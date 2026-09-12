@@ -1,0 +1,263 @@
+{
+    "Start": {
+        "post_delay": 5000,
+        "next": [
+            "start-announcement",
+            "start-convened",
+            "start-accessing",
+            "start-serve",
+            "Exception-handling-remind",
+            "Exception-handling-nurturance-one",
+            "startup"
+        ]
+    },
+    "startup": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_wait_freezes": 10000,
+        "timeout": 120000,
+        "next": [
+            "start-healthy",
+            "start-serve",
+            "start-update",
+            "start-announcement"
+        ],
+        "interrupt": [
+            "Exception-handling-remind",
+            "Exception-handling-nurturance-one"
+        ]
+    },
+    "StopApp": {
+        "action": "StopApp",
+        "package": "com.cipaishe.wuhua.bilibili"
+    },
+    "start-healthy": {
+        "recognition": "OCR",
+        "expected": "健康",
+        "action": "Click",
+        "post_delay": 3000,
+        "roi": [
+            405,
+            230,
+            510,
+            260
+        ],
+        "next": [
+            "start-serve",
+            "start-healthy",
+            "start-announcement"
+        ]
+    },
+    "start-serve": {
+        "recognition": "OCR",
+        "expected": [
+            "服务",
+            "同步",
+            "更新",
+            "解压",
+            "检测",
+            "资源",
+            "配置"
+        ],
+        "action": "DoNothing",
+        "post_delay": 3000,
+        "timeout": 120000,
+        "roi": [
+            195,
+            595,
+            260,
+            125
+        ],
+        "next": [
+            "start-update",
+            "start-serve",
+            "start-announcement"
+        ]
+    },
+    "start-update": {
+        "recognition": "OCR",
+        "expected": "更新",
+        "action": "Click",
+        "post_delay": 3000,
+        "timeout": 120000,
+        "target": [
+            765,
+            430,
+            0,
+            0
+        ],
+        "roi": [
+            403,
+            249,
+            474,
+            111
+        ],
+        "next": [
+            "start-serve",
+            "start-update",
+            "start-announcement"
+        ]
+    },
+    "start-announcement": {
+        "recognition": "OCR",
+        "expected": "公告",
+        "action": "DoNothing",
+        "post_delay": 1000,
+        "roi": [
+            360,
+            50,
+            545,
+            105
+        ],
+        "next": [
+            "start-CloseAnnouncement",
+            "start-announcement"
+        ]
+    },
+    "start-CloseAnnouncement": {
+        "recognition": "TemplateMatch",
+        "template": "Startup/12.png",
+        "roi": [
+            1063,
+            27,
+            197,
+            157
+        ],
+        "action": "Click",
+        "post_delay": 2000,
+        "next": [
+            "start-accessing",
+            "start-CloseAnnouncement"
+        ]
+    },
+    "start-accessing": {
+        "recognition": "OCR",
+        "expected": "抵制不良",
+        "action": "Click",
+        "target_offset": [
+            0,
+            -40,
+            0,
+            0
+        ],
+        "roi": [
+            198,
+            618,
+            125,
+            62
+        ],
+        "post_wait_freezes": 7000,
+        "next": [
+            "start-handling-remind",
+            "start-up-new",
+            "start-attendance",
+            "start-accessing",
+            "start-GetResource",
+            "start-convened"
+        ],
+        "interrupt": [
+            "Exception-handling-remind",
+            "Exception-handling-nurturance-one"
+        ]
+    },
+    "start-handling-remind": {
+        "recognition": "OCR",
+        "expected": "今日登录不再提示",
+        "action": "Click",
+        "post_delay": 2000,
+        "target": [
+            1160,
+            130,
+            0,
+            0
+        ],
+        "roi": [
+            115,
+            590,
+            277,
+            100
+        ],
+        "next": [
+            "start-up-new",
+            "start-handling-remind",
+            "start-GetResource",
+            "start-AccumulatedSignInExit",
+            "start-attendance"
+        ]
+    },
+    "start-up-new": {
+        "recognition": "OCR",
+        "expected": [
+            "衣装上新",
+            "周边上新"
+        ],
+        "action": "Click",
+        "post_delay": 2000,
+        "target": [
+            1160,
+            130,
+            0,
+            0
+        ],
+        "roi": [
+            316,
+            390,
+            711,
+            296
+        ],
+        "next": [
+            "start-handling-remind",
+            "start-up-new",
+            "start-GetResource",
+            "start-AccumulatedSignInExit",
+            "start-attendance"
+        ]
+    },
+    "start-attendance": {
+        "recognition": "OCR",
+        "expected": "签到",
+        "action": "Click",
+        "post_delay": 2000,
+        "next": [
+            "start-GetResource",
+            "start-AccumulatedSignInExit",
+            "start-attendance"
+        ]
+    },
+    "start-AccumulatedSignInExit": {
+        "recognition": "TemplateMatch",
+        "template": "Startup/AccumulatedSignInExit.png",
+        "action": "Click",
+        "post_delay": 3000,
+        "next": [
+            "start-AccumulatedSignInExit",
+            "start-convened",
+            "start-attendance",
+            "start-GetResource"
+        ]
+    },
+    "start-GetResource": {
+        "recognition": "OCR",
+        "expected": "获得物资",
+        "action": "Click",
+        "post_delay": 2000,
+        "next": [
+            "start-AccumulatedSignInExit",
+            "start-convened",
+            "start-attendance",
+            "start-GetResource"
+        ]
+    },
+    "start-convened": {
+        "recognition": "TemplateMatch",
+        "template": "Startup/11.png",
+        "action": "DoNothing",
+        "post_delay": 2000,
+        "roi": [
+            906,
+            340,
+            170,
+            205
+        ]
+    }
+}

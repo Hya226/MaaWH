@@ -1,0 +1,22 @@
+{
+    "调到3": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 1500,
+        "next": ["FloorMinus"]
+    },
+    "FloorMinus": {
+        "action": "Click",
+        "target": [774, 340],
+        "repeat": 10,
+        "repeat_delay": 350,
+        "next": ["PlusTwo"]
+    },
+    "PlusTwo": {
+        "action": "Click",
+        "target": [1032, 340],
+        "repeat": 2,
+        "repeat_delay": 600,
+        "pre_delay": 3000
+    }
+}

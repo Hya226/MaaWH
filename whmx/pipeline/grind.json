@@ -1,0 +1,306 @@
+{
+    // 《物华弥新》刷冬谷币 —— 自适应版
+    // 次数调节已从宿主 Kotlin 挪进流水线：段1 → 连按「-」触底 → 按「+」到目标次数 → 段2
+    // 目标次数由 interface.json 的 option「刷冬谷币次数」覆盖 刷谷_加次数.repeat（次数=1 时覆盖 刷谷_调次数.next 跳过加号）
+    // 回主页/关弹窗复用 common.json 的 Common_* 公共节点
+
+    "刷冬谷币": {
+        "next": ["刷谷段1"]
+    },
+    "刷谷段1": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 1000,
+        "next": [
+            "StageHome"
+        ]
+    },
+    "StageHome": {
+        "action": "DoNothing",
+        "timeout": 240000,
+        "next": [
+            "CloseAnno2",
+            "ToEnterPage",
+            "YanXun"
+        ]
+    },
+    "到主页": {
+        "action": "DoNothing",
+        "timeout": 240000,
+        "next": [
+            "HomeLoop"
+        ]
+    },
+    "HomeLoop": {
+        "action": "DoNothing",
+        "timeout": 240000,
+        "next": [
+            "CloseAnno2H",
+            "ToEnterPageH",
+            "YanXunDone"
+        ]
+    },
+    "CloseAnno2H": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x.png",
+        "threshold": 0.6,
+        "roi": [822, 20, 458, 220],
+        "action": "Click",
+        "post_delay": 800,
+        "next": [
+            "HomeLoop"
+        ]
+    },
+    "ToEnterPageH": {
+        "recognition": "OCR",
+        "text": [
+            "进入游戏",
+            "点击任意处",
+            "任意处进入",
+            "久进",
+            "进斿戈"
+        ],
+        "roi": [191, 120, 1000, 480],
+        "action": "DoNothing",
+        "rate_limit": 800,
+        "timeout": 150000,
+        "next": [
+            "TapToEnterH"
+        ]
+    },
+    "TapToEnterH": {
+        "action": "Click",
+        "target": [640, 360],
+        "pre_delay": 500,
+        "post_delay": 2500,
+        "next": [
+            "HomeLoop"
+        ]
+    },
+    "YanXunDone": {
+        "recognition": "TemplateMatch",
+        "template": "yanxun.png",
+        "threshold": 0.5,
+        "roi": [580, 100, 700, 460],
+        "action": "DoNothing",
+        "next": [
+            "Common_关弹窗"
+        ]
+    },
+    "CloseAnno2": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x.png",
+        "threshold": 0.6,
+        "roi": [822, 20, 458, 220],
+        "action": "Click",
+        "post_delay": 800,
+        "next": [
+            "StageHome"
+        ]
+    },
+    "ToEnterPage": {
+        "recognition": "OCR",
+        "text": [
+            "进入游戏",
+            "点击任意处",
+            "任意处进入",
+            "久进",
+            "进斿戈"
+        ],
+        "roi": [191, 120, 1000, 480],
+        "action": "DoNothing",
+        "rate_limit": 800,
+        "timeout": 150000,
+        "next": [
+            "TapToEnter"
+        ]
+    },
+    "TapToEnter": {
+        "action": "Click",
+        "target": [640, 360],
+        "pre_delay": 500,
+        "post_delay": 2500,
+        "next": [
+            "StageHome"
+        ]
+    },
+    "YanXun": {
+        "recognition": "TemplateMatch",
+        "template": "yanxun.png",
+        "threshold": 0.55,
+        "roi": [580, 100, 700, 460],
+        "action": "Click",
+        "post_delay": 600,
+        "next": [
+            "StartTrain"
+        ]
+    },
+    "StartTrain": {
+        "recognition": "TemplateMatch",
+        "template": "kaishi_xunlian.png",
+        "threshold": 0.5,
+        "order_by": "Score",
+        "action": "Click",
+        "timeout": 6000,
+        "next": [
+            "DongGuBiOcr",
+            "DongGuBiTpl"
+        ]
+    },
+    "DongGuBiOcr": {
+        "recognition": "OCR",
+        "text": [
+            "05冬谷币：辰",
+            "冬谷币：辰"
+        ],
+        "roi": [236, 150, 1000, 520],
+        "action": "Click",
+        "post_wait_freezes": 1000,
+        "next": [
+            "SuTongClick"
+        ]
+    },
+    "DongGuBiTpl": {
+        "recognition": "TemplateMatch",
+        "template": "donggubi.png",
+        "threshold": 0.6,
+        "roi": [436, 200, 800, 400],
+        "action": "Click",
+        "post_wait_freezes": 1000,
+        "next": [
+            "SuTongClick"
+        ]
+    },
+    "SuTongClick": {
+        "recognition": "TemplateMatch",
+        "template": "sutong.png",
+        "threshold": 0.8,
+        "order_by": "Score",
+        "roi": [922, 600, 358, 120],
+        "action": "Click",
+        "target": [1026, 656],
+        "post_delay": 1500,
+        "next": [
+            "刷谷_速通判定"
+        ]
+    },
+
+    // ============ 速通弹窗校验（防止误点编队页角色）============
+    // 分叉容器：命中「速通战斗」弹窗 → 正常调次数；4s 未命中（点偏了/误入编队页）
+    // → on_error 走「返回战前」重试。注意 on_error 必须挂在容器节点上才生效。
+    "刷谷_速通判定": {
+        "action": "DoNothing",
+        "timeout": 6000,
+        "next": [
+            "刷谷_速通校验"
+        ],
+        "on_error": [
+            "刷谷_返回战前"
+        ]
+    },
+    "刷谷_速通校验": {
+        "recognition": "TemplateMatch",
+        "template": "sutong_dialog.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "刷谷_调次数"
+        ]
+    },
+    // 误入编队页时，左上角「器者列表」按钮返回战前准备页；最多重试 3 次（max_hit）防死循环
+    "刷谷_返回战前": {
+        "action": "Click",
+        "target": [107, 33],
+        "post_delay": 1500,
+        "max_hit": 3,
+        "next": [
+            "SuTongClick"
+        ]
+    },
+
+    // ============ 次数调节 ============
+    // 弹窗内 ROI（x 730~1120, y 300~385）限定，避免「−」这类简单图形在其它页面误匹配
+    // 连按「−」9 次触底（值恒为 1），再按「+」到目标次数
+    "刷谷_调次数": {
+        "recognition": "TemplateMatch",
+        "template": "sutong_minus.png",
+        "threshold": 0.85,
+        "roi": [566, 300, 390, 85],
+        "action": "Click",
+        "repeat": 9,
+        "repeat_delay": 350,
+        "next": [
+            "刷谷_加次数"
+        ]
+    },
+    // 目标次数 - 1（初始已在 1）；pre_delay 等触底提示消失
+    // interface.json 的「刷冬谷币次数」option 覆盖本节点 repeat
+    "刷谷_加次数": {
+        "recognition": "TemplateMatch",
+        "template": "sutong_plus.png",
+        "threshold": 0.85,
+        "roi": [566, 300, 390, 85],
+        "action": "Click",
+        "pre_delay": 1400,
+        "repeat": 2,
+        "repeat_delay": 400,
+        "next": [
+            "刷谷段2"
+        ]
+    },
+
+    "刷谷段2": {
+        "next": [
+            "ConfirmBattle"
+        ]
+    },
+    "ConfirmBattle": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.8,
+        "roi": [736, 330, 240, 160],
+        "action": "Click",
+        "post_delay": 1500,
+        "next": [
+            "FavYes",
+            "WaitClaim"
+        ]
+    },
+    "FavYes": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.7,
+        "roi": [656, 360, 240, 160],
+        "action": "Click",
+        "pre_delay": 1800,
+        "post_delay": 1000,
+        "next": [
+            "WaitClaim"
+        ]
+    },
+    "WaitClaim": {
+        "recognition": "OCR",
+        "text": [
+            "完成"
+        ],
+        "roi": [636, 300, 644, 420],
+        "action": "DoNothing",
+        "rate_limit": 1500,
+        "timeout": 420000,
+        "next": [
+            "ClaimFixed"
+        ]
+    },
+    // 结算页「完成」按钮：模板识别（右下角红底白字），避免固定坐标点偏
+    "ClaimFixed": {
+        "recognition": "TemplateMatch",
+        "template": "claim_done.png",
+        "threshold": 0.8,
+        "roi": [772, 570, 508, 150],
+        "action": "Click",
+        "post_delay": 2000,
+        "next": [
+            "Common_回主页验证"
+        ]
+    }
+}

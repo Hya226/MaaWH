@@ -1,0 +1,13 @@
+{
+    // 临时：只点「速通」一次，无后续动作
+    "点速通": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2000,
+        "next": ["ClickSuTong"]
+    },
+    "ClickSuTong": {
+        "action": "Click",
+        "target": [1354, 656]
+    }
+}

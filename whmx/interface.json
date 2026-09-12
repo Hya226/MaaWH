@@ -1,0 +1,317 @@
+{
+    // 《物华弥新》MaaWH 任务包声明 —— 对标 MWA/MaaEnd 的 ProjectInterface v2
+    // 任务清单、参数化(次数/角色/子任务开关)全部在此声明，宿主只负责渲染与传参。
+    // 参考: MaaFramework/docs/zh_cn/3.3-ProjectInterfaceV2协议.md
+    "interface_version": 2,
+    "name": "whmx",
+    "label": "物华弥新",
+    "version": "0.2.0",
+    "description": "MaaWH 的《物华弥新》任务包（Shizuku + 虚拟屏）",
+
+    "controller": [
+        {
+            "name": "ShizukuVirtualDisplay",
+            "label": "Shizuku 虚拟屏",
+            "type": "Adb",
+            "display_short_side": 720
+        }
+    ],
+
+    "resource": [
+        {
+            "name": "whmx",
+            "label": "《物华弥新》",
+            "path": [
+                "{PROJECT_DIR}"
+            ]
+        }
+    ],
+
+    "group": [
+        { "name": "startup", "label": "启动" },
+        { "name": "daily", "label": "日常" },
+        { "name": "battle", "label": "战斗" },
+        { "name": "operator", "label": "器者" },
+        { "name": "other", "label": "其他" },
+        { "name": "tools", "label": "小工具" },
+        { "name": "dev", "label": "开发测试" }
+    ],
+
+    "task": [
+        {
+            "name": "启动",
+            "label": "启动",
+            "entry": "到主页",
+            "default_check": true,
+            "group": ["startup"],
+            "description": "虚拟屏投游戏并收口到主页"
+        },
+        {
+            "name": "刷冬谷币",
+            "label": "刷冬谷币",
+            "entry": "刷冬谷币",
+            "default_check": true,
+            "group": ["battle"],
+            "option": ["刷冬谷币次数"]
+        },
+        {
+            "name": "征集",
+            "label": "征集",
+            "entry": "征集",
+            "default_check": true,
+            "group": ["daily"],
+            "option": ["征集次数"]
+        },
+        {
+            "name": "行会签到",
+            "label": "行会签到",
+            "entry": "签到段1",
+            "default_check": true,
+            "group": ["daily"]
+        },
+        {
+            "name": "每日免费礼包购买",
+            "label": "每日免费礼包购买",
+            "entry": "礼包段1",
+            "default_check": true,
+            "group": ["daily"]
+        },
+        {
+            "name": "派遣公司事务",
+            "label": "派遣公司事务",
+            "entry": "派遣公司事务",
+            "default_check": true,
+            "group": ["daily"],
+            "option": ["办公室物资购买", "喝茶"]
+        },
+        {
+            "name": "装卸装备",
+            "label": "装卸装备",
+            "entry": "装卸装备",
+            "group": ["operator"],
+            "option": ["目标角色"]
+        },
+        {
+            "name": "升好感度",
+            "label": "升好感度",
+            "entry": "升好感度",
+            "group": ["operator"],
+            "option": ["目标角色", "礼物次数"]
+        },
+        {
+            "name": "查找器者",
+            "label": "查找器者",
+            "entry": "查找器者",
+            "group": ["tools"],
+            "option": ["目标角色"]
+        },
+        {
+            "name": "装备分解",
+            "label": "装备分解",
+            "entry": "装备分解",
+            "group": ["daily"]
+        },
+        {
+            "name": "领取奖励",
+            "label": "领取奖励",
+            "entry": "领取奖励",
+            "group": ["daily"]
+        },
+        {
+            "name": "外勤",
+            "label": "外勤",
+            "entry": "外勤",
+            "group": ["daily"]
+        },
+        {
+            "name": "关闭游戏",
+            "label": "关闭游戏",
+            "entry": "关闭游戏",
+            "group": ["other"]
+        }
+    ],
+
+    "option": {
+        // ===== 次数：select + cases + pipeline_override（对标 MWA「征集几个」）=====
+        "刷冬谷币次数": {
+            "type": "select",
+            "label": "刷冬谷币次数",
+            "default_case": "3",
+            "cases": [
+                {
+                    "name": "1",
+                    "pipeline_override": {
+                        "刷谷_调次数": { "next": ["刷谷段2"] }
+                    }
+                },
+                {
+                    "name": "2",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 1 }
+                    }
+                },
+                {
+                    "name": "3",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 2 }
+                    }
+                },
+                {
+                    "name": "4",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 3 }
+                    }
+                },
+                {
+                    "name": "5",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 4 }
+                    }
+                },
+                {
+                    "name": "6",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 5 }
+                    }
+                },
+                {
+                    "name": "7",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 6 }
+                    }
+                },
+                {
+                    "name": "8",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 7 }
+                    }
+                },
+                {
+                    "name": "9",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 8 }
+                    }
+                },
+                {
+                    "name": "10",
+                    "pipeline_override": {
+                        "刷谷_加次数": { "repeat": 9 }
+                    }
+                }
+            ]
+        },
+
+        "征集次数": {
+            "type": "select",
+            "label": "征集次数",
+            "default_case": "1",
+            "cases": [
+                {
+                    "name": "1",
+                    "pipeline_override": {
+                        "征集段2": { "next": ["ZJ_DuiGou2"] }
+                    }
+                },
+                {
+                    "name": "2",
+                    "pipeline_override": {
+                        "ZJ_JiaHao2": { "repeat": 1 }
+                    }
+                },
+                {
+                    "name": "3",
+                    "pipeline_override": {
+                        "ZJ_JiaHao2": { "repeat": 2 }
+                    }
+                },
+                {
+                    "name": "4",
+                    "pipeline_override": {
+                        "ZJ_JiaHao2": { "repeat": 3 }
+                    }
+                }
+            ]
+        },
+
+        // ===== 子任务开关：switch + enabled 覆盖（对标 MWA「是否喝茶」）=====
+        "办公室物资购买": {
+            "type": "switch",
+            "label": "办公室物资购买",
+            "default_case": "No",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "pipeline_override": {
+                        "派遣段2": { "enabled": true }
+                    }
+                },
+                {
+                    "name": "No",
+                    "pipeline_override": {
+                        "派遣段2": { "enabled": false }
+                    }
+                }
+            ]
+        },
+
+        // ===== 角色选择：input + {角色} 变量替换（替代宿主复制 _target.png 的做法）=====
+        "目标角色": {
+            "type": "input",
+            "label": "目标角色",
+            "description": "选择要操作的角色，需与 image/ 下 <角色名>.png 模板一致",
+            "inputs": [
+                {
+                    "name": "角色",
+                    "label": "角色名",
+                    "default": "蛙锣",
+                    "pipeline_type": "string"
+                }
+            ],
+            "pipeline_override": {
+                "CDZB2_Hit": { "template": "{角色}.png" },
+                "升2_Hit": { "template": "{角色}.png" },
+                "查2_Hit": { "template": "{角色}.png" }
+            }
+        },
+
+        // ===== 礼物次数：input + 变量替换到 repeat =====
+        "礼物次数": {
+            "type": "input",
+            "label": "礼物次数",
+            "description": "升好感度时点击礼物的次数（1~20）",
+            "inputs": [
+                {
+                    "name": "礼物次数",
+                    "label": "次数",
+                    "default": "1",
+                    "pipeline_type": "int",
+                    "verify": "^([1-9]|1[0-9]|20)$",
+                    "pattern_msg": "请输入 1~20 的整数"
+                }
+            ],
+            "pipeline_override": {
+                "升好_礼物": { "repeat": "{礼物次数}" }
+            }
+        },
+
+        // ===== 派遣公司事务可选子任务：喝茶（开关 pqgs.json 的 喝茶段）=====
+        "喝茶": {
+            "type": "switch",
+            "label": "喝茶",
+            "default_case": "No",
+            "cases": [
+                {
+                    "name": "Yes",
+                    "pipeline_override": {
+                        "喝茶段": { "enabled": true },
+                        "VF_喝茶_20": { "next": ["派遣段3"] }
+                    }
+                },
+                {
+                    "name": "No",
+                    "pipeline_override": { "喝茶段": { "enabled": false } }
+                }
+            ]
+        }
+    }
+}

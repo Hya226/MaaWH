@@ -1,0 +1,48 @@
+{
+    "Nav_回主页C": {
+        "action": "Click",
+        "target": [660, 419],
+        "post_delay": 1200,
+        "next": ["Nav_回主页D"]
+    },
+    "Nav_回主页D": {
+        "action": "Click",
+        "target": [240, 37],
+        "post_delay": 2200,
+        "next": ["Nav_演训C"]
+    },
+    "Nav_演训C": {
+        "recognition": "TemplateMatch",
+        "template": "yanxun.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 2200,
+        "next": ["Nav_开始C"]
+    },
+    "Nav_开始C": {
+        "recognition": "TemplateMatch",
+        "template": "kaishi_xunlian.png",
+        "threshold": 0.5,
+        "order_by": "Score",
+        "action": "Click",
+        "post_delay": 2500,
+        "next": ["Nav_OCR"]
+    },
+    "Nav_OCR": {
+        "recognition": "OCR",
+        "text": ["05冬谷币：辰", "冬谷币：辰"],
+        "roi": [236, 150, 1000, 520],
+        "action": "Click",
+        "post_delay": 600,
+        "next": ["Nav_SuTong"]
+    },
+    "Nav_SuTong": {
+        "recognition": "TemplateMatch",
+        "template": "sutong.png",
+        "threshold": 0.8,
+        "order_by": "Score",
+        "roi": [922, 600, 358, 120],
+        "action": "Click",
+        "post_delay": 1500
+    }
+}

@@ -1,0 +1,13 @@
+{
+    // 点击右下角红底「完成」按钮（OCR定位 1247,617）
+    "点完成3": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["CW2"]
+    },
+    "CW2": {
+        "action": "Click",
+        "target": [1278, 633]
+    }
+}

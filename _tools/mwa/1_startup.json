@@ -1,0 +1,132 @@
+{
+    "Start": {
+        "next": [
+            "StartWuhua",
+            "update",
+            "CloseAnnouncement"
+        ]
+    },
+    "StartWuhua": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili/com.cipaishe.wuhua.bilibili.activity.ONESDKSplashActivity",
+        "post_wait_freezes": 10000,
+        "timeout": 20000,
+        "next": [
+            "update",
+            "CloseAnnouncement",
+            "convened"
+        ]
+    },
+    "update": {
+        "recognition": "OCR",
+        "expected": "终端数据更新",
+        "roi": [
+            403,
+            249,
+            474,
+            111
+        ],
+        "action": "Click",
+        "post_delay": 10000,
+        "timeout": 20000,
+        "timeout_next": [
+            "update",
+            "CloseAnnouncement"
+        ],
+        "target": [
+            765,
+            430,
+            0,
+            0
+        ],
+        "next": []
+    },
+    "CloseAnnouncement": {
+        "recognition": "TemplateMatch",
+        "template": "Startup/12.png",
+        "roi": [
+            1063,
+            27,
+            197,
+            157
+        ],
+        "action": "Click",
+        "post_delay": 5000,
+        "next": [
+            "StartGame",
+            "CloseAnnouncement"
+        ]
+    },
+    "StartGame": {
+        "recognition": "OCR",
+        "expected": "提示",
+        "action": "Click",
+        "post_delay": 7000,
+        "target": [
+            1060,
+            80,
+            0,
+            0
+        ],
+        "roi": [
+            1170,
+            580,
+            100,
+            135
+        ],
+        "next": [
+            "AccumulatedSignIn",
+            "AccumulatedSignInExit",
+            "GetResource",
+            "convened"
+        ]
+    },
+    "convened": {
+        "recognition": "TemplateMatch",
+        "template": "Startup/11.png",
+        "action": "DoNothing",
+        "roi": [
+            906,
+            340,
+            170,
+            205
+        ],
+        "post_delay": 2000
+    },
+    "AccumulatedSignIn": {
+        "action": "Click",
+        "target": [
+            800,
+            350,
+            0,
+            0
+        ],
+        "post_delay": 3000,
+        "next": [
+            "GetResource",
+            "AccumulatedSignInExit",
+            "convened",
+            "AccumulatedSignIn"
+        ]
+    },
+    "AccumulatedSignInExit": {
+        "recognition": "TemplateMatch",
+        "template": "Startup/AccumulatedSignInExit.png",
+        "action": "Click",
+        "post_delay": 3000,
+        "next": [
+            "GetResource",
+            "AccumulatedSignInExit",
+            "convened"
+        ]
+    },
+    "GetResource": {
+        "recognition": "OCR",
+        "expected": "获得物资",
+        "action": "Click",
+        "next": [
+            "AccumulatedSignInExit",
+            "convened"
+        ]
+    }
+}

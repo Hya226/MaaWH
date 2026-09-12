@@ -1,0 +1,11 @@
+{
+    // 引擎自检任务：在 MaaWH 界面上用 TemplateMatch 找到「截图并预览」按钮并点击。
+    // 无 next -> 执行完一次即结束（成功）。
+    // 模板图位于 image/btn_screenshot.png（相对资源根目录的 image 目录）。
+    "SelfTest": {
+        "recognition": "TemplateMatch",
+        "template": "btn_screenshot.png",
+        "threshold": 0.85,
+        "action": "Click"
+    }
+}

@@ -1,0 +1,36 @@
+{
+    "定位主页钮": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye.png",
+        "threshold": 0.3,
+        "roi": [0, 0, 1608, 720],
+        "action": "DoNothing",
+        "rate_limit": 400,
+        "timeout": 10000
+    },
+    "任务页找主页钮": {
+        "action": "Click",
+        "target": [1456, 671],
+        "post_delay": 1600,
+        "next": []
+    },
+    "ProbeZhuye2": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye.png",
+        "threshold": 0.3,
+        "roi": [0, 0, 1608, 720],
+        "action": "DoNothing",
+        "rate_limit": 400,
+        "timeout": 10000
+    }
+,
+    "只找主页钮": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye.png",
+        "threshold": 0.25,
+        "roi": [0, 0, 1608, 720],
+        "action": "DoNothing",
+        "rate_limit": 400,
+        "timeout": 10000
+    }
+}

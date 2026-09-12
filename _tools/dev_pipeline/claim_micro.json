@@ -1,0 +1,14 @@
+{
+    // 临时微步：点击「完成」领取一次
+    "点完成": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["OcrClaim"]
+    },
+    "OcrClaim": {
+        "recognition": "OCR",
+        "text": ["完成"],
+        "action": "Click"
+    }
+}

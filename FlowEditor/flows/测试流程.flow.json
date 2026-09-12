@@ -1,0 +1,158 @@
+{
+  "name": "测试流程",
+  "chain": [
+    "n00147d6",
+    "n0043173",
+    "n00503ea",
+    "n00619b9",
+    "n0074ed3",
+    "n00806f0",
+    "n009e79b",
+    "n01323d5"
+  ],
+  "nodes": {
+    "n00147d6": {
+      "type": "tpl_click",
+      "x": 306.0,
+      "y": 89.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "rate_limit": 0,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "bowuyanxue_rukou.png"
+      }
+    },
+    "n0043173": {
+      "type": "tpl_click",
+      "x": 306.0,
+      "y": 179.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "rate_limit": 0,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "jinyinjihang.png"
+      }
+    },
+    "n00503ea": {
+      "type": "tpl_click",
+      "x": 306.0,
+      "y": 269.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "rate_limit": 0,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "jinruzhuti.png"
+      }
+    },
+    "n00619b9": {
+      "type": "tpl_click",
+      "x": 306.0,
+      "y": 359.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "rate_limit": 0,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "yanxueqicheng.png"
+      }
+    },
+    "n0074ed3": {
+      "type": "tpl_click",
+      "x": 306.0,
+      "y": 449.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "rate_limit": 0,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "yanxueboss_2.png"
+      }
+    },
+    "n00806f0": {
+      "type": "tpl_click",
+      "x": 306.0,
+      "y": 539.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "rate_limit": 0,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "yanxuenandu_putong.png"
+      }
+    },
+    "n009e79b": {
+      "type": "tpl_click",
+      "x": 306.0,
+      "y": 629.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "rate_limit": 0,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "yanxuejuese_jia.png"
+      }
+    },
+    "n01323d5": {
+      "type": "tpl_click",
+      "x": 307.0,
+      "y": 747.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "rate_limit": 0,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    }
+  }
+}

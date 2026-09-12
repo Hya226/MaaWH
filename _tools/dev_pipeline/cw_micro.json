@@ -1,0 +1,13 @@
+{
+    // 临时：点击左下「完成」按钮（模板唯一候选中心）
+    "点完成2": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["CW"]
+    },
+    "CW": {
+        "action": "Click",
+        "target": [281, 572]
+    }
+}

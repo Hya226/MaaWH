@@ -1,0 +1,24 @@
+{
+    // 只读定位图标（不点击）：找出 + 与 √ 的位置
+    "读图标": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 3000,
+        "next": ["Tplus", "Tcheck"]
+    },
+    "Tplus": {
+        "recognition": "TemplateMatch",
+        "template": "jiahao.png",
+        "threshold": 0.35,
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": ["Tcheck"]
+    },
+    "Tcheck": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.35,
+        "action": "DoNothing",
+        "timeout": 8000
+    }
+}

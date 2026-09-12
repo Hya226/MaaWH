@@ -1,0 +1,12 @@
+{
+    "点开始训练": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2000,
+        "next": ["ClickST"]
+    },
+    "ClickST": {
+        "action": "Click",
+        "target": [365, 612]
+    }
+}

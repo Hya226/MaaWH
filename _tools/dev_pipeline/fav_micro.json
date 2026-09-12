@@ -1,0 +1,15 @@
+{
+    // 临时微步：好感度弹窗的「√」点击一次
+    "点好感√": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["ClickFav"]
+    },
+    "ClickFav": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.8,
+        "action": "Click"
+    }
+}

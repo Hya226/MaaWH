@@ -1,0 +1,32 @@
+{
+    // 《物华弥新》最简登录流程
+    // 启动游戏 -> 弹出公告窗 -> 识别右上角×并点击 -> 「点击任意处进入游戏」标题出现 -> 点屏幕中央进入
+    //
+    // 注意：
+    // 1) 识别用图为短边720归一化帧；模板 cha_x.png 已按此坐标系缩放
+    // 2) 固定点击坐标 [804,360] 是 1608x720 帧的中心，引擎会自动映射回真实分辨率
+    "启动": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "next": ["CloseAnnounce"]
+    },
+    "CloseAnnounce": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x.png",
+        "threshold": 0.7,
+        "roi": [822, 20, 458, 220],
+        "action": "Click",
+        "next": ["TapEnter"]
+    },
+    "TapEnter": {
+        "action": "Click",
+        "target": [640, 360],
+        "pre_delay": 3000
+    },
+
+    // 「关闭游戏」任务入口：强杀游戏进程（一键长草队列末尾可选）
+    "关闭游戏": {
+        "action": "StopApp",
+        "package": "com.cipaishe.wuhua.bilibili"
+    }
+}

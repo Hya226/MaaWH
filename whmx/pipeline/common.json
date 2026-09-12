@@ -1,0 +1,155 @@
+{
+    // 《物华弥新》公共节点层 —— 对标 MaaEnd 的 Common/Button 与 MWA 的 convened
+    // 所有 pipeline 文件共享同一命名空间，节点名即全局标识，可直接被任意任务 next 引用。
+    // 约定：Common_* 前缀为跨任务复用节点，任务文件不要重复定义。
+
+    // ============ 通用点击 ============
+
+    // 回主页：左上角主页图标（房子）。
+    // 用「分叉容器」包一层，保证本节点【永远成功】——这点很关键：
+    //   它是多个循环退出链（如 PQ_TCPQ/PQ_TCBG）的 on_error 收尾目标，
+    //   若直接用识别节点，识别失败会让容器 error 与循环回边构成
+    //   "error handling loop"（2026-09-12 实测崩溃），必须用容器兜底。
+    // 语义：命中主页图标 → 点击返回；未命中 → 视为已在主页/无需点击 → 完成。
+    "Common_回主页": {
+        "action": "DoNothing",
+        "timeout": 1500,
+        "next": ["Common_回主页_Hit"],
+        "on_error": ["Common_回主页_完成"]
+    },
+    "Common_回主页_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "home_icon.png",
+        "threshold": 0.8,
+        "roi": [191, 8, 130, 70],
+        "action": "Click",
+        "post_delay": 800
+    },
+    "Common_回主页_完成": {
+        "action": "DoNothing",
+        "next": []
+    },
+
+    // 点屏幕正中：用于关闭弹窗/确认层，让主页图标重新出现（收口，无 next）
+    "Common_点中间": {
+        "action": "Click",
+        "target": [640, 360],
+        "post_delay": 800
+    },
+
+    // 点屏幕正中关掉结算层，然后回主页（领取类流程的标准收尾）
+    "Common_点中间回主页": {
+        "action": "Click",
+        "target": [640, 360],
+        "post_delay": 800,
+        "next": ["Common_回主页"]
+    },
+
+    // 回主页并校验（主页以「演训」等入口可见为准），未到位则点主页图标重试（上限 3 次）
+    "Common_回主页验证": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": ["Common_主页校验"],
+        "on_error": ["Common_回主页_重试"]
+    },
+    "Common_主页校验": {
+        "recognition": "TemplateMatch",
+        "template": "yanxun.png",
+        "threshold": 0.5,
+        "roi": [580, 100, 700, 460],
+        "action": "DoNothing"
+    },
+    // 固定坐标兜底重试（主页图标模板未命中时用），max_hit 防死循环
+    "Common_回主页_重试": {
+        "action": "Click",
+        "target": [240, 37],
+        "post_delay": 1500,
+        "max_hit": 3,
+        "next": ["Common_回主页验证"]
+    },
+
+    // ============ 通用弹窗关闭 ============
+    // 全屏活动/公告弹窗的关闭「×」有两种样式：
+    //   cha_x.png        —— 细线「×」（公告、领取完成弹窗）
+    //   cha_x_big.png    —— 白色描边粗「×」（签到奖励页、活动推广横幅）
+    // 两者互相匹配度 0.65~0.9，用 Or 一次覆盖；阈值 0.6 实测稳定命中。
+
+    // 循环关闭全屏弹窗：识别到任一「×」→ 点击 → 再查；连续 2s 检测不到 → 完成
+    // 用法：任务里 "next": ["Common_关弹窗"]（本节点自身收口，不返回调用方）
+    "Common_关弹窗": {
+        "action": "DoNothing",
+        "timeout": 2000,
+        "next": ["Common_关弹窗_Hit"],
+        "on_error": ["Common_关弹窗_完成"]
+    },
+    "Common_关弹窗_Hit": {
+        "recognition": "Or",
+        "any_of": ["Common_关弹窗_X细", "Common_关弹窗_X粗"],
+        "action": "Click",
+        "post_delay": 800,
+        "next": ["Common_关弹窗"]
+    },
+    "Common_关弹窗_X细": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x.png",
+        "threshold": 0.6,
+        "roi": [822, 20, 458, 220]
+    },
+    "Common_关弹窗_X粗": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x_big.png",
+        "threshold": 0.6,
+        "roi": [822, 20, 458, 220]
+    },
+    "Common_关弹窗_完成": {
+        "action": "DoNothing",
+        "next": []
+    },
+
+    // 循环关闭「领取完成」类弹窗：识别到「×」→ 点击 → 再查；消失后回主页
+    "Common_关弹窗回主页": {
+        "action": "DoNothing",
+        "timeout": 2000,
+        "next": ["Common_弹窗_Hit"],
+        "on_error": ["Common_回主页"]
+    },
+    "Common_弹窗_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "cha_tanchuang.png",
+        "threshold": 0.6,
+        "roi": [971, 60, 160, 100],
+        "action": "Click",
+        "post_delay": 800,
+        "next": ["Common_关弹窗回主页"]
+    },
+
+    // ============ 通用确认 / 关闭按钮（模板识别）============
+
+    // 通用确认「√」：多用于战斗结算/领取确认，识别到即点击
+    "Common_确认": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "post_delay": 800
+    },
+
+    // 通用返回按钮（右上角左箭头）
+    "Common_返回": {
+        "recognition": "TemplateMatch",
+        "template": "hanghui_fanhui.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 800
+    },
+
+    // 通用开始训练按钮（演训页「开始训练」）
+    "Common_开始训练": {
+        "recognition": "TemplateMatch",
+        "template": "kaishi_xunlian.png",
+        "threshold": 0.5,
+        "order_by": "Score",
+        "action": "Click",
+        "timeout": 6000
+    }
+}

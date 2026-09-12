@@ -1,0 +1,18 @@
+{
+    // 临时微步：按「+」2 次（把默认 1 加到 3），然后停止
+    "加点": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["PlusX2"]
+    },
+    "PlusX2": {
+        "recognition": "TemplateMatch",
+        "template": "jiahao.png",
+        "threshold": 0.8,
+        "roi": [900, 270, 320, 170],
+        "action": "Click",
+        "repeat": 2,
+        "repeat_delay": 700
+    }
+}

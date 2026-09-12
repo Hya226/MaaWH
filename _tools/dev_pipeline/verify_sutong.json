@@ -1,0 +1,24 @@
+{
+    // 只读验证（不点击）：确认速通弹窗内的 −/+ 模板能被引擎正确识别
+    // 用 DoNothing，仅产出识别结果与坐标，不消耗体力
+    "验证速通按钮": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": ["验证_minus", "验证_plus"]
+    },
+    "验证_minus": {
+        "recognition": "TemplateMatch",
+        "template": "sutong_minus.png",
+        "threshold": 0.85,
+        "roi": [730, 300, 390, 85],
+        "action": "DoNothing",
+        "next": ["验证_plus"]
+    },
+    "验证_plus": {
+        "recognition": "TemplateMatch",
+        "template": "sutong_plus.png",
+        "threshold": 0.85,
+        "roi": [730, 300, 390, 85],
+        "action": "DoNothing"
+    }
+}

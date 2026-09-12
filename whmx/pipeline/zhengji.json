@@ -1,0 +1,155 @@
+{
+    // 《物华弥新》征集 —— 单入口自包含（原宿主 runZhengjiSmart 的分流已迁入流水线）
+    // 流程：点器者征集 → 分流
+    //   有「全部确认」弹窗 → 全确→跳过抽卡→对勾→点中间→回主页（结束）
+    //   否则点「开始征集」→ 弹出次数选择框 → 检满？→ 已满则回主页；未满则按「+」到目标次数 → 对勾 → 回主页
+    // 次数由 interface.json 的 option「征集次数」参数化：
+    //   次数=1 → 覆盖 征集段2.next = [ZJ_DuiGou2]（跳过加号）
+    //   次数=2/3/4 → 覆盖 ZJ_JiaHao2.repeat
+    // 回主页/点中间复用 common.json 的 Common_* 公共节点
+
+    "征集": {
+        "next": ["征集段1"]
+    },
+    "征集段1": {
+        "action": "DoNothing",
+        "timeout": 60000,
+        "next": [
+            "ZJ_Entry"
+        ]
+    },
+    "ZJ_Entry": {
+        "recognition": "TemplateMatch",
+        "template": "qizhezhengji.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "post_delay": 800,
+        "next": [
+            "ZJ_Branch"
+        ]
+    },
+    "ZJ_Branch": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "ZJ_HasConfirm",
+            "ZJ_GoStart"
+        ]
+    },
+    // 无「全部确认」弹窗：点开始征集，弹出次数选择框 → 走检满分流
+    "ZJ_GoStart": {
+        "recognition": "TemplateMatch",
+        "template": "kaishizhengji.png",
+        "threshold": 0.6,
+        "timeout": 3000,
+        "action": "Click",
+        "post_delay": 600,
+        "next": [
+            "征集_检满检查"
+        ]
+    },
+    // 有「全部确认」弹窗：领取分支（全确→跳过抽卡→对勾→点中间→回主页）
+    "ZJ_HasConfirm": {
+        "recognition": "TemplateMatch",
+        "template": "quanbuqueren.png",
+        "threshold": 0.6,
+        "timeout": 4000,
+        "action": "Click",
+        "post_delay": 600,
+        "next": [
+            "ZJ_TiaoGuoCK"
+        ]
+    },
+    "ZJ_TiaoGuoCK": {
+        "recognition": "TemplateMatch",
+        "template": "tiaoguochouka.png",
+        "threshold": 0.55,
+        "pre_delay": 1000,
+        "rate_limit": 500,
+        "timeout": 20000,
+        "action": "Click",
+        "post_delay": 1000,
+        "next": [
+            "ZJ_DuiGouCK"
+        ],
+        "on_error": [
+            "Common_回主页"
+        ],
+        "order_by": "Score"
+    },
+    "ZJ_DuiGouCK": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 900,
+        "next": [
+            "Common_点中间回主页"
+        ]
+    },
+
+    // ============ 队列已满分流（分叉容器）============
+    // 命中「队列已满」→ 回主页；3.5s 未命中 → 进入次数设置
+    "征集_检满检查": {
+        "action": "DoNothing",
+        "timeout": 3500,
+        "next": ["征集检满"],
+        "on_error": ["征集段2"]
+    },
+    "征集检满": {
+        "recognition": "OCR",
+        "text": [
+            "征集队列已满",
+            "队列已满",
+            "已满"
+        ],
+        "action": "DoNothing",
+        "next": ["Common_回主页"]
+    },
+    // 兼容旧入口：单独跑此节点即检测是否在主页（命中=true）
+    "征集在页": {
+        "recognition": "TemplateMatch",
+        "template": "hanghui_main.png",
+        "threshold": 0.55,
+        "timeout": 3000,
+        "action": "DoNothing"
+    },
+
+    // ============ 次数设置 ============
+    "征集段2": {
+        "action": "DoNothing",
+        "timeout": 20000,
+        "next": [
+            "ZJ_JiaHao2"
+        ]
+    },
+    // 按「+」到目标次数（目标次数-1，初始已在1）；option「征集次数」覆盖本节点 repeat
+    "ZJ_JiaHao2": {
+        "recognition": "TemplateMatch",
+        "template": "jiahao2.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "repeat": 1,
+        "repeat_delay": 600,
+        "next": [
+            "ZJ_DuiGou2"
+        ]
+    },
+    "ZJ_DuiGou2": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.65,
+        "roi": [696, 380, 200, 120],
+        "timeout": 6000,
+        "action": "Click",
+        "post_delay": 600,
+        "next": [
+            "ZJ_Home"
+        ]
+    },
+    // 兼容旧入口引用：转发到公共回主页节点（模板识别）
+    "ZJ_Home": {
+        "action": "DoNothing",
+        "next": ["Common_回主页"]
+    }
+}

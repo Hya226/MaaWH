@@ -1,0 +1,17 @@
+{
+    "dispatch_company_all": {
+        "next": [
+            "entry_one",
+            "entry_two",
+            "dispath_company_collect",
+            "fabricate",
+            "tea",
+            "vitality"
+        ]
+    },
+    "dc_back": {
+        "recognition": "TemplateMatch",
+        "template": "Collect/06.png",
+        "action": "Click"
+    }
+}

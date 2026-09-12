@@ -1,0 +1,25 @@
+{
+    // 《物华弥新》【商周十供】文字识别 + 点击测试
+    // 入口：TestSZ10 —— 在角色 box 栏识别 "商周十供" 字样并点击其中心
+    // 分叉容器：命中点击→结束；未命中(超时)→直接结束
+    "TestSZ10": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": ["SZ10_Hit"],
+        "on_error": ["SZ10_End"]
+    },
+    "SZ10_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "sz10.png",
+        "threshold": 0.72,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 900,
+        "timeout": 5000,
+        "next": ["SZ10_End"]
+    },
+    "SZ10_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

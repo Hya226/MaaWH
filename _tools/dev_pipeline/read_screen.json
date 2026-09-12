@@ -1,0 +1,15 @@
+{
+    // 只读探针（不点击）：切到游戏前台并 OCR 打印整屏文字/坐标
+    "ReadScreen": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 1500,
+        "next": ["OcrProbe"]
+    },
+    "OcrProbe": {
+        "recognition": "OCR",
+        "text": ["速通", "开始训练", "冬谷币", "完成", "返回", "编队"],
+        "action": "DoNothing",
+        "timeout": 40000
+    }
+}
