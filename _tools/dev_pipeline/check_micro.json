@@ -1,0 +1,15 @@
+{
+    // 临时微步：点击红底「√」一次，然后停止
+    "点确认": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["ClickCheck"]
+    },
+    "ClickCheck": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.8,
+        "action": "Click"
+    }
+}

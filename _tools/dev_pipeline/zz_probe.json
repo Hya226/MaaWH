@@ -1,0 +1,10 @@
+{
+    "屏幕探针": {
+        "recognition": "OCR",
+        "text": ["演训"],
+        "roi": [0, 0, 1608, 720],
+        "action": "DoNothing",
+        "rate_limit": 300,
+        "timeout": 5000
+    }
+}

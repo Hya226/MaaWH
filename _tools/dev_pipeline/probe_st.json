@@ -1,0 +1,16 @@
+{
+    "探针开始": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2000,
+        "next": ["ProbeST"]
+    },
+    "ProbeST": {
+        "recognition": "TemplateMatch",
+        "template": "kaishi_xunlian.png",
+        "threshold": 0.25,
+        "roi": [80, 450, 620, 270],
+        "action": "DoNothing",
+        "timeout": 6000
+    }
+}

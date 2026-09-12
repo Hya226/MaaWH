@@ -1,0 +1,301 @@
+{
+  "name": "喝茶",
+  "chain": [
+    "n002634b",
+    "n00498da",
+    "n0053f0e",
+    "n008d833",
+    "n0099bd1",
+    "n0108097",
+    "n011527d",
+    "n01224fd",
+    "n0136932",
+    "n014a86c",
+    "n0159955",
+    "n0167080",
+    "n017f641",
+    "n0188abd",
+    "n0199d5c",
+    "n020b804",
+    "n021e8f8",
+    "n0221863"
+  ],
+  "nodes": {
+    "n002634b": {
+      "type": "tpl_click",
+      "x": 500,
+      "y": 560,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "chashi.png"
+      }
+    },
+    "n00498da": {
+      "type": "tpl_click",
+      "x": 500,
+      "y": 650,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "tea_0.png"
+      }
+    },
+    "n0053f0e": {
+      "type": "tpl_click",
+      "x": 500,
+      "y": 740,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "tea_xihulongjing.png"
+      }
+    },
+    "n008d833": {
+      "type": "tpl_click",
+      "x": 500.0,
+      "y": 843.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "tea_queren.png"
+      }
+    },
+    "n0099bd1": {
+      "type": "tpl_click",
+      "x": 500.0,
+      "y": 933.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "tea_queren2.png"
+      }
+    },
+    "n0108097": {
+      "type": "tpl_click",
+      "x": 500.0,
+      "y": 1023.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "tea_qipao.png"
+      }
+    },
+    "n011527d": {
+      "type": "tpl_click",
+      "x": 500.0,
+      "y": 1113.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "tea_yaoqing.png"
+      }
+    },
+    "n01224fd": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1203.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 642,
+        "y": "284",
+        "pre_delay": 0,
+        "post_delay": 500,
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    },
+    "n0136932": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1293.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 978,
+        "y": "376",
+        "pre_delay": 0,
+        "post_delay": 500,
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    },
+    "n014a86c": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1383.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 642,
+        "y": "284",
+        "pre_delay": 0,
+        "post_delay": 500,
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    },
+    "n0159955": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1473.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 978,
+        "y": "376",
+        "pre_delay": 0,
+        "post_delay": "1500",
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    },
+    "n0167080": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1563.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 642,
+        "y": "284",
+        "pre_delay": 0,
+        "post_delay": "1500",
+        "repeat": "2",
+        "repeat_delay": "1000"
+      }
+    },
+    "n017f641": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1653.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 988,
+        "y": "266",
+        "pre_delay": 0,
+        "post_delay": 500,
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    },
+    "n0188abd": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1743.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 642,
+        "y": "284",
+        "pre_delay": 0,
+        "post_delay": 500,
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    },
+    "n0199d5c": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1833.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 988,
+        "y": "266",
+        "pre_delay": 0,
+        "post_delay": 500,
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    },
+    "n020b804": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 1923.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 642,
+        "y": "284",
+        "pre_delay": 0,
+        "post_delay": "1500",
+        "repeat": "3",
+        "repeat_delay": "1500"
+      }
+    },
+    "n021e8f8": {
+      "type": "tap",
+      "x": 500.0,
+      "y": 2013.0,
+      "title": "固定坐标点击",
+      "props": {
+        "x": 136,
+        "y": "449",
+        "pre_delay": 0,
+        "post_delay": 500,
+        "repeat": 1,
+        "repeat_delay": 350
+      }
+    },
+    "n0221863": {
+      "type": "tpl_click",
+      "x": 500.0,
+      "y": 2103.0,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "chashi_tuichu.png"
+      }
+    }
+  }
+}

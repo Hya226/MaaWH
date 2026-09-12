@@ -1,0 +1,177 @@
+{
+    // 《物华弥新》派遣公司事务
+    // 单入口串联：派遣段1(收资源/感应) → 派遣段2(办公室物资购买，可用 option「办公室物资购买」开关) → 派遣段3(退出回主页)
+    // 子任务开关用 pipeline 的 enabled 字段实现（对标 MWA「是否喝茶」）：
+    //   option Yes → 派遣段2.enabled=true；No → false（节点被跳过，流程直接进 派遣段3）
+
+    "派遣公司事务": {
+        "next": ["派遣段1"]
+    },
+    // ============ 段1：主流程 ============
+    "派遣段1": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": ["PQ_ENTRY"]
+    },
+    // 主页点【派遣公司】进入派遣公司页
+    "PQ_ENTRY": {
+        "recognition": "TemplateMatch",
+        "template": "paiqiangongsi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 800,
+        "next": ["PQ_SQ"]
+    },
+    "PQ_SQ": {
+        "recognition": "TemplateMatch",
+        "template": "shouquziyuan.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 600,
+        "next": ["PQ_R1"]
+    },
+    "PQ_R1": {
+        "action": "Click",
+        "target": [1086, 400],
+        "post_delay": 600,
+        "next": ["PQ_HG"]
+    },
+    "PQ_HG": {
+        "recognition": "TemplateMatch",
+        "template": "huoquganying.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 600,
+        "next": ["PQ_R2"]
+    },
+    // 段1 收尾 → 进入段2（若被 option 关闭则引擎自动跳过，直接走段3）
+    "PQ_R2": {
+        "action": "Click",
+        "target": [1186, 400],
+        "post_delay": 600,
+        "next": ["派遣段2", "喝茶段", "派遣段3"]
+    },
+
+    // ============ 段2：办公室物资购买（默认关闭，由 option 打开）============
+    "派遣段2": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "enabled": false,
+        "next": ["PQ_BGCheck"]
+    },
+    // 办公室入口判断（分叉容器）：识别到「办公室标识」→ 进办公室；3s识别不到 → 跳过该分支
+    "PQ_BGCheck": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": ["PQ_BG_Btn"],
+        "on_error": ["PQ_SkipOffice"]
+    },
+    "PQ_BG_Btn": {
+        "recognition": "TemplateMatch",
+        "template": "bangongshi_biaozhi.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": ["PQ_BG"]
+    },
+    "PQ_SkipOffice": {
+        "action": "DoNothing",
+        "next": ["派遣段3"]
+    },
+    "PQ_BG": {
+        "recognition": "TemplateMatch",
+        "template": "bangongshi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 800,
+        "next": ["PQ_YJCheck"]
+    },
+    // 易物机购买判断（分叉容器）：识别到 → 继续购买流程；3s识别不到 → 直接退出办公室收尾
+    "PQ_YJCheck": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": ["PQ_YJ_Btn"],
+        "on_error": ["PQ_SkipYJ"]
+    },
+    "PQ_YJ_Btn": {
+        "recognition": "TemplateMatch",
+        "template": "yiwujigoumai.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": ["PQ_YJ"]
+    },
+    "PQ_SkipYJ": {
+        "action": "DoNothing",
+        "next": ["PQ_TCBG"]
+    },
+    "PQ_YJ": {
+        "recognition": "TemplateMatch",
+        "template": "yiwujigoumai.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 800,
+        "next": ["PQ_TB"]
+    },
+    "PQ_TB": {
+        "recognition": "TemplateMatch",
+        "template": "dianjitoubi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 800,
+        "next": ["PQ_MID"]
+    },
+    "PQ_MID": {
+        "action": "Click",
+        "target": [836, 360],
+        "post_delay": 800,
+        "next": ["PQ_TCBG"]
+    },
+    // 退出办公室：循环检测（按钮在→点，每约1秒再查；连续1.5秒检测不到=已退出→进段3）
+    "PQ_TCBG": {
+        "action": "DoNothing",
+        "timeout": 1500,
+        "next": ["PQ_TCBG_Btn"],
+        "on_error": ["喝茶段", "派遣段3"]
+    },
+    "PQ_TCBG_Btn": {
+        "recognition": "TemplateMatch",
+        "template": "tuichubangongshi.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "post_delay": 800,
+        "next": ["PQ_TCBG"]
+    },
+
+    // ============ 段3：退出派遣公司返回主页 ============
+    "派遣段3": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": ["PQ_TCPQ"]
+    },
+    // 退出派遣公司：循环检测（按钮在→点，每约1秒再查；连续1.5秒检测不到=已退出→回主页）
+    "PQ_TCPQ": {
+        "action": "DoNothing",
+        "timeout": 1500,
+        "next": ["PQ_TCPQ_Btn"],
+        "on_error": ["Common_回主页"]
+    },
+    "PQ_TCPQ_Btn": {
+        "recognition": "TemplateMatch",
+        "template": "tuichupaiqiangongsi.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "post_delay": 800,
+        "next": ["PQ_TCPQ"]
+    },
+
+    // ============ 可选段：喝茶（默认关闭，由 option「喝茶」打开）============
+    // 茶室入口在派遣公司页面里，必须在退出派遣公司之前喝。
+    // 两条路径都挂：办公室购买关闭直通(PQ_R2.next) 与 购买退出循环(PQ_TCBG.on_error)。
+    // VF_喝茶 自包含收尾：喝完→退茶室→退出派遣公司→回主页，因此 Yes 时段3自然被跳过。
+    "喝茶段": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "enabled": false,
+        "post_delay": 1000,
+        "next": ["VF_喝茶"]
+    }
+}

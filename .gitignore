@@ -1,0 +1,52 @@
+# Android 构建产物
+app/build/
+build/
+.gradle/
+local.properties
+*.apk
+*.aab
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Python
+__pycache__/
+
+# 抓帧与临时产物（含游戏截图，不入库）
+_tools/*.jpg
+_tools/*.png
+_tools/neg_frames/
+_tools/*.log
+FlowEditor/_*
+FlowEditor/pick_frame.jpg
+FlowEditor/flow_editor.log
+FlowEditor/template_picker.log
+FlowEditor/picker.log
+FlowEditor/flows/build/
+
+# 根目录调试 dump 与临时产物
+/*.xml
+/*.txt
+/*.json
+/*.png
+/*.jpg
+/*.xlsx
+
+# 大体积非项目源码
+shots_login/
+platform-tools/
+_dl/
+refs/
+mfw-android/
+
+# 历史备份目录（含重复大文件）
+_tools/appsrc_backup_*/
+_tools/whmx_backup_*/
+
+# 构建时自动生成的 assets 副本（由 whmx/ 同步而来）
+app/src/main/assets/whmx/
+
+# 预编译库来源目录（内嵌 git 仓库；so 已在 app/src/main/jniLibs）
+MaaFramework/

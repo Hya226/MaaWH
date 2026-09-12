@@ -1,0 +1,89 @@
+{
+  "name": "示例流程",
+  "chain": [
+    "n1",
+    "n2",
+    "n3",
+    "n4",
+    "n5",
+    "n6"
+  ],
+  "nodes": {
+    "n1": {
+      "type": "startapp",
+      "x": 500,
+      "y": 60,
+      "title": "启动游戏",
+      "props": {
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 1000
+      }
+    },
+    "n2": {
+      "type": "wait_tpl",
+      "x": 500,
+      "y": 142,
+      "title": "等待模板出现",
+      "props": {
+        "threshold": 0.8,
+        "roi": "0,0,200,120",
+        "timeout": 15000,
+        "template": "home_icon.png"
+      }
+    },
+    "n3": {
+      "type": "tpl_click",
+      "x": 500,
+      "y": 224,
+      "title": "找模板点击",
+      "props": {
+        "threshold": 0.8,
+        "roi": "",
+        "order_by": false,
+        "timeout": 8000,
+        "pre_delay": 0,
+        "post_delay": 800,
+        "repeat": 1,
+        "repeat_delay": 350,
+        "template": "qizhe.png"
+      }
+    },
+    "n4": {
+      "type": "branch",
+      "x": 500,
+      "y": 306,
+      "title": "分支(模板在?)",
+      "props": {
+        "threshold": 0.7,
+        "roi": "600,20,120,110",
+        "timeout": 3000,
+        "template": "cha_x.png"
+      },
+      "hit_next": null,
+      "miss_next": "n6"
+    },
+    "n5": {
+      "type": "swipe",
+      "x": 500,
+      "y": 388,
+      "title": "滑动",
+      "props": {
+        "x1": 360,
+        "y1": 1000,
+        "x2": 360,
+        "y2": 400,
+        "duration": 900,
+        "post_delay": 600
+      }
+    },
+    "n6": {
+      "type": "common",
+      "x": 500,
+      "y": 470,
+      "title": "公共节点(收口)",
+      "props": {
+        "node": "Common_回主页"
+      }
+    }
+  }
+}

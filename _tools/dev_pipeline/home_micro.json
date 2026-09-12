@@ -1,0 +1,23 @@
+{
+    // 点击左上角主页图标(zhuye, raw约450,60 -> 引擎300,40)，随后OCR校验主页文字，不在则重试
+    "点主页": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["TapZhuyeFix"]
+    },
+    "TapZhuyeFix": {
+        "action": "Click",
+        "target": [300, 40],
+        "post_delay": 2500,
+        "next": ["HomeVerify"]
+    },
+    "HomeVerify": {
+        "recognition": "OCR",
+        "text": ["演训", "招集", "器者", "执行"],
+        "action": "DoNothing",
+        "rate_limit": 1200,
+        "timeout": 6000,
+        "on_error": ["TapZhuyeFix"]
+    }
+}

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MaaWH</string>
+
+    <string name="tab_home">主页</string>
+    <string name="tab_log">日志</string>
+    <string name="tab_settings">设置</string>
+
+    <string name="label_preview">屏幕预览（截屏刷新，图上点按=模拟点击）</string>
+    <string name="btn_shot">截图</string>
+    <string name="status_title">Shizuku 状态</string>
+    <string name="btn_request">申请 Shizuku 权限</string>
+    <string name="btn_refresh">刷新状态</string>
+    <string name="btn_run">运行</string>
+    <string name="label_pack">任务包</string>
+    <string name="label_entry">入口</string>
+    <string name="switch_tap">点按预览 = 模拟点击</string>
+    <string name="log_title">运行日志</string>
+    <string name="run_ready">就绪 — 添加任务后点「开始任务」</string>
+    <string name="run_running">任务运行中…</string>
+    <string name="run_ok">✓ 任务执行成功</string>
+    <string name="run_fail">✗ 任务执行失败，详见日志</string>
+    <string name="label_count">次数</string>
+    <string name="hint_count">(1~10)</string>
+    <string name="btn_add_qidong">＋启动</string>
+    <string name="btn_add_shua">＋刷冬谷币</string>
+    <string name="btn_add_zhengji">＋征集</string>
+    <string name="hint_queue">任务队列：勾选参与运行，长按拖动排序</string>
+    <string name="tab_oneclick">一键长草</string>
+    <string name="tab_tools">小工具</string>
+    <string name="tools_maintip">测试任务队列：由 adb 入口或快捷工具触发，勾选后点「开始任务」运行；不影响一键长草主队列</string>
+    <string name="tools_edit_hint">单击左侧测试任务查看/编辑参数</string>
+    <string name="tools_target_label">目标角色名（穿戴装备搜索用）</string>
+    <string name="tools_target_hint">如：商周十供</string>
+    <string name="edit_hint">点击左侧任务可在此编辑次数</string>
+    <string name="edit_title">任务编辑</string>
+    <string name="edit_count_label">次数 (1~10)</string>
+    <string name="edit_apply">应用</string>
+    <string name="btn_start_queue">开始任务</string>
+    <string name="btn_quick">快捷选项</string>
+    <string name="quick_mute">关闭游戏声音</string>
+    <string name="quick_autofmute">游戏启动后关闭游戏声音</string>
+    <string name="quick_close">任务自动结束时关闭游戏</string>
+    <string name="quick_closegame">关闭游戏</string>
+    <string name="quick_stop">停止任务</string>
+    <string name="vd_run">启动虚拟屏</string>
+    <string name="vd_stop">停止虚拟屏</string>
+    <string name="vd_full">全屏</string>
+    <string name="about_text">MaaWH — 仿 MAA-Meow 的安卓自动化宿主\n\n任务包目录：\n内部 files/taskpacks/\n外部 Android/data/com.maawh.app/files/taskpacks/\n\n新包结构：\ndefault_pipeline.json\npipeline/（任务 json）\nimage/（模板 png）\n\n在电脑执行：\nadb push 你的包文件夹 \\\n    /sdcard/Android/data/com.maawh.app/files/taskpacks/\n\n引擎说明：识别用图为「短边720」归一化坐标系。</string>
+</resources>

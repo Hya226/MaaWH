@@ -1,0 +1,14 @@
+{
+    "加到7": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2000,
+        "next": ["PlusX6"]
+    },
+    "PlusX6": {
+        "action": "Click",
+        "target": [1032, 340],
+        "repeat": 6,
+        "repeat_delay": 500
+    }
+}

@@ -1,0 +1,51 @@
+{
+    // 《物华弥新》每日免费礼包购买 —— 固定坐标版
+    // 按钮位置经用户逐帧确认（引擎视角帧），全部固定坐标点击，避免模板识别随画面波动误判
+    // 步骤间 post_wait_freezes 等加载动画静止再继续
+    // 收尾复用 common.json 的 Common_点中间回主页
+
+    "每日免费礼包购买": {
+        "next": ["礼包段1"]
+    },
+    "礼包段1": {
+        "action": "DoNothing",
+        "timeout": 60000,
+        "next": ["LB_ShangTing"]
+    },
+    "LB_ShangTing": {
+        "action": "Click",
+        "target": [924, 672],
+        "post_wait_freezes": 1000,
+        "post_delay": 300,
+        "next": ["LB_LiBao"]
+    },
+    "LB_LiBao": {
+        "action": "Click",
+        "target": [698, 125],
+        "post_wait_freezes": 1000,
+        "post_delay": 300,
+        "next": ["LB_XunShi"]
+    },
+    "LB_XunShi": {
+        "action": "Click",
+        "target": [109, 421],
+        "post_wait_freezes": 1000,
+        "post_delay": 300,
+        "next": ["LB_MianFei"]
+    },
+    "LB_MianFei": {
+        "action": "Click",
+        "target": [874, 665],
+        "post_wait_freezes": 1000,
+        "post_delay": 300,
+        "next": ["LB_GouMai"]
+    },
+    // 购买后先点屏幕正中（关掉弹窗/确认层），主页图标才会出现，再回主页
+    "LB_GouMai": {
+        "action": "Click",
+        "target": [778, 518],
+        "post_wait_freezes": 800,
+        "post_delay": 300,
+        "next": ["Common_点中间回主页"]
+    }
+}

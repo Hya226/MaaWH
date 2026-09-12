@@ -1,0 +1,15 @@
+{
+    "读主页图标": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["TZhuye"]
+    },
+    "TZhuye": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye.png",
+        "threshold": 0.3,
+        "action": "DoNothing",
+        "timeout": 8000
+    }
+}

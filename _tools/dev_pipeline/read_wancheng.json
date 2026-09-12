@@ -1,0 +1,16 @@
+{
+    // 只读：定位 wancheng.png 模板的匹配候选
+    "读完成": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2500,
+        "next": ["TWan"]
+    },
+    "TWan": {
+        "recognition": "TemplateMatch",
+        "template": "wancheng.png",
+        "threshold": 0.35,
+        "action": "DoNothing",
+        "timeout": 8000
+    }
+}

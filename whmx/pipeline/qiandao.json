@@ -1,0 +1,37 @@
+{
+    // 《物华弥新》行会签到 —— 段式流水线
+    // 主页点【行会】入口 → 循环检测返回按钮(hanghui_fanhui)：
+    //   检测到 → 点击 → 等1秒 → 再检测……直到检测不到（已正确返回主页）→ 完成
+    "行会签到": {
+        "next": []
+    },
+    "签到段1": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": ["HH_Entry"]
+    },
+    "HH_Entry": {
+        "recognition": "TemplateMatch",
+        "template": "hanghui_main.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "post_delay": 1000,
+        "next": ["HH_Loop"]
+    },
+    // 循环：识别到返回按钮 → 点击 → 等1秒 → 回到本节点再检测；
+    // 连续3秒识别不到（已回主页）→ on_error 走 HH_Done 完成
+    "HH_Loop": {
+        "recognition": "TemplateMatch",
+        "template": "hanghui_fanhui.png",
+        "threshold": 0.6,
+        "timeout": 3000,
+        "action": "Click",
+        "post_delay": 1000,
+        "next": ["HH_Loop"],
+        "on_error": ["HH_Done"]
+    },
+    "HH_Done": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

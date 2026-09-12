@@ -1,0 +1,14 @@
+{
+    "减到3": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 2000,
+        "next": ["MinusX4"]
+    },
+    "MinusX4": {
+        "action": "Click",
+        "target": [774, 340],
+        "repeat": 4,
+        "repeat_delay": 500
+    }
+}

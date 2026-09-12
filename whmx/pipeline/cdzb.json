@@ -1,0 +1,1768 @@
+{
+    "CDZB1": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "CDZB1_Hit"
+        ],
+        "on_error": [
+            "CDZB1_End"
+        ]
+    },
+    "CDZB1_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "qizhe.png",
+        "threshold": 0.72,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "CDZB1_End"
+        ]
+    },
+    "CDZB1_End": {
+        "action": "DoNothing",
+        "next": [
+            "CDZB2"
+        ]
+    },
+    "CDZB2": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S0"
+        ]
+    },
+    "CDZB2_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "蛙锣.png",
+        "threshold": 0.85,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1500,
+        "timeout": 4000,
+        "next": [
+            "CDZB2_End"
+        ]
+    },
+    "CDZB2_End": {
+        "action": "DoNothing",
+        "next": [
+            "CDZB3"
+        ]
+    },
+    "CDZB2_S0": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G1"
+        ]
+    },
+    "CDZB2_G1": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S1"
+        ]
+    },
+    "CDZB2_S1": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G2"
+        ]
+    },
+    "CDZB2_G2": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S2"
+        ]
+    },
+    "CDZB2_S2": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G3"
+        ]
+    },
+    "CDZB2_G3": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S3"
+        ]
+    },
+    "CDZB2_S3": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G4"
+        ]
+    },
+    "CDZB2_G4": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S4"
+        ]
+    },
+    "CDZB2_S4": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G5"
+        ]
+    },
+    "CDZB2_G5": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S5"
+        ]
+    },
+    "CDZB2_S5": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G6"
+        ]
+    },
+    "CDZB2_G6": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S6"
+        ]
+    },
+    "CDZB2_S6": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G7"
+        ]
+    },
+    "CDZB2_G7": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S7"
+        ]
+    },
+    "CDZB2_S7": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G8"
+        ]
+    },
+    "CDZB2_G8": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S8"
+        ]
+    },
+    "CDZB2_S8": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G9"
+        ]
+    },
+    "CDZB2_G9": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S9"
+        ]
+    },
+    "CDZB2_S9": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G10"
+        ]
+    },
+    "CDZB2_G10": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S10"
+        ]
+    },
+    "CDZB2_S10": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G11"
+        ]
+    },
+    "CDZB2_G11": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_S11"
+        ]
+    },
+    "CDZB2_S11": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZB2_G12"
+        ]
+    },
+    "CDZB2_G12": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "CDZB2_Hit"
+        ],
+        "on_error": [
+            "CDZB2_End"
+        ]
+    },
+    "CDZB3": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "CDZB3_Hit"
+        ],
+        "on_error": [
+            "CDZB3_End"
+        ]
+    },
+    "CDZB3_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "wuqizhuangbei.png",
+        "threshold": 0.72,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "CDZB3_End"
+        ]
+    },
+    "CDZB3_End": {
+        "action": "DoNothing",
+        "next": [
+            "CDZB4"
+        ]
+    },
+    "CDZB4": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "CDZB4_Hit"
+        ],
+        "on_error": [
+            "CDZB4_End"
+        ]
+    },
+    "CDZB4_Hit": {
+        "action": "Click",
+        "target": [316, 600],
+        "post_wait_freezes": 1200,
+        "timeout": 3000,
+        "next": [
+            "CDZB4_End"
+        ]
+    },
+    "CDZB4_End": {
+        "action": "DoNothing",
+        "next": [
+            "CDZB5"
+        ]
+    },
+    "CDZB5": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "CDZB5_Hit"
+        ],
+        "on_error": [
+            "CDZB5_End"
+        ]
+    },
+    "CDZB5_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "chuandai.png",
+        "threshold": 0.55,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "CDZB5_End"
+        ]
+    },
+    "CDZB5_End": {
+        "action": "DoNothing",
+        "next": [
+            "CDZB6"
+        ]
+    },
+    "CDZB6": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "CDZB6_Hit"
+        ],
+        "on_error": [
+            "CDZB6_End"
+        ]
+    },
+    "CDZB6_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "xiexia.png",
+        "threshold": 0.65,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "CDZB6_End"
+        ]
+    },
+    "CDZB6_End": {
+        "action": "DoNothing",
+        "next": [
+            "CDZB7"
+        ]
+    },
+    "CDZB7": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "CDZB7_Hit"
+        ],
+        "on_error": [
+            "CDZB7_End"
+        ]
+    },
+    "CDZB7_Hit": {
+        "action": "DoNothing",
+        "post_delay": 300,
+        "timeout": 3000,
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "CDZB7_End": {
+        "action": "DoNothing",
+        "next": []
+    },
+    "CDZBSweep": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "CDZBSweep_End"
+        ]
+    },
+    "CDZBSweep_End": {
+        "action": "DoNothing",
+        "next": []
+    },
+    "CDZB1only": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "CDZB1only_Hit"
+        ],
+        "on_error": [
+            "CDZB1only_End"
+        ]
+    },
+    "CDZB1only_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "qizhe.png",
+        "threshold": 0.72,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "CDZB1only_End"
+        ]
+    },
+    "CDZB1only_End": {
+        "action": "DoNothing",
+        "next": []
+    },
+    "装卸装备": {
+        "action": "DoNothing",
+        "timeout": 1000,
+        "next": [
+            "CDZB1"
+        ]
+    },
+    "升好感度": {
+        "action": "DoNothing",
+        "timeout": 1000,
+        "next": [
+            "升1"
+        ]
+    },
+    "升1": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "升1_Hit"
+        ],
+        "on_error": [
+            "升1_End"
+        ]
+    },
+    "升1_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "qizhe.png",
+        "threshold": 0.72,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "升1_End"
+        ]
+    },
+    "升1_End": {
+        "action": "DoNothing",
+        "next": [
+            "升2"
+        ]
+    },
+    "升2_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "蛙锣.png",
+        "threshold": 0.85,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1500,
+        "timeout": 4000,
+        "next": [
+            "升2_End"
+        ]
+    },
+    "升2_End": {
+        "action": "DoNothing",
+        "next": [
+            "升好_好感"
+        ]
+    },
+    "升2": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S0"
+        ]
+    },
+    "升2_S0": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G1"
+        ]
+    },
+    "升2_G1": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S1"
+        ]
+    },
+    "升2_S1": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G2"
+        ]
+    },
+    "升2_G2": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S2"
+        ]
+    },
+    "升2_S2": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G3"
+        ]
+    },
+    "升2_G3": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S3"
+        ]
+    },
+    "升2_S3": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G4"
+        ]
+    },
+    "升2_G4": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S4"
+        ]
+    },
+    "升2_S4": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G5"
+        ]
+    },
+    "升2_G5": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S5"
+        ]
+    },
+    "升2_S5": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G6"
+        ]
+    },
+    "升2_G6": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S6"
+        ]
+    },
+    "升2_S6": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G7"
+        ]
+    },
+    "升2_G7": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S7"
+        ]
+    },
+    "升2_S7": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G8"
+        ]
+    },
+    "升2_G8": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S8"
+        ]
+    },
+    "升2_S8": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G9"
+        ]
+    },
+    "升2_G9": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S9"
+        ]
+    },
+    "升2_S9": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G10"
+        ]
+    },
+    "升2_G10": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S10"
+        ]
+    },
+    "升2_S10": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G11"
+        ]
+    },
+    "升2_G11": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_S11"
+        ]
+    },
+    "升2_S11": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "升2_G12"
+        ]
+    },
+    "升2_G12": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "升2_Hit"
+        ],
+        "on_error": [
+            "升2_End"
+        ]
+    },
+    "查找器者": {
+        "action": "DoNothing",
+        "timeout": 1000,
+        "next": [
+            "查1"
+        ]
+    },
+    "查1": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "查1_Hit"
+        ],
+        "on_error": [
+            "查1_End"
+        ]
+    },
+    "查1_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "qizhe.png",
+        "threshold": 0.72,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "查1_End"
+        ]
+    },
+    "查1_End": {
+        "action": "DoNothing",
+        "next": [
+            "查2"
+        ]
+    },
+    "查2_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "蛙锣.png",
+        "threshold": 0.85,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1500,
+        "timeout": 4000,
+        "next": [
+            "查2_End"
+        ]
+    },
+    "查2_End": {
+        "action": "DoNothing",
+        "next": []
+    },
+    "查2": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S0"
+        ]
+    },
+    "查2_S0": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G1"
+        ]
+    },
+    "查2_G1": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S1"
+        ]
+    },
+    "查2_S1": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G2"
+        ]
+    },
+    "查2_G2": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S2"
+        ]
+    },
+    "查2_S2": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G3"
+        ]
+    },
+    "查2_G3": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S3"
+        ]
+    },
+    "查2_S3": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G4"
+        ]
+    },
+    "查2_G4": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S4"
+        ]
+    },
+    "查2_S4": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G5"
+        ]
+    },
+    "查2_G5": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S5"
+        ]
+    },
+    "查2_S5": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G6"
+        ]
+    },
+    "查2_G6": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S6"
+        ]
+    },
+    "查2_S6": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G7"
+        ]
+    },
+    "查2_G7": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S7"
+        ]
+    },
+    "查2_S7": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G8"
+        ]
+    },
+    "查2_G8": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S8"
+        ]
+    },
+    "查2_S8": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G9"
+        ]
+    },
+    "查2_G9": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S9"
+        ]
+    },
+    "查2_S9": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G10"
+        ]
+    },
+    "查2_G10": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S10"
+        ]
+    },
+    "查2_S10": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G11"
+        ]
+    },
+    "查2_G11": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_S11"
+        ]
+    },
+    "查2_S11": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            650
+        ],
+        "end": [
+            200,
+            650
+        ],
+        "duration": 900,
+        "timeout": 2000,
+        "next": [
+            "查2_G12"
+        ]
+    },
+    "查2_G12": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "查2_Hit"
+        ],
+        "on_error": [
+            "查2_End"
+        ]
+    },
+    "升好_好感": {
+        "action": "Click",
+        "target": [48, 200],
+        "post_delay": 800,
+        "timeout": 3000,
+        "next": [
+            "升好_礼物"
+        ]
+    },
+    "升好_礼物": {
+        "action": "Click",
+        "target": [1170, 425],
+        "post_delay": 800,
+        "timeout": 3000,
+        "next": [
+            "升好_同享"
+        ]
+    },
+    "升好_同享": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "升好_同享_Hit"
+        ],
+        "on_error": [
+            "升好_主页"
+        ]
+    },
+    "升好_同享_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tongxiang.png",
+        "threshold": 0.65,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1000,
+        "timeout": 4000,
+        "next": [
+            "升好_主页"
+        ]
+    },
+    "升好_主页": {
+        "action": "DoNothing",
+        "post_delay": 300,
+        "timeout": 3000,
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "升好_End": {
+        "action": "DoNothing",
+        "next": []
+    },
+    "装备分解": {
+        "action": "DoNothing",
+        "timeout": 1000,
+        "next": [
+            "分_物资库"
+        ]
+    },
+    "分_物资库": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "分_物资库_Hit"
+        ],
+        "on_error": [
+            "分_End"
+        ]
+    },
+    "分_物资库_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "wuziku.png",
+        "threshold": 0.55,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "分_分解"
+        ]
+    },
+    "分_End": {
+        "action": "DoNothing",
+        "next": []
+    },
+    "分_分解": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "分_分解_Hit"
+        ],
+        "on_error": [
+            "分_End"
+        ]
+    },
+    "分_分解_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "fenjie.png",
+        "threshold": 0.55,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "分_白板"
+        ]
+    },
+    "分_白板": {
+        "action": "Click",
+        "target": [548, 175],
+        "post_delay": 800,
+        "timeout": 3000,
+        "next": [
+            "分_√右下"
+        ]
+    },
+    "分_√右下": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "分_√右下_Hit"
+        ],
+        "on_error": [
+            "分_End"
+        ]
+    },
+    "分_√右下_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.6,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1000,
+        "timeout": 5000,
+        "next": [
+            "分_√中"
+        ]
+    },
+    "分_√中": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "分_√中_Hit"
+        ],
+        "on_error": [
+            "分_End"
+        ]
+    },
+    "分_√中_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou2.png",
+        "threshold": 0.6,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1000,
+        "timeout": 5000,
+        "next": [
+            "分_中"
+        ]
+    },
+    // 点屏幕正中关掉结算/分解层，再回主页。
+    // 注意：不能把 next 写成 ["Common_点中间", "分_主页"] —— Common_点中间 是终结节点（无 next），
+    // 引擎命中它之后流程就断了，永远走不到 分_主页（2026-09-12 实测「装备分解后回不了主页」的原因）。
+    "分_中": {
+        "action": "Click",
+        "target": [640, 360],
+        "post_delay": 800,
+        "timeout": 3000,
+        "next": [
+            "分_主页"
+        ]
+    },
+    "分_主页": {
+        "action": "DoNothing",
+        "post_delay": 300,
+        "timeout": 3000,
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "领取奖励": {
+        "action": "DoNothing",
+        "timeout": 1000,
+        "next": [
+            "领_任务"
+        ]
+    },
+    "领_任务": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "领_任务_Hit"
+        ],
+        "on_error": [
+            "领_End"
+        ]
+    },
+    "领_任务_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "renwu.png",
+        "threshold": 0.5,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "领_判1"
+        ]
+    },
+    "领_End": {
+        "action": "DoNothing",
+        "next": []
+    },
+    "领_判1": {
+        "action": "DoNothing",
+        "timeout": 5000,
+        "next": [
+            "领_全领1"
+        ],
+        "on_error": [
+            "领_周常"
+        ]
+    },
+    "领_全领1": {
+        "recognition": "TemplateMatch",
+        "template": "quanbulingqu.png",
+        "threshold": 0.55,
+        "order_by": "Score",
+        "action": "Click",
+        "timeout": 4000,
+        "next": [
+            "领_点1"
+        ],
+        "post_delay": 1500
+    },
+    "领_点1": {
+        "action": "Click",
+        "target": [36, 600],
+        "post_delay": 500,
+        "timeout": 3000,
+        "next": [
+            "领_周常"
+        ]
+    },
+    "领_周常": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "领_周常_Hit"
+        ],
+        "on_error": [
+            "领_判2"
+        ]
+    },
+    "领_周常_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhouchangrenwu.png",
+        "threshold": 0.55,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "领_判2"
+        ],
+        "pre_delay": 1000
+    },
+    "领_判2": {
+        "action": "DoNothing",
+        "timeout": 5000,
+        "next": [
+            "领_全领2"
+        ],
+        "on_error": [
+            "领_主页"
+        ]
+    },
+    "领_全领2": {
+        "recognition": "TemplateMatch",
+        "template": "quanbulingqu.png",
+        "threshold": 0.55,
+        "order_by": "Score",
+        "action": "Click",
+        "timeout": 4000,
+        "next": [
+            "领_点2"
+        ],
+        "post_delay": 2000
+    },
+    "领_点2": {
+        "action": "Click",
+        "target": [36, 600],
+        "post_delay": 500,
+        "timeout": 3000,
+        "next": [
+            "领_主页"
+        ]
+    },
+    "领_主页": {
+        "action": "DoNothing",
+        "post_delay": 300,
+        "timeout": 3000,
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "外勤": {
+        "action": "DoNothing",
+        "timeout": 1000,
+        "next": [
+            "外_演训"
+        ]
+    },
+    "外_演训": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "外_演训_Hit"
+        ],
+        "on_error": [
+            "外_End"
+        ]
+    },
+    "外_演训_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yanxun.png",
+        "threshold": 0.55,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1500,
+        "timeout": 5000,
+        "next": [
+            "外_通识"
+        ]
+    },
+    "外_End": {
+        "action": "DoNothing",
+        "next": []
+    },
+    "外_通识": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "外_通识_Hit"
+        ],
+        "on_error": [
+            "外_End"
+        ]
+    },
+    "外_通识_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tongshikechengwaiqin.png",
+        "threshold": 0.55,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1500,
+        "timeout": 5000,
+        "next": [
+            "外_判断"
+        ]
+    },
+    "外_判断": {
+        "action": "DoNothing",
+        "timeout": 5000,
+        "next": [
+            "外_一键领"
+        ],
+        "on_error": [
+            "外_领取"
+        ]
+    },
+    "外_一键领": {
+        "recognition": "TemplateMatch",
+        "template": "lingqu_waiqin.png",
+        "threshold": 0.5,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 4000,
+        "next": [
+            "外_领取"
+        ]
+    },
+    "外_领取": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "外_领取_Hit"
+        ],
+        "on_error": [
+            "外_End"
+        ]
+    },
+    "外_领取_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "lingqu_waiqin2.png",
+        "threshold": 0.5,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "外_点565"
+        ]
+    },
+    "外_点565": {
+        "action": "Click",
+        "target": [36, 565],
+        "post_delay": 600,
+        "timeout": 3000,
+        "next": [
+            "外_统一"
+        ]
+    },
+    "外_主页": {
+        "action": "DoNothing",
+        "post_delay": 300,
+        "timeout": 3000,
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "外_统一": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "外_统一_Hit"
+        ],
+        "on_error": [
+            "外_主页"
+        ]
+    },
+    "外_统一_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tongyiwaiqin.png",
+        "threshold": 0.5,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "外_确认"
+        ]
+    },
+    "外_确认": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "外_确认_Hit"
+        ],
+        "on_error": [
+            "外_主页"
+        ]
+    },
+    "外_确认_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "querenwaiqin.png",
+        "threshold": 0.5,
+        "order_by": "Score",
+        "action": "Click",
+        "post_wait_freezes": 1200,
+        "timeout": 5000,
+        "next": [
+            "外_主页"
+        ]
+    }
+}

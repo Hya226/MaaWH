@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_app">#10141F</color>
+    <color name="bg_card">#1B2230</color>
+    <color name="text_primary">#ECF0F7</color>
+    <color name="text_secondary">#8E9AAB</color>
+    <color name="accent">#4C9AFF</color>
+    <color name="ok_green">#3DDC84</color>
+    <color name="err_red">#FF6B6B</color>
+    <color name="ic_launcher_background">#2D2D2D</color>
+</resources>
