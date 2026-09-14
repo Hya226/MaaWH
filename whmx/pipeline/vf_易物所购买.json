@@ -1,0 +1,24 @@
+{
+    "VF_易物所购买": {
+        "next": [
+            "VF_易物所购买_01"
+        ]
+    },
+    "VF_易物所购买_01": {
+        "recognition": "OCR",
+        "text": [
+            "易物所"
+        ],
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "next": [
+            "VF_易物所购买_02"
+        ]
+    },
+    "VF_易物所购买_02": {
+        "next": [
+            "Common_回主页"
+        ]
+    }
+}

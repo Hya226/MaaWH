@@ -1,0 +1,525 @@
+{
+    "VF_派遣公司事务": {
+        "next": [
+            "VF_派遣公司事务_01"
+        ]
+    },
+    "VF_派遣公司事务_01": {
+        "recognition": "TemplateMatch",
+        "template": "paiqiangongsi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_02"
+        ]
+    },
+    "VF_派遣公司事务_02": {
+        "recognition": "TemplateMatch",
+        "template": "shouquziyuan.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务_03"
+        ]
+    },
+    "VF_派遣公司事务_03": {
+        "action": "Click",
+        "target": [
+            1086,
+            400
+        ],
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务_04"
+        ]
+    },
+    "VF_派遣公司事务_04": {
+        "recognition": "TemplateMatch",
+        "template": "huoquganying.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务_05"
+        ]
+    },
+    "VF_派遣公司事务_05": {
+        "action": "Click",
+        "target": [
+            1186,
+            400
+        ],
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务_06"
+        ]
+    },
+    "VF_派遣公司事务_06": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_06_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_14"
+        ]
+    },
+    "VF_派遣公司事务_06_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "bangongshi_biaozhi.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_07"
+        ]
+    },
+    "VF_派遣公司事务_07": {
+        "recognition": "TemplateMatch",
+        "template": "bangongshi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_08"
+        ]
+    },
+    "VF_派遣公司事务_08": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_08_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_12"
+        ]
+    },
+    "VF_派遣公司事务_08_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yiwujigoumai.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_09"
+        ]
+    },
+    "VF_派遣公司事务_09": {
+        "recognition": "TemplateMatch",
+        "template": "yiwujigoumai.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_10"
+        ]
+    },
+    "VF_派遣公司事务_10": {
+        "recognition": "TemplateMatch",
+        "template": "dianjitoubi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_11"
+        ]
+    },
+    "VF_派遣公司事务_11": {
+        "action": "Click",
+        "target": [
+            836,
+            360
+        ],
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_12"
+        ]
+    },
+    "VF_派遣公司事务_12": {
+        "recognition": "TemplateMatch",
+        "template": "tuichubangongshi.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_13"
+        ]
+    },
+    "VF_派遣公司事务_13": {
+        "action": "DoNothing",
+        "timeout": 1500,
+        "next": [
+            "VF_派遣公司事务_13_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_14"
+        ]
+    },
+    "VF_派遣公司事务_13_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tuichubangongshi.png",
+        "threshold": 0.5,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_12"
+        ]
+    },
+    "VF_派遣公司事务_14": {
+        "recognition": "TemplateMatch",
+        "template": "chashi_rukou.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_15"
+        ]
+    },
+    "VF_派遣公司事务_15": {
+        "recognition": "TemplateMatch",
+        "template": "tea_0.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_16"
+        ]
+    },
+    "VF_派遣公司事务_16": {
+        "action": "Click",
+        "target": [
+            200,
+            400
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务_17"
+        ]
+    },
+    "VF_派遣公司事务_17": {
+        "recognition": "TemplateMatch",
+        "template": "tea_max.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_18"
+        ]
+    },
+    "VF_派遣公司事务_18": {
+        "recognition": "TemplateMatch",
+        "template": "tea_queren.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_19"
+        ]
+    },
+    "VF_派遣公司事务_19": {
+        "recognition": "TemplateMatch",
+        "template": "tea_queren2.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_20"
+        ]
+    },
+    "VF_派遣公司事务_20": {
+        "recognition": "TemplateMatch",
+        "template": "tea_qipao.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "rate_limit": 200,
+        "next": [
+            "VF_派遣公司事务_21"
+        ]
+    },
+    "VF_派遣公司事务_21": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_21_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_20"
+        ]
+    },
+    "VF_派遣公司事务_21_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tea_yaoqing.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_22"
+        ]
+    },
+    "VF_派遣公司事务_22": {
+        "recognition": "TemplateMatch",
+        "template": "tea_yaoqing.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_23"
+        ]
+    },
+    "VF_派遣公司事务_23": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务_24"
+        ]
+    },
+    "VF_派遣公司事务_24": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_24_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_23"
+        ]
+    },
+    "VF_派遣公司事务_24_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_25"
+        ]
+    },
+    "VF_派遣公司事务_25": {
+        "action": "Click",
+        "target": [
+            978,
+            376
+        ],
+        "post_delay": 500,
+        "repeat": 2,
+        "repeat_delay": 350,
+        "next": [
+            "VF_派遣公司事务_26"
+        ]
+    },
+    "VF_派遣公司事务_26": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 500,
+        "pre_delay": 500,
+        "repeat": 2,
+        "repeat_delay": 350,
+        "next": [
+            "VF_派遣公司事务_27"
+        ]
+    },
+    "VF_派遣公司事务_27": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_27_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_26"
+        ]
+    },
+    "VF_派遣公司事务_27_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_28"
+        ]
+    },
+    "VF_派遣公司事务_28": {
+        "action": "Click",
+        "target": [
+            978,
+            376
+        ],
+        "post_delay": 1500,
+        "next": [
+            "VF_派遣公司事务_29"
+        ]
+    },
+    "VF_派遣公司事务_29": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 2000,
+        "repeat": 2,
+        "repeat_delay": 200,
+        "next": [
+            "VF_派遣公司事务_30"
+        ]
+    },
+    "VF_派遣公司事务_30": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_30_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_28"
+        ]
+    },
+    "VF_派遣公司事务_30_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_31"
+        ]
+    },
+    "VF_派遣公司事务_31": {
+        "action": "Click",
+        "target": [
+            988,
+            266
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务_32"
+        ]
+    },
+    "VF_派遣公司事务_32": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务_33"
+        ]
+    },
+    "VF_派遣公司事务_33": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_33_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_31"
+        ]
+    },
+    "VF_派遣公司事务_33_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_34"
+        ]
+    },
+    "VF_派遣公司事务_34": {
+        "action": "Click",
+        "target": [
+            988,
+            266
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务_35"
+        ]
+    },
+    "VF_派遣公司事务_35": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 1500,
+        "next": [
+            "VF_派遣公司事务_36"
+        ]
+    },
+    "VF_派遣公司事务_36": {
+        "action": "Click",
+        "target": [
+            136,
+            449
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务_37"
+        ]
+    },
+    "VF_派遣公司事务_37": {
+        "recognition": "TemplateMatch",
+        "template": "chashi_tuichu.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_38"
+        ]
+    },
+    "VF_派遣公司事务_38": {
+        "recognition": "TemplateMatch",
+        "template": "tuichupaiqiangongsi.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务_39"
+        ]
+    },
+    "VF_派遣公司事务_39": {
+        "action": "DoNothing",
+        "timeout": 1500,
+        "next": [
+            "VF_派遣公司事务_39_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_End"
+        ]
+    },
+    "VF_派遣公司事务_39_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tuichupaiqiangongsi.png",
+        "threshold": 0.5,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_38"
+        ]
+    },
+    "VF_派遣公司事务_40": {
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "VF_派遣公司事务_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

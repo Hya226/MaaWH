@@ -72,17 +72,17 @@
         {
             "name": "每日免费礼包购买",
             "label": "每日免费礼包购买",
-            "entry": "礼包段1",
+            "entry": "VF_每日免费礼包",
             "default_check": true,
             "group": ["daily"]
         },
         {
             "name": "派遣公司事务",
             "label": "派遣公司事务",
-            "entry": "派遣公司事务",
+            "entry": "VF_派遣公司事务",
             "default_check": true,
             "group": ["daily"],
-            "option": ["办公室物资购买", "喝茶"]
+            "description": "收取资源+办公易物+喝茶（内联完整流程，旧集成版 option 开关已并入）"
         },
         {
             "name": "装卸装备",
@@ -233,27 +233,6 @@
             ]
         },
 
-        // ===== 子任务开关：switch + enabled 覆盖（对标 MWA「是否喝茶」）=====
-        "办公室物资购买": {
-            "type": "switch",
-            "label": "办公室物资购买",
-            "default_case": "No",
-            "cases": [
-                {
-                    "name": "Yes",
-                    "pipeline_override": {
-                        "派遣段2": { "enabled": true }
-                    }
-                },
-                {
-                    "name": "No",
-                    "pipeline_override": {
-                        "派遣段2": { "enabled": false }
-                    }
-                }
-            ]
-        },
-
         // ===== 角色选择：input + {角色} 变量替换（替代宿主复制 _target.png 的做法）=====
         "目标角色": {
             "type": "input",
@@ -292,26 +271,6 @@
             "pipeline_override": {
                 "升好_礼物": { "repeat": "{礼物次数}" }
             }
-        },
-
-        // ===== 派遣公司事务可选子任务：喝茶（开关 pqgs.json 的 喝茶段）=====
-        "喝茶": {
-            "type": "switch",
-            "label": "喝茶",
-            "default_case": "No",
-            "cases": [
-                {
-                    "name": "Yes",
-                    "pipeline_override": {
-                        "喝茶段": { "enabled": true },
-                        "VF_喝茶_20": { "next": ["派遣段3"] }
-                    }
-                },
-                {
-                    "name": "No",
-                    "pipeline_override": { "喝茶段": { "enabled": false } }
-                }
-            ]
         }
     }
 }
