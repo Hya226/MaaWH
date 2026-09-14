@@ -53,8 +53,12 @@ for f in glob.glob(os.path.join(PIPE_DIR, "*.json")):
         continue
     for k, v in d.items():
         nodes[k] = v
-        if isinstance(v, dict) and isinstance(v.get('template'), str):
-            tpl_used.add(v['template'])
+        if isinstance(v, dict):
+            tv = v.get('template')
+            if isinstance(tv, str):
+                tpl_used.add(tv)
+            elif isinstance(tv, list):      # 多候选模板（任一命中）
+                tpl_used.update(x for x in tv if isinstance(x, str))
 
 fails, warns, infos = [], [], []
 
