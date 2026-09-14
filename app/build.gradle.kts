@@ -5,24 +5,32 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// 签名口令取自仓库根的 keystore.properties（被 .gitignore 忽略，不入库）。
-// 刻意不做明文兜底：文件或字段缺失直接让构建失败，避免口令又回到脚本里。
+// 签名口令取自仓库根的 keystore.properties（被 .gitignore 忽略，不入库），绝不写明文兜底。
+// 该文件只影响 release/beta：缺失时 debug 变体照常构建，只有真要构 release/beta 才明确报错。
 val keystorePropsFile = rootProject.file("keystore.properties")
-if (!keystorePropsFile.exists()) {
-    throw GradleException(
-        "缺少 $keystorePropsFile：签名口令不再写在构建脚本里，" +
-            "请在仓库根目录创建 keystore.properties（已被 .gitignore 忽略）：\n" +
-            "  storeFile=maawh-release.keystore\n" +
-            "  storePassword=<口令>\n" +
-            "  keyAlias=<别名>\n" +
-            "  keyPassword=<口令>"
-    )
+val keystoreProps: Properties? = if (keystorePropsFile.exists()) {
+    Properties().apply { keystorePropsFile.inputStream().use { load(it) } }
+} else {
+    null
 }
-val keystoreProps = Properties().apply { keystorePropsFile.inputStream().use { load(it) } }
+
+// 本次命令行是否真要产出 release/beta 包（:app:assembleRelease、assembleBeta、bundleRelease…）。
+// 报错若不加这层判断，配置阶段一触发就会把 debug 构建也一起挡掉。
+val signingRequested = gradle.startParameter.taskNames.any { task ->
+    val name = task.substringAfterLast(':').lowercase()
+    (name.contains("release") || name.contains("beta")) &&
+        listOf("assemble", "bundle", "install", "package").any { name.startsWith(it) }
+}
+
+val keystoreHint = "请在仓库根目录创建 $keystorePropsFile（该文件不入库）：\n" +
+    "  storeFile=maawh-release.keystore\n" +
+    "  storePassword=<口令>\n" +
+    "  keyAlias=<别名>\n" +
+    "  keyPassword=<口令>"
 
 fun keystoreProp(key: String): String =
-    keystoreProps.getProperty(key)?.takeIf { it.isNotBlank() }
-        ?: throw GradleException("keystore.properties 缺少 $key（$keystorePropsFile）")
+    keystoreProps?.getProperty(key)?.takeIf { it.isNotBlank() }
+        ?: throw GradleException("$keystorePropsFile 缺少 $key（release/beta 签名必需）。\n$keystoreHint")
 
 android {
     namespace = "com.maawh.app"
@@ -50,11 +58,17 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = rootProject.file(keystoreProp("storeFile"))
-            storePassword = keystoreProp("storePassword")
-            keyAlias = keystoreProp("keyAlias")
-            keyPassword = keystoreProp("keyPassword")
+        if (keystoreProps != null) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProp("storeFile"))
+                storePassword = keystoreProp("storePassword")
+                keyAlias = keystoreProp("keyAlias")
+                keyPassword = keystoreProp("keyPassword")
+            }
+        } else if (signingRequested) {
+            throw GradleException(
+                "缺少 $keystorePropsFile，无法构建 release/beta：签名口令不再写在构建脚本里。\n$keystoreHint"
+            )
         }
     }
 
@@ -62,7 +76,8 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release")
+            // 缺 keystore.properties 时不挂签名（产物即 -unsigned）；真要构 release 已在上面报错
+            if (keystoreProps != null) signingConfig = signingConfigs.getByName("release")
         }
         // 与 release 内容/签名一致但可调试：run-as、抓帧、引擎日志等诊断手段可用。
         // 自己手机装这个排障；分发给别人的用 release。
@@ -70,7 +85,7 @@ android {
             initWith(getByName("release"))
             isDebuggable = true
             matchingFallbacks += listOf("release")
-            signingConfig = signingConfigs.getByName("release")
+            if (keystoreProps != null) signingConfig = signingConfigs.getByName("release")
         }
     }
 
