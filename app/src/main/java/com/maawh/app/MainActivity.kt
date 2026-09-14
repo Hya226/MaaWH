@@ -103,6 +103,8 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 binding.btnStartQueue.isEnabled = true
                 if (did) log("✓ 内置任务包已初始化（首次安装或 APK 版本更新）")
+                // 首装/升级时 interface.json 此刻才落盘，清单必须在释放完成后加载
+                loadManifestIntoQueue()
             }
         }
 
@@ -125,7 +127,7 @@ class MainActivity : AppCompatActivity() {
         buildVdOverlay()
 
         setupQueue()
-        loadManifestIntoQueue()
+        // 清单加载移至任务包释放完成之后（见下方 ensureBundledTaskpack 回调）
 
         setupNav()
 
@@ -309,7 +311,20 @@ class MainActivity : AppCompatActivity() {
         // 只跑本次入口这一个任务，不重跑小工具队列里的历史条目
         queuedStart?.let { binding.btnStartQueue.removeCallbacks(it) }
         queuedStart = Runnable {
-            if (!running && shizukuReady()) runQueue(listOf(toolItem))
+            when {
+                running -> {}
+                !shizukuRunning() -> {
+                    log("✗ Shizuku 未运行，任务未执行：请启动 Shizuku 后重新触发")
+                    refreshStatus()
+                }
+                !shizukuReady() -> {
+                    // 卸载重装后授权会失效：给出明确提示并主动发起授权请求
+                    log("✗ Shizuku 未授权，任务未执行：请在弹出的授权框中允许，再重新触发任务")
+                    refreshStatus()
+                    requestShizukuPermission()
+                }
+                else -> runQueue(listOf(toolItem))
+            }
         }
         binding.btnStartQueue.postDelayed(queuedStart!!, 1800)
     }
