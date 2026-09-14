@@ -6,6 +6,20 @@ local.properties
 *.apk
 *.aab
 
+# 签名密钥与凭据（绝不入库）
+*.keystore
+*.jks
+*.pepk
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+signing.properties
+.env
+secrets*.json
+credentials*.json
+
 # IDE
 .idea/
 *.iml
@@ -19,12 +33,10 @@ _tools/*.jpg
 _tools/*.png
 _tools/neg_frames/
 _tools/*.log
-FlowEditor/_*
-FlowEditor/pick_frame.jpg
-FlowEditor/flow_editor.log
-FlowEditor/template_picker.log
-FlowEditor/picker.log
-FlowEditor/flows/build/
+
+# 流程编辑器/模板框选工具已独立到 E:\MaaWH Stdio（见 AGENTS.md 第〇节）；
+# 这条只用于忽略仓库里可能残留的旧目录，不再跟踪其中任何文件
+FlowEditor/
 
 # 根目录调试 dump 与临时产物
 /*.xml
