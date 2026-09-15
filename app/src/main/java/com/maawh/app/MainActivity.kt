@@ -133,6 +133,7 @@ class MainActivity : AppCompatActivity() {
 
         refreshStatus()
         updateInfoTexts()
+        checkKeepAliveSetup()
         log("MaaWH 任务队列版启动")
 
         // Shizuku 服务离线时 sticky listener 不会回调，延迟兜底检测一次
@@ -685,9 +686,12 @@ class MainActivity : AppCompatActivity() {
                     VdStreamer.start()
                     vdHandler.removeCallbacks(vdUiTick)
                     vdHandler.post(vdUiTick)
+                    // 虚拟屏活着就得让 App 也活着：屏挂在 App 的用户服务进程上
+                    keepAlive(getString(R.string.keepalive_vd))
                     log("虚拟屏状态已同步")
                 } else if (!alive && vdOn) {
                     vdOn = false
+                    if (!running) stopKeepAlive()
                 }
             }
         }
@@ -1016,6 +1020,10 @@ class MainActivity : AppCompatActivity() {
         val logDir = File(filesDir, "maa_logs")
         val prevVolume = if (muteEnabled) getMusicVolume() else -1
 
+        // 保活：任务期间挂前台服务（通知权限顺手要一下，通知可见性影响系统对待方式）
+        requestNotifPermission()
+        keepAlive(getString(R.string.keepalive_running))
+
         lifecycleScope.launch(Dispatchers.IO) {
             // M4-④a：以服务端权威状态同步虚拟屏路由(截图/点击目标屏)
             ShizukuShell.syncVdMode()
@@ -1026,7 +1034,10 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread { log("任务已停止：剩余队列不再执行") }
                     break
                 }
-                runOnUiThread { setRunState("执行中: ${item.label}", R.color.accent) }
+                runOnUiThread {
+                    setRunState("执行中: ${item.label}", R.color.accent)
+                    keepAlive("任务运行中：${item.label}")
+                }
                 log("==== 任务 ${item.label} 开始 ====")
                 val r = try {
                     if (item.entry == "启动" || item.name == "启动") {
@@ -1091,8 +1102,12 @@ class MainActivity : AppCompatActivity() {
             }
             // 任务结束：勾选「游戏启动后关闭游戏声音」时，
             // 若游戏仍在运行（虚拟屏未退出）则保持静音效果，不主动恢复声音；
-            // 仅当游戏已退出（如本队列末尾勾选了关闭游戏）才恢复音量
-            if (closeAfterEnabled) ShizukuShell.execBlocking("am", "force-stop", GAME_PKG)
+            // 仅当游戏已退出（如本队列末尾勾选了关闭游戏）才恢复音量。
+            // 这里的调用必须兜异常：Shizuku 若在任务期间被系统回收，execBlocking 会抛异常，
+            // 而本协程没有外层 catch —— 未捕获异常会直接把 App 打崩（虚拟屏也随之没）。
+            if (closeAfterEnabled) {
+                runCatching { ShizukuShell.execBlocking("am", "force-stop", GAME_PKG) }
+            }
             if (muteEnabled && prevVolume > 0) {
                 val gameAlive = try {
                     ShizukuShell.execBlocking("pidof", GAME_PKG)
@@ -1102,11 +1117,22 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (!gameAlive) setMusicVolume(prevVolume)
             }
+            // 收尾体检：Shizuku 掉了要说清"不是 MaaWH 关的"并给出保活办法，
+            // 否则用户只会看到下次打开时必须重新启用 Shizuku
+            if (!shizukuRunning()) {
+                runOnUiThread {
+                    log("⚠ Shizuku 已离线（MaaWH 全程只对游戏包名下命令，不会关闭 Shizuku；" +
+                        "通常是 ColorOS 回收了后台进程）。请到【快捷选项 → 防后台被杀设置】" +
+                        "把 MaaWH 与 Shizuku 加入电池优化白名单，并在 Shizuku 里开启 Watchdog。")
+                }
+            }
 
             runOnUiThread {
                 running = false
                 binding.btnStartQueue.isEnabled = true
                 binding.btnStartQueue.text = getString(R.string.btn_start_queue)
+                // 队列收工：虚拟屏还活着就继续保活（游戏还在屏上，App 一死屏就没了），否则停服务
+                if (vdOn) keepAlive(getString(R.string.keepalive_vd)) else stopKeepAlive()
                 when {
                     stopRequested -> {
                         setRunState("✓ 任务已停止", R.color.ok_green)
@@ -1144,6 +1170,7 @@ class MainActivity : AppCompatActivity() {
         }
         popup.menu.add(0, 7, 0, getString(R.string.vd_full))
         popup.menu.add(0, 8, 0, getString(R.string.quick_shot))
+        popup.menu.add(0, 9, 0, getString(R.string.keepalive_title))
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> toggleMute()
@@ -1172,6 +1199,7 @@ class MainActivity : AppCompatActivity() {
                     else startActivity(android.content.Intent(this, VdFullscreenActivity::class.java))
                 }
                 8 -> takeScreenshot()
+                9 -> showKeepAliveDialog()
             }
             true
         }
@@ -1193,6 +1221,143 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { log("已恢复游戏声音"); toast("游戏声音已恢复") }
             }
         }
+    }
+
+    // ==================================================================
+    // 保活（前台服务）：任务运行中 / 虚拟屏存活期间常驻，避免被系统当缓存进程回收
+    // ==================================================================
+
+    private fun keepAlive(text: String) = KeepAliveService.start(this, text)
+
+    private fun stopKeepAlive() = KeepAliveService.stop(this)
+
+    /** Android 13+ 通知权限：给了前台服务通知才可见（被拒也不影响服务本身与优先级） */
+    private fun requestNotifPermission() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED) return
+        runCatching {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIF)
+        }
+    }
+
+    // ==================================================================
+    // 防后台被杀设置（Shizuku 保活）
+    // ==================================================================
+
+    private fun ignoringBattery(pkg: String): Boolean = try {
+        getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(pkg)
+    } catch (e: Throwable) {
+        false
+    }
+
+    /**
+     * 启动时体检：两者没进电池优化白名单就提示一次。
+     * 依据：实测本机 `dumpsys activity exit-info` 里 Shizuku 管理器被 ColorOS 反复清理
+     * （o-stop(40)/o-kill/Cached(nirvana)），MaaWH 自己也以 importance=400 缓存进程身份被杀。
+     */
+    private fun checkKeepAliveSetup() {
+        val self = ignoringBattery(packageName)
+        val sh = ignoringBattery(SHIZUKU_PKG)
+        if (self && sh) {
+            log("防杀体检：MaaWH 与 Shizuku 均已在电池优化白名单")
+        } else {
+            val who = listOfNotNull(
+                if (self) null else "MaaWH",
+                if (sh) null else "Shizuku"
+            ).joinToString("、")
+            log("防杀体检：${who}未加入电池优化白名单 → 系统回收后台时会连带 Shizuku 掉线。" +
+                "到【快捷选项 → 防后台被杀设置】处理")
+        }
+    }
+
+    private fun showKeepAliveDialog() {
+        val self = ignoringBattery(packageName)
+        val sh = ignoringBattery(SHIZUKU_PKG)
+        // 说明 + 可点条目都放进自绘视图：AlertDialog 的 setMessage 与 setItems 同时用会只显示其一
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(4), dp(20), dp(4))
+        }
+        box.addView(TextView(this).apply {
+            text = "MaaWH 不会关闭 Shizuku（所有命令只针对游戏包名）；Shizuku 掉线是系统回收后台进程所致" +
+                "（本机 ColorOS 实测有 o-stop / nirvana 清理记录）。\n\n" +
+                "当前：MaaWH 电池优化 = ${if (self) "已关闭 ✓" else "未关闭"}；" +
+                "Shizuku 电池优化 = ${if (sh) "已关闭 ✓" else "未关闭"}"
+            textSize = 13f
+            setTextColor(getColorCompat(R.color.text_primary))
+            setPadding(0, dp(8), 0, dp(10))
+        })
+        var dlg: AlertDialog? = null
+        val actions = listOf<Pair<String, () -> Unit>>(
+            "① 让 MaaWH 不受电池优化限制" to { requestIgnoreBattery(packageName) },
+            "② 让 Shizuku 不受电池优化限制" to { requestIgnoreBattery(SHIZUKU_PKG) },
+            "③ ColorOS 手动设置清单（自启动 / 应用速冻 / 锁定后台 / Watchdog）" to { showColorOsChecklist() },
+            "④ 打开 Shizuku 应用详情" to { openAppDetails(SHIZUKU_PKG) }
+        )
+        for ((label, act) in actions) {
+            box.addView(TextView(this).apply {
+                text = label
+                textSize = 14f
+                setTextColor(getColorCompat(R.color.text_primary))
+                background = getDrawable(R.drawable.bg_card)
+                setPadding(dp(12), dp(12), dp(12), dp(12))
+                val lp = LinearLayout.LayoutParams(match(), wrap())
+                lp.topMargin = dp(6)
+                layoutParams = lp
+                isClickable = true
+                setOnClickListener {
+                    dlg?.dismiss()
+                    act()
+                }
+            })
+        }
+        dlg = AlertDialog.Builder(this)
+            .setTitle(R.string.keepalive_title)
+            .setView(box)
+            .setNegativeButton("关闭", null)
+            .create()
+        dlg.show()
+    }
+
+    /** 拉系统「不优化」确认框；机型/权限不支持时退回电池优化列表页 */
+    private fun requestIgnoreBattery(pkg: String) {
+        val direct = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            .setData(Uri.parse("package:$pkg"))
+        val ok = runCatching { startActivity(direct) }.isSuccess
+        log(if (ok) "已请求忽略电池优化：$pkg" else "直接请求失败，改开电池优化列表：$pkg")
+        if (!ok) {
+            runCatching {
+                startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            }.onFailure { toast("请手动到 设置 → 电池 → 电池优化 里把 MaaWH/Shizuku 设为不优化") }
+        }
+    }
+
+    private fun openAppDetails(pkg: String) = runCatching {
+        startActivity(
+            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(Uri.parse("package:$pkg"))
+        )
+    }.onFailure { toast("未找到应用：$pkg") }.let { }
+
+    /** ColorOS/realme 专有保活项：App 无法代改，只能引导 */
+    private fun showColorOsChecklist() {
+        val text = buildString {
+            append("ColorOS / realme 需手动开的项（缺一项都可能被杀）\n\n")
+            append("1. 设置 → 应用管理 → 自启动管理：MaaWH 与 Shizuku 都打开「自启动」「关联启动」\n")
+            append("2. 设置 → 电池 → 应用速冻：确认两者未被勾选\n")
+            append("3. 设置 → 电池 → 耗电保护：两者的「允许后台行为」打开\n")
+            append("4. 多任务界面长按卡片 → 点锁图标锁定后台\n")
+            append("5. 打开 Shizuku → 设置 → 开启 Watchdog（服务被杀后自动重启）\n")
+            append("6. 给 MaaWH 通知权限（前台服务保活通知需要它）\n\n")
+            append("做完这些，跑完任务后就不容易连 Shizuku 一起掉。")
+        }
+        AlertDialog.Builder(this)
+            .setTitle("ColorOS 保活清单")
+            .setMessage(text)
+            .setPositiveButton("打开 Shizuku 应用详情") { _, _ -> openAppDetails(SHIZUKU_PKG) }
+            .setNegativeButton("关闭", null)
+            .show()
     }
 
     /** 停止任务：中断当前引擎任务，剩余队列不再执行 */
@@ -1233,6 +1398,8 @@ class MainActivity : AppCompatActivity() {
         if (vdOn) {
             setRunState("启动虚拟屏…", R.color.accent)
             log("启动虚拟屏…")
+            requestNotifPermission()
+            keepAlive(getString(R.string.keepalive_vd))
             lifecycleScope.launch(Dispatchers.IO) {
                 val r = ShizukuShell.startVirtualGame()
                 runCatching { File(filesDir, "m4result.txt").writeText(r) }
@@ -1249,6 +1416,8 @@ class MainActivity : AppCompatActivity() {
             vdHandler.removeCallbacks(vdUiTick)
             lifecycleScope.launch(Dispatchers.IO) { ShizukuShell.stopVirtual() }
             hideFullscreen()
+            // 虚拟屏没了就不用再占着前台服务（任务在跑的话保留，由 runQueue 收尾时停）
+            if (!running) stopKeepAlive()
             setRunState(getString(R.string.run_ready), R.color.text_secondary)
             log("已停止虚拟屏")
         }
@@ -1593,6 +1762,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQ_SHIZUKU = 1001
+        private const val REQ_NOTIF = 1002
         /** Shizuku 管理器包名（引导用户去启动服务用） */
         private const val SHIZUKU_PKG = "moe.shizuku.privileged.api"
         private const val SHIZUKU_GUIDE_URL = "https://shizuku.rikka.app/zh-hans/"

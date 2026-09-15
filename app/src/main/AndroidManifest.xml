@@ -4,6 +4,14 @@
     <!-- Shizuku API v23 权限（旧版 Shizuku Manager 需要） -->
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
+    <!-- 保活：任务/虚拟屏存活期间挂前台服务，避免被 ColorOS 当缓存进程清理（见 KeepAliveService） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Android 13+ 前台服务通知可见；被拒也不影响服务运行 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 「防后台被杀设置」里为 MaaWH/Shizuku 申请忽略电池优化 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -20,6 +28,16 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- 任务运行中 / 虚拟屏存活时的保活前台服务（targetSdk 34 必须声明 FGS 类型） -->
+        <service
+            android:name=".KeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="longRunningAutomation" />
+        </service>
 
         <activity
             android:name=".VdFullscreenActivity"
