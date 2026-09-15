@@ -43,6 +43,15 @@
     <string name="quick_close">任务自动结束时关闭游戏</string>
     <string name="quick_closegame">关闭游戏</string>
     <string name="quick_stop">停止任务</string>
+    <string name="tab_config">配置</string>
+    <string name="config_title">配置管理</string>
+    <string name="config_new">新建配置</string>
+    <string name="config_hint">配置 = 一整套任务队列（勾选 / 参数 / 顺序）。生效配置就是「一键长草」里正在编辑的队列，改完自动保存；点配置名切换生效。</string>
+    <string name="config_no_manifest">任务包清单未加载，暂无配置可管理</string>
+    <string name="config_rename">重命名配置</string>
+    <string name="config_edit_queue">编辑本配置的任务队列</string>
+    <string name="config_duplicate">复制配置</string>
+    <string name="config_delete">删除配置</string>
     <string name="vd_run">启动虚拟屏</string>
     <string name="vd_stop">停止虚拟屏</string>
     <string name="vd_full">全屏</string>
