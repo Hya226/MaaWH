@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-15T22:57:09+08:00",
+        "generatedAt": "2026-09-16T07:27:10+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:28ea965e6d8591dd413bcb64c6678d99f443eea741874a060eda33f5d2e51d1f",
-        "pipelineHash": "sha256:bc9ddd778e6f1843b5268a5924168de47a06e51e7d7b97cb529be03cee61b0d6",
+        "flowHash": "sha256:09f29539a0e976d2b7f7599879cdf782a4399f0aae8f7d9778b9e377a031810c",
+        "pipelineHash": "sha256:e9039757a165f1ddfbfc5820d38908775505367f158600c44b34ad4409f5b762",
         "frameW": 1280,
         "frameH": 720
     },
@@ -24,7 +24,7 @@
     },
     "VF_启动_04": {
         "recognition": "TemplateMatch",
-        "template": "qd_cha.png",
+        "template": "ks_cha.png",
         "threshold": 0.8,
         "action": "DoNothing",
         "timeout": 10000,
@@ -34,7 +34,7 @@
     },
     "VF_启动_02": {
         "recognition": "TemplateMatch",
-        "template": "qd_cha.png",
+        "template": "ks_cha.png",
         "threshold": 0.8,
         "action": "Click",
         "timeout": 8000,

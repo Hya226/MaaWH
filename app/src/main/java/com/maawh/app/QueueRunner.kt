@@ -50,10 +50,40 @@ class QueueRunner(
     var stopRequested = false
         private set
 
+    /** 当前在跑的任务显示名（状态行用；任务循环写、引擎事件线程读） */
+    @Volatile
+    private var currentLabel: String? = null
+
+    /** 最近一次上报到状态行的节点名（同节点不重复刷） */
+    private var lastNode: String? = null
+
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private fun notify(block: () -> Unit) {
         mainHandler.post(block)
+    }
+
+    // ---- 引擎实时事件（第 2 步）----
+    // 事件在引擎线程进来，这里只挑关键的处理：当前节点刷状态行、控制器动作失败即时上报。
+    // 节点级成败细节（识别没过/等超时的归因）仍由 EngineLog 日志轮询负责——日志文本里有
+    // 模板/阈值/ROI 提示，事件 json 里没有。
+    private val engineListener: (MaaEvent) -> Unit = { ev -> onEngineEvent(ev) }
+
+    private fun onEngineEvent(ev: MaaEvent) {
+        when (ev.msg) {
+            MaaBridge.MaaMsg.NODE_STARTING -> {
+                val n = ev.nodeName ?: return
+                if (n == lastNode) return
+                lastNode = n
+                val label = currentLabel ?: return
+                // 状态行显示当前节点（running 检查防收尾结算态被迟到事件覆盖）
+                notify { if (running) cb.onRunState("执行中: $label · 节点 $n", R.color.accent) }
+            }
+            MaaBridge.MaaMsg.CTRL_FAILED ->
+                cb.onLog("控制器动作失败（截图/点击/滑动注入，详见引擎日志）", LogLevel.WRN)
+            MaaBridge.MaaMsg.TASK_STARTING ->
+                cb.onLog("引擎任务开始: ${ev.entry ?: ev.nodeName ?: "?"}", LogLevel.TRACE)
+        }
     }
 
     fun requestStop() {
@@ -79,6 +109,8 @@ class QueueRunner(
         // 保活：任务期间挂前台服务（通知权限申请在 Activity 侧 launch 前做）
         KeepAliveService.start(context, context.getString(R.string.keepalive_running))
 
+        // 订阅引擎实时事件（finally 里必须摘掉：Tasker 每任务重建，但监听器按队列生命周期走）
+        MaaBridge.addEngineEventListener(engineListener)
         try {
             // M4-④a：以服务端权威状态同步虚拟屏路由(截图/点击目标屏)
             ShizukuShell.syncVdMode()
@@ -97,6 +129,8 @@ class QueueRunner(
                         cb.onRunState("执行中: ${item.label}", R.color.accent)
                         KeepAliveService.start(context, "任务运行中：${item.label}")
                     }
+                    currentLabel = item.label
+                    lastNode = null
                     cb.onLog("开始任务：${item.label}", LogLevel.TRACE)
                     val taskStart = android.os.SystemClock.elapsedRealtime()
                     val r = try {
@@ -247,6 +281,9 @@ class QueueRunner(
                 cb.onQueueFinished()
                 if (!cb.isVdOn()) KeepAliveService.stop(context)
             }
+        } finally {
+            MaaBridge.removeEngineEventListener(engineListener)
+            lastNode = null
         }
     }
 
