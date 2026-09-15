@@ -61,7 +61,28 @@ interface MaaLibrary : Library {
     fun MaaTaskerRunning(tasker: Pointer): Byte
     fun MaaTaskerPostStop(tasker: Pointer): Long
     fun MaaTaskerGetRecognitionDetail(tasker: Pointer, taskId: Long, buffer: Pointer): Byte
+
+    // ---------- tasker 实时事件（MaaTasker.h：MaaSinkId MaaTaskerAddSink(tasker, sink, trans_arg)）----------
+    fun MaaTaskerAddSink(tasker: Pointer, sink: MaaEventSink, transArg: Pointer?): Long
 }
+
+/**
+ * 引擎事件回调（对应 MaaDef.h 的 MaaEventCallback）。
+ * 在【引擎线程】被调；message 是事件名（MaaMsg.h，如 "Node.PipelineNode.Starting"），
+ * detailsJson 是事件明细 json（节点名 / task_id / reco_id 等）。
+ */
+fun interface MaaEventSink : Callback {
+    fun invoke(handle: Pointer?, message: String?, detailsJson: String?, transArg: Pointer?)
+}
+
+/** 引擎实时事件（常用字段已从 details 解出；解析失败置 null） */
+data class MaaEvent(
+    val msg: String,          // 事件名，如 Tasker.Task.Failed / Node.PipelineNode.Starting
+    val nodeName: String?,    // details.name（Node.* 事件的节点名）
+    val entry: String?,       // details.entry（Tasker.Task.* 事件的入口名）
+    val taskId: Long?,        // details.task_id
+    val details: String       // 原始 json
+)
 
 // ============ CustomController 回调函数指针表（结构体字段顺序必须与头文件一致） ============
 
@@ -143,6 +164,52 @@ object MaaBridge {
 
     /** 串行化「停止注入」与「引擎销毁」，避免 PostStop 与 Destroy 并发触发 FORTIFY mutex 崩溃 */
     private val stopLock = Any()
+
+    // ============ 引擎实时事件（第 2 步：通知回调，替代 500ms 日志轮询的地基） ============
+    //
+    // 引擎每个节点/动作/任务的 Starting/Succeeded/Failed 都经 MaaTaskerAddSink 实时推过来
+    // （此前只能 500ms 轮询 tail maafw.log 再正则解析）。两个消费方向：
+    //  - QueueRunner 订阅：状态行实时显示当前节点、控制器动作失败即时上报；
+    //  - 后续悬浮面板 / 通知进度 / 任务历史都吃这条事件流。
+    // EngineLog 日志轮询保留：识别失败/超时的归因细节（模板/阈值/ROI 提示）仍靠日志文本。
+
+    /** 事件名常量（MaaMsg.h 子集，只列本项目消费的） */
+    object MaaMsg {
+        const val TASK_STARTING = "Tasker.Task.Starting"
+        const val NODE_STARTING = "Node.PipelineNode.Starting"
+        const val CTRL_FAILED = "Controller.Action.Failed"
+    }
+
+    /** 监听器：在【引擎线程】被调，必须快（只做转发/落队列，重活切自己的线程） */
+    private val listeners = java.util.concurrent.CopyOnWriteArrayList<(MaaEvent) -> Unit>()
+
+    fun addEngineEventListener(l: (MaaEvent) -> Unit) { listeners.add(l) }
+    fun removeEngineEventListener(l: (MaaEvent) -> Unit) { listeners.remove(l) }
+
+    /**
+     * Sink 单例：必须与 MaaBridge 同生命周期持有——JNA Callback 的 trampoline 若在
+     * 引擎仍持引用时被回收会直接崩；挂在 object 单例上则跨 runTask 复用、永不回收。
+     */
+    private val eventSink = MaaEventSink { _, msg, details, _ ->
+        val m = msg ?: return@MaaEventSink
+        var node: String? = null
+        var entry: String? = null
+        var tid: Long? = null
+        try {
+            val jo = org.json.JSONObject(details ?: "{}")
+            node = jo.optString("name").takeIf { it.isNotEmpty() }
+            entry = jo.optString("entry").takeIf { it.isNotEmpty() }
+            tid = if (jo.has("task_id")) jo.getLong("task_id") else null
+        } catch (ignored: Throwable) {
+        }
+        val ev = MaaEvent(m, node, entry, tid, details ?: "")
+        for (l in listeners) {
+            // 单个监听器抛异常不能打死引擎回调线程（那会拖垮整个任务）
+            try { l(ev) } catch (e: Throwable) {
+                android.util.Log.w("MaaWH", "engine event listener error", e)
+            }
+        }
+    }
 
     /** 请求立即停止运行中的引擎任务（线程安全，可从任意线程调用） */
     fun requestStop() {
@@ -324,6 +391,8 @@ object MaaBridge {
             val taskerHandle = checkNotNull(tasker) { "MaaTaskerCreate 失败" }
             lib.MaaTaskerBindResource(taskerHandle, resource)
             lib.MaaTaskerBindController(taskerHandle, controller)
+            // 实时事件 Sink（节点/动作/任务的 Starting/Succeeded/Failed 都推给 listeners）
+            lib.MaaTaskerAddSink(taskerHandle, eventSink, null)
             onLog("Tasker inited=${lib.MaaTaskerInited(taskerHandle).toInt()}")
 
             // 4) 跑任务（pipeline_override 传空 JSON，引擎不允许 NULL 覆盖串）
