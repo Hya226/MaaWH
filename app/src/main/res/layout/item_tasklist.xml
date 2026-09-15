@@ -19,18 +19,24 @@
         android:minWidth="0dp"
         android:minHeight="34dp" />
 
+    <!-- 任务名按自身宽度（永远看得见），参数摘要占剩下的地方并截断 ——
+         摘要过长（如「太阳神鸟 · 洛神赋图 · 蛙锣」）时不能把任务名挤成 0 宽 -->
     <TextView
         android:id="@+id/itemName"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:maxLines="1"
         android:textColor="@color/text_primary"
         android:textSize="14sp" />
 
     <TextView
         android:id="@+id/itemCount"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:gravity="end"
+        android:maxLines="1"
         android:paddingEnd="4dp"
         android:textColor="@color/text_secondary"
         android:textSize="12sp" />

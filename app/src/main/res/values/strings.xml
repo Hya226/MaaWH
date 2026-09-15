@@ -29,11 +29,13 @@
     <string name="hint_queue">勾选参与运行，长按拖动排序</string>
     <string name="tab_oneclick">一键长草</string>
     <string name="tab_tools">小工具</string>
-    <string name="tools_maintip">测试任务队列：由 adb 入口或快捷工具触发，勾选后点「开始任务」运行；不影响一键长草主队列</string>
-    <string name="tools_edit_hint">单击左侧测试任务查看/编辑参数</string>
+    <string name="tools_maintip">小工具队列：任务包清单声明的工具任务（如刷活动关、博物研学）+ adb 直达入口。单击左侧任务行在右侧改参数，勾选后点「开始任务」；不影响一键长草主队列</string>
+    <string name="tools_edit_hint">单击左侧任务行查看/编辑参数</string>
     <string name="tools_target_label">目标角色名（穿戴装备搜索用）</string>
     <string name="tools_target_hint">如：商周十供</string>
-    <string name="edit_hint">点击左侧任务可在此编辑次数</string>
+    <string name="edit_hint">单击左侧任务行按任务包清单 interface.json 编辑参数</string>
+    <string name="move_to_tools">⇄ 移到小工具</string>
+    <string name="move_to_main">⇄ 移到一键长草</string>
     <string name="edit_title">任务编辑</string>
     <string name="edit_count_label">次数 (1~10)</string>
     <string name="edit_apply">应用</string>

@@ -179,6 +179,11 @@ class MainActivity : AppCompatActivity() {
         val dir = resolveBundleDir()
         val m = if (dir != null) TaskPack.load(dir) else null
         manifest = m
+        // 存档要先读：用户手动挪过位置的任务（home）得在按清单铺队列之前生效
+        val saved = QueueStore.load(this)
+        val usable = saved != null && (m == null || saved.pack == m.name)
+        homeOf.clear()
+        if (usable) homeOf.putAll(saved!!.home)
         tasks.clear()
         enabled.clear()
         toolsTasks.clear()
@@ -189,32 +194,14 @@ class MainActivity : AppCompatActivity() {
         } else {
             log("任务包清单 ${m.label} v${m.version}：${m.tasks.size} 个任务")
             m.tasks.forEach { t ->
-                val item = TaskItem(
-                    pack = m.name,
-                    name = t.name,
-                    entry = t.entry,
-                    label = t.label,
-                    options = t.options,
-                    selection = TaskPack.Selection().also { sel ->
-                        // 用 option 默认值初始化选择
-                        t.options.forEach { key ->
-                            val o = m.option(key) ?: return@forEach
-                            when (o.type) {
-                                "input" -> o.inputs.forEach { sel.inputOf[it.name] = it.default }
-                                else -> sel.caseOf[key] = o.defaultCase
-                            }
-                        }
-                    }
-                ).also { it.summary = summarize(it) }
-                // 小工具任务（group 含 tools）：只进工具队列，不进一键长草
-                if (t.group.contains("tools")) addToolTask(item) else addTask(item)
+                val item = taskItemOf(t)
+                // 归属：清单 group 只给默认值，用户挪过位置的以 home 为准
+                if (taskHome(t.name, t.group) == HOME_TOOLS) addToolTask(item) else addTask(item)
             }
             val toolCount = toolsTasks.size
             if (toolCount > 0) log("小工具任务 $toolCount 个（在「小工具」tab）")
         }
-        // 载入存档：配置列表 + 各配置内容（下面 restore 要用），并决定当前生效的配置
-        val saved = QueueStore.load(this)
-        val usable = saved != null && (m == null || saved.pack == m.name)
+        // 配置列表 + 各配置内容（下面 restore 要用），并决定当前生效的配置
         profileData.clear()
         saved?.profiles?.forEach { profileData[it.name] = it.main }
         if (profileData.isEmpty()) profileData[DEFAULT_PROFILE] = emptyList()
@@ -231,6 +218,100 @@ class MainActivity : AppCompatActivity() {
     // ==================================================================
     // 配置（多套任务队列）的恢复与保存
     // ==================================================================
+
+    /** 按清单声明构建队列项：option 用清单默认值初始化（主队列与小工具队列共用） */
+    private fun taskItemOf(t: TaskPack.TaskDef): TaskItem {
+        val m = manifest
+        val sel = TaskPack.Selection()
+        t.options.forEach { key ->
+            val o = m?.option(key) ?: return@forEach
+            when (o.type) {
+                "input" -> o.inputs.forEach { sel.inputOf[it.name] = it.default }
+                else -> sel.caseOf[key] = o.defaultCase
+            }
+        }
+        return TaskItem(
+            pack = m?.name ?: "whmx",
+            name = t.name,
+            entry = t.entry,
+            label = t.label,
+            options = t.options,
+            selection = sel
+        ).also { it.summary = summarize(it) }
+    }
+
+    /** 清单里按 name（优先）或 entry 找任务并构建队列项；清单没声明 → null */
+    private fun manifestItemOf(name: String, entry: String): TaskItem? {
+        val m = manifest ?: return null
+        val def = m.tasks.firstOrNull { it.name == name }
+            ?: m.tasks.firstOrNull { it.entry == entry }
+        return def?.let { taskItemOf(it) }
+    }
+
+    // ==================================================================
+    // 任务归属：一键长草（main）⇄ 小工具（tools）
+    // ==================================================================
+
+    /** 用户手动挪过位置的任务：任务名 → HOME_MAIN / HOME_TOOLS。清单 group 只给默认值。 */
+    private val homeOf = HashMap<String, String>()
+
+    /** 任务当前归属：手动挪过以 homeOf 为准，否则看清单 group */
+    private fun taskHome(name: String, group: List<String>): String =
+        homeOf[name] ?: if (group.contains("tools")) HOME_TOOLS else HOME_MAIN
+
+    /** 该任务对象此刻在哪个队列里（返回 HOME_* ；两边都不在 → null） */
+    private fun homeOfItem(item: TaskItem): String? =
+        if (tasks.any { it === item }) HOME_MAIN
+        else if (toolsTasks.any { it === item }) HOME_TOOLS else null
+
+    /**
+     * 把一个任务在【一键长草】与【小工具】之间挪位置（调试完转正式任务就是靠它）。
+     * 勾选状态与已设的参数跟着走，并在两个 tab 之间自动切过去、选中它，让结果看得见。
+     */
+    private fun moveTaskTo(item: TaskItem, target: String) {
+        val from = homeOfItem(item) ?: return
+        if (from == target) {
+            toast("它已经在" + (if (target == HOME_TOOLS) "小工具" else "一键长草") + "里了")
+            return
+        }
+        val wasEnabled = if (from == HOME_MAIN) enabled.getOrElse(tasks.indexOf(item)) { true }
+                         else toolsEnabled.getOrElse(toolsTasks.indexOf(item)) { true }
+        if (from == HOME_MAIN) {
+            val i = tasks.indexOf(item)
+            tasks.removeAt(i)
+            enabled.removeAt(i)
+            // 旧面板还停在它身上，清掉免得留下一个「已经不在这个 tab」的编辑面板
+            binding.layoutOptionsTools.removeAllViews()
+            binding.tvToolsEditTitle.text = getString(R.string.edit_title)
+            binding.tvToolsEditHint.text = getString(R.string.tools_edit_hint)
+            binding.btnToolsEditMove.visibility = View.GONE
+        } else {
+            val i = toolsTasks.indexOf(item)
+            toolsTasks.removeAt(i)
+            toolsEnabled.removeAt(i)
+            binding.layoutOptionsMain.removeAllViews()
+            binding.tvEditTitle.text = getString(R.string.edit_title)
+            binding.tvEditHint.text = getString(R.string.edit_hint)
+            binding.btnEditMove.visibility = View.GONE
+        }
+        homeOf[item.name] = target
+        if (target == HOME_TOOLS) {
+            toolsTasks.add(item)
+            toolsEnabled.add(wasEnabled)
+            switchTab(HomeTab.TOOLS)
+            toolsAdapter.notifyDataSetChanged()
+            selectToolTask(toolsTasks.size - 1)
+        } else {
+            tasks.add(item)
+            enabled.add(wasEnabled)
+            switchTab(HomeTab.ONECLICK)
+            adapter.notifyDataSetChanged()
+            selectTask(tasks.size - 1)
+        }
+        saveNow()
+        log("已把「${item.label}」移到" +
+            (if (target == HOME_TOOLS) "【小工具】" else "【一键长草】（主队列）"))
+    }
 
     /**
      * 用存档覆盖刚按清单构建的默认队列。
@@ -274,23 +355,31 @@ class MainActivity : AppCompatActivity() {
         enabled.addAll(newEnabled)
     }
 
-    /** 小工具队列：清单声明的工具任务取原对象（带 option），adb 直达条目按存档的 entry 重建 */
+    /** 小工具队列：清单声明的工具任务取原对象（带 option），
+     *  存档里按 entry 记的 adb 直达条目也按清单声明重建（否则参数面板是空的） */
     private fun restoreToolsQueue(saved: List<QueueStore.SavedTask>) {
         val newTasks = ArrayList<TaskItem>()
         val newEnabled = ArrayList<Boolean>()
         val seen = HashSet<String>()
+        val seenEntries = HashSet<String>()
         for (s in saved) {
             if (!seen.add(s.name)) continue
             val idx = toolsTasks.indexOfFirst { it.name == s.name }
-            val item = if (idx >= 0) toolsTasks[idx]
-                       else TaskItem(manifest?.name ?: "whmx", s.name, s.entry)
-            if (idx >= 0) applySavedSelection(item, s)
+            val fromManifest = if (idx < 0) manifestItemOf(s.name, s.entry) else null
+            if (fromManifest != null && !seenEntries.add(fromManifest.entry)) continue
+            val item = when {
+                idx >= 0 -> toolsTasks[idx]
+                fromManifest != null -> fromManifest
+                else -> TaskItem(manifest?.name ?: "whmx", s.name, s.entry)
+            }
+            if (idx >= 0 || fromManifest != null) applySavedSelection(item, s)
             item.summary = summarize(item)
             newTasks.add(item)
             newEnabled.add(s.enabled)
+            seenEntries.add(item.entry)
         }
         toolsTasks.forEachIndexed { i, item ->
-            if (seen.contains(item.name)) return@forEachIndexed
+            if (seen.contains(item.name) || !seenEntries.add(item.entry)) return@forEachIndexed
             newTasks.add(item)
             newEnabled.add(toolsEnabled.getOrElse(i) { true })
         }
@@ -303,7 +392,8 @@ class MainActivity : AppCompatActivity() {
     /** 把存档取值填回任务：只认清单声明的 option，case 名已不存在时保持清单默认 */
     private fun applySavedSelection(item: TaskItem, s: QueueStore.SavedTask) {
         val m = manifest ?: return
-        val def = m.tasks.firstOrNull { it.name == item.name } ?: return
+        val def = m.tasks.firstOrNull { it.name == item.name }
+            ?: m.tasks.firstOrNull { it.entry == item.entry } ?: return
         for (key in def.options) {
             val o = m.option(key) ?: continue
             if (o.type == "input") {
@@ -347,7 +437,8 @@ class MainActivity : AppCompatActivity() {
                 tools = toolsTasks.mapIndexed { i, it -> savedTaskOf(it, toolsEnabled.getOrElse(i) { true }) },
                 tab = if (homeTab == HomeTab.TOOLS) "tools" else "oneclick",
                 mute = muteEnabled,
-                closeAfter = closeAfterEnabled
+                closeAfter = closeAfterEnabled,
+                home = HashMap(homeOf)
             ))
         } catch (e: Throwable) {
             log("保存配置失败: $e")
@@ -643,11 +734,20 @@ class MainActivity : AppCompatActivity() {
         }
         val vdFirst = intent.getBooleanExtra("vd", false) && !vdOn
         val pack = intent.getStringExtra("pack") ?: "whmx"
-        // 工具入口：只进小工具队列并切到小工具 tab，绝不改动一键长草主队列
-        val toolItem = TaskItem(pack, entry, entry)
-        addToolTask(toolItem)
-        switchTab(HomeTab.TOOLS)
-        log("工具入口: [$entry] 已加入小工具队列")
+        // 清单里声明过的入口：复用它在本机队列里的那一条（带着你设好的参数），
+        // 别新建一个只有 entry 的空条目 —— 否则编辑器点「▶ 同步并运行」跑的是清单默认值
+        val queued = tasks.firstOrNull { it.name == entry || it.entry == entry }
+            ?: toolsTasks.firstOrNull { it.name == entry || it.entry == entry }
+        val toolItem = queued ?: manifestItemOf(entry, entry) ?: TaskItem(pack, entry, entry)
+        if (queued != null && tasks.any { it === queued }) {
+            // 已经归在【一键长草】的任务：只运行，不往小工具里塞重复条目
+            log("工具入口: [$entry] 是【一键长草】任务，直接运行（不加入小工具队列）")
+        } else {
+            // 小工具队列里的任务 / adb 直达的临时入口：照旧入队并切到小工具 tab
+            addToolTask(toolItem)
+            switchTab(HomeTab.TOOLS)
+            log("工具入口: [$entry] 已加入小工具队列")
+        }
         if (vdFirst) {
             log("vd=1：先建虚拟屏并投游戏，再跑 [$entry]")
             vdOn = true
@@ -791,17 +891,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==================================================================
-    // 小工具队列（adb 入口触发的测试任务）
+    // 小工具队列（清单声明的工具任务 + adb 入口触发的测试任务）
     // ==================================================================
 
-    /** 加入小工具队列（同入口去重后移到最新位，保留最近 12 条，超出丢弃最旧） */
+    /**
+     * 加入小工具队列（同入口去重后移到最新位，保留最近 12 条，超出丢弃最旧）。
+     * adb 直达入口（`--es entry VF_xxx`）带的 TaskItem 只有 entry、没有清单声明，
+     * 直接入队会让参数面板显示成「无额外参数」、运行时 override 也拿不到清单里的 option
+     * （刷活动关的「刷取次数」就是这么丢的）→ 这里优先换成清单里同 entry 的那一条。
+     */
     private fun addToolTask(item: TaskItem) {
-        val dup = toolsTasks.indexOfFirst { it.pack == item.pack && it.entry == item.entry }
+        val keep = toolsTasks.firstOrNull { it.pack == item.pack && it.entry == item.entry }
+        val use = when {
+            // 队列里已有清单项：留住它（带着 option 和用户已改的参数）
+            keep != null && keep.options.isNotEmpty() -> keep
+            item.options.isNotEmpty() -> item
+            else -> manifestItemOf(item.name, item.entry) ?: item
+        }
+        val dup = toolsTasks.indexOfFirst { it.pack == use.pack && it.entry == use.entry }
         if (dup >= 0) {
             toolsTasks.removeAt(dup)
             toolsEnabled.removeAt(dup)
         }
-        toolsTasks.add(item)
+        toolsTasks.add(use)
         toolsEnabled.add(true)
         if (toolsTasks.size > 12) {
             toolsTasks.removeAt(0)
@@ -824,8 +936,16 @@ class MainActivity : AppCompatActivity() {
         if (i < 0 || i >= toolsTasks.size) return
         val item = toolsTasks[i]
         binding.tvToolsEditTitle.text = "编辑: ${item.label}"
-        binding.tvToolsEditHint.text = "该入口为 adb 直达测试任务，无额外参数"
-        binding.layoutOptionsTools.removeAllViews()
+        // 归属切换按钮：清单声明的任务才给（adb 直达的临时条目挪过去没意义）
+        val declared = manifest?.tasks?.any { it.name == item.name || it.entry == item.entry } == true
+        binding.btnToolsEditMove.visibility = if (declared) View.VISIBLE else View.GONE
+        binding.btnToolsEditMove.setOnClickListener { moveTaskTo(item, HOME_MAIN) }
+        val container = binding.layoutOptionsTools
+        container.removeAllViews()
+        binding.tvToolsEditHint.text = if (renderOptionsFor(container, item))
+            "参数来自任务包清单 interface.json"
+        else
+            "该入口为 adb 直达测试任务，无额外参数"
         log("选中工具任务: ${item.label}")
     }
 
@@ -866,29 +986,26 @@ class MainActivity : AppCompatActivity() {
         if (on) refreshProfilePanel()
     }
 
-    /** 刷新某任务的列表摘要显示 */
+    /** 刷新某任务的列表摘要显示（主队列与小工具队列各刷一次） */
     private fun refreshRow(item: TaskItem) {
         val idx = tasks.indexOf(item)
         if (idx >= 0) adapter.notifyItemChanged(idx)
+        if (::toolsAdapter.isInitialized) {
+            val tIdx = toolsTasks.indexOf(item)
+            if (tIdx >= 0) toolsAdapter.notifyItemChanged(tIdx)
+        }
     }
 
-    /** 单击任务行：右侧按 interface.json 的 option 动态渲染编辑面板 */
-    private fun selectTask(i: Int) {
-        if (i < 0 || i >= tasks.size) return
-        editingIndex = i
-        val item = tasks[i]
-        binding.tvEditTitle.text = "编辑: ${item.label}"
-        val m = manifest
-        val container = binding.layoutOptionsMain
-        container.removeAllViews()
-
-        val def = m?.tasks?.firstOrNull { it.name == item.name }
-        if (m == null || def == null || def.options.isEmpty()) {
-            binding.tvEditHint.text = "该任务无可配置参数"
-            return
-        }
-        binding.tvEditHint.text = "参数来自任务包清单 interface.json"
-
+    /**
+     * 按清单 option 动态渲染参数面板（主队列与小工具共用）。
+     * 返回 false = 清单里没给这个任务声明 option（如 adb 直达的临时探针），调用方显示提示。
+     */
+    private fun renderOptionsFor(container: LinearLayout, item: TaskItem): Boolean {
+        val m = manifest ?: return false
+        val def = m.tasks.firstOrNull { it.name == item.name }
+            ?: m.tasks.firstOrNull { it.entry == item.entry }
+            ?: return false
+        if (def.options.isEmpty()) return false
         for (key in def.options) {
             val o = m.option(key) ?: continue
             when (o.type) {
@@ -897,6 +1014,26 @@ class MainActivity : AppCompatActivity() {
                 else -> renderSelectOption(container, item, o)
             }
         }
+        return true
+    }
+
+    /** 单击任务行：右侧按 interface.json 的 option 动态渲染编辑面板 */
+    private fun selectTask(i: Int) {
+        if (i < 0 || i >= tasks.size) return
+        editingIndex = i
+        val item = tasks[i]
+        binding.tvEditTitle.text = "编辑: ${item.label}"
+        // 归属切换按钮：清单声明的任务才给（挪到小工具当临时调试项）
+        val declared = manifest?.tasks?.any { it.name == item.name || it.entry == item.entry } == true
+        binding.btnEditMove.visibility = if (declared) View.VISIBLE else View.GONE
+        binding.btnEditMove.setOnClickListener { moveTaskTo(item, HOME_TOOLS) }
+        val container = binding.layoutOptionsMain
+        container.removeAllViews()
+        if (!renderOptionsFor(container, item)) {
+            binding.tvEditHint.text = "该任务无可配置参数"
+            return
+        }
+        binding.tvEditHint.text = "参数来自任务包清单 interface.json"
     }
 
     /** select：下拉框（次数、关卡等枚举） */
@@ -1053,6 +1190,9 @@ class MainActivity : AppCompatActivity() {
             if (muteEnabled) setMusicVolume(0)
             var ok = true
             val failed = ArrayList<String>()
+            // 跟读引擎日志：把"识别失败 / 超时 / 节点失败 / 包校验失败"按性质打进日志区
+            val stopTail = startEngineLogTail(whmxDir)
+            try {
             for (item in planTasks) {
                 if (stopRequested) {
                     runOnUiThread { log("任务已停止：剩余队列不再执行") }
@@ -1120,8 +1260,9 @@ class MainActivity : AppCompatActivity() {
                         cmdOk && !alive
                     } else {
                         // 其余任务：按清单 option 生成 pipeline_override 后交给引擎
+                        // （name 对不上时用 entry 兜底：adb 直达入口的 TaskItem 只有 entry 可用）
                         val override = manifest?.let { m ->
-                            m.tasks.firstOrNull { it.name == item.name }
+                            m.tasks.firstOrNull { it.name == item.name || it.entry == item.entry }
                                 ?.let { TaskPack.buildOverride(m, it, item.selection) }
                         } ?: "{}"
                         log("pipeline_override: $override")
@@ -1155,6 +1296,9 @@ class MainActivity : AppCompatActivity() {
                         log("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）", LogLevel.WRN)
                     }
                 }
+            }
+            } finally {
+                stopTail()          // 收尾：把折叠掉的重复次数与归类小结打出来
             }
             // 任务结束：勾选「游戏启动后关闭游戏声音」时，
             // 若游戏仍在运行（虚拟屏未退出）则保持静音效果，不主动恢复声音；
@@ -1824,6 +1968,102 @@ class MainActivity : AppCompatActivity() {
     /** 引擎逐节点日志：降到 TRACE（暗色），让任务时间线在日志里醒目 */
     private fun logEngine(msg: String) = log(msg, LogLevel.TRACE)
 
+    /**
+     * 跟读引擎日志，把"任务为什么失败"按性质打进日志区。
+     *
+     * 引擎只把逐节点细节写进 `files/maa_logs/maafw.log`（App 没注册引擎的通知接口，
+     * 所以收不到事件流）—— 这里增量读它，解析成【识别失败】/【超时】/【节点失败】/
+     * 【动作失败】/【引擎错误】/【任务包校验失败】，并**把该节点该认得什么（模板/期望文字/
+     * 阈值/ROI）补在括号里**：光看节点名判断不出"是识别没过还是等超时"。
+     * 同一种错 + 同一个节点连续重复只提示一次（一次运行里能重复几百次，刷屏会把
+     * 有用的信息顶掉），收尾时再打一条归类小结。
+     *
+     * 返回一个 stop()：停止跟读并等它把小结算打完（在任务队列收尾时调用）。
+     */
+    private fun startEngineLogTail(bundleDir: File): () -> Unit {
+        val file = File(File(filesDir, "maa_logs"), "maafw.log")
+        val stopped = java.util.concurrent.atomic.AtomicBoolean(false)
+        val thread = Thread {
+            var offset = if (file.exists()) file.length() else 0L   // 只读"从现在往后"
+            var partial = ""                      // 上一轮读到的半行
+            var lastKey = ""
+            var repeats = 0
+            var readOnce = false
+            var errOnce = false
+            val totals = LinkedHashMap<String, Int>()
+            log("引擎日志跟读已启动：只提示【识别失败】【超时】等错误（同一条不重复刷屏）",
+                LogLevel.TRACE)
+            fun flushRepeats() {
+                if (repeats > 0) {
+                    log("   ↳ 上面这条又连续重复了 $repeats 次（同一条只提示一次）", LogLevel.TRACE)
+                    repeats = 0
+                }
+            }
+            while (!stopped.get()) {
+                try {
+                    if (file.exists() && file.length() < offset) {
+                        offset = 0L                    // 日志轮转过 → 从头再跟
+                        partial = ""
+                    }
+                    if (file.exists() && file.length() > offset) {
+                        val len = (file.length() - offset).toInt()
+                        java.io.RandomAccessFile(file, "r").use { raf ->
+                            raf.seek(offset)
+                            val buf = ByteArray(len)
+                            raf.readFully(buf)
+                            offset += len
+                            val lines = (partial + String(buf, Charsets.UTF_8)).split("\n")
+                            partial = lines.last()     // 可能是半行，留到下一轮
+                            if (!readOnce) {
+                                readOnce = true
+                                log("   ↳ 已接到引擎日志（+$len 字节，共 ${lines.size - 1} 行）",
+                                    LogLevel.TRACE)
+                            }
+                            for (i in 0 until lines.size - 1) {
+                                val ev = EngineLog.parse(lines[i], bundleDir) ?: continue
+                                if (ev.key == lastKey) {
+                                    repeats++
+                                    continue
+                                }
+                                flushRepeats()
+                                lastKey = ev.key
+                                totals[ev.line] = (totals[ev.line] ?: 0) + 1
+                                log(ev.line, ev.kind.level)
+                            }
+                        }
+                    }
+                } catch (e: Throwable) {
+                    // 读日志失败不能影响任务本身；但第一条要说一声，否则"什么都没输出"很难查
+                    if (!errOnce) {
+                        errOnce = true
+                        val why = e.cause?.let { " ← ${it::class.java.name}: ${it.message}" } ?: ""
+                        val at = e.stackTrace.firstOrNull()?.toString() ?: ""
+                        log("引擎日志跟读出错（不影响任务）：$e$why @$at", LogLevel.TRACE)
+                    }
+                }
+                try {
+                    Thread.sleep(500)
+                } catch (e: InterruptedException) {
+                    break
+                }
+            }
+            flushRepeats()
+            if (totals.isNotEmpty()) {
+                log("—— 本次运行的报错归类（按出现次数） ——", LogLevel.WRN)
+                totals.entries.sortedByDescending { it.value }.forEach { (k, v) ->
+                    log("   ${if (v > 1) "$v × " else ""}$k", LogLevel.TRACE)
+                }
+            }
+        }
+        thread.isDaemon = true
+        thread.start()
+        return {
+            stopped.set(true)
+            thread.join(2000)      // 等小结打完，别让它在"任务失败"之后才冒出来
+            Unit
+        }
+    }
+
     /** 设备内存摘要（maameow 的日志里也有这行，顺带能看到跑任务前的内存压力） */
     private fun memoryInfoText(): String = try {
         val mi = android.app.ActivityManager.MemoryInfo()
@@ -1866,6 +2106,9 @@ class MainActivity : AppCompatActivity() {
         private const val GAME_PKG = "com.cipaishe.wuhua.bilibili"
         /** 全新安装时的第一个配置名（对标 maameow 的「日常」） */
         private const val DEFAULT_PROFILE = "日常"
+        /** 任务归属两处：一键长草主队列 / 小工具队列（见 homeOf） */
+        private const val HOME_MAIN = "main"
+        private const val HOME_TOOLS = "tools"
         private const val MATCH_PARENT = -1
     }
 }
