@@ -44,6 +44,11 @@
     <string name="quick_closegame">关闭游戏</string>
     <string name="quick_stop">停止任务</string>
     <string name="quick_shot">截图（刷新预览）</string>
+    <string name="keepalive_title">防后台被杀设置</string>
+    <string name="keepalive_channel">运行状态</string>
+    <string name="keepalive_default">MaaWH 运行中</string>
+    <string name="keepalive_running">任务运行中</string>
+    <string name="keepalive_vd">虚拟屏运行中</string>
     <string name="config_edit">编辑配置</string>
     <string name="config_done">完成</string>
     <string name="tab_config">配置</string>
