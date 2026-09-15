@@ -75,6 +75,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var vdOverlay: FrameLayout
     private lateinit var vdFullImg: ImageView
 
+    /** 任务日志视图（时间 + 级别徽标 + 颜色），onCreate 里初始化 */
+    private var logView: TaskLogView? = null
+
     private var lastBitmap: Bitmap? = null
     private var downX = 0f
     private var downY = 0f
@@ -89,6 +92,23 @@ class MainActivity : AppCompatActivity() {
 
         ShizukuShell.init(applicationContext)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        // 任务日志：时间 + 级别徽标 + 颜色（TRACE 灰 / INFO 蓝 / SUCCESS 绿 / WRN 橙 / ERR 红）
+        logView = TaskLogView(binding.tvLog, binding.scrollLog) { level ->
+            getColorCompat(
+                when (level) {
+                    LogLevel.TRACE -> R.color.text_secondary
+                    LogLevel.INFO -> R.color.accent
+                    LogLevel.SUCCESS -> R.color.ok_green
+                    LogLevel.WRN -> R.color.warn_orange
+                    LogLevel.ERR -> R.color.err_red
+                }
+            )
+        }
+        binding.btnClearLog.setOnClickListener {
+            logView?.clear()
+            log("日志已清空")
+        }
 
         // 内置任务包释放（首次安装/覆盖升级时拷 assets/whmx，平时零开销）；
         // 释放完成前禁用开始队列，避免引擎加载到不完整的资源
@@ -648,12 +668,12 @@ class MainActivity : AppCompatActivity() {
             when {
                 running -> {}
                 !shizukuRunning() -> {
-                    log("✗ Shizuku 未运行，任务未执行：请启动 Shizuku 后重新触发")
+                    log("Shizuku 未运行，任务未执行：请启动 Shizuku 后重新触发", LogLevel.ERR)
                     refreshStatus()
                 }
                 !shizukuReady() -> {
                     // 卸载重装后授权会失效：给出明确提示并主动发起授权请求
-                    log("✗ Shizuku 未授权，任务未执行：请在弹出的授权框中允许，再重新触发任务")
+                    log("Shizuku 未授权，任务未执行：请在弹出的授权框中允许，再重新触发任务", LogLevel.ERR)
                     refreshStatus()
                     requestShizukuPermission()
                 }
@@ -991,15 +1011,18 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (!shizukuReady()) {
-            log("无法运行：Shizuku ${if (!shizukuRunning()) "未运行" else "未授权"}")
+            log("无法运行：Shizuku ${if (!shizukuRunning()) "未运行" else "未授权"}", LogLevel.ERR)
             refreshStatus()
             return
         }
-        log("运行配置「$activeProfile」：${plan.joinToString(" → ") { it.label }}")
         runQueue(plan)
     }
 
     private fun runQueue(planTasks: List<TaskItem>) {
+        // 队列抬头（对标 maameow 的「开始执行任务，共 N 项」+ 设备内存）
+        log("开始执行任务，共 ${planTasks.size} 项：${planTasks.joinToString(" → ") { it.label }}")
+        log(memoryInfoText())
+        val queueStart = android.os.SystemClock.elapsedRealtime()
         running = true
         stopRequested = false
         MaaBridge.clearStop()
@@ -1011,7 +1034,7 @@ class MainActivity : AppCompatActivity() {
         // 故优先用内部 taskpacks（adb 可经 run-as 铺内），不存在时回退外部目录
         val whmxDir = resolveBundleDir()
         if (whmxDir == null) {
-            log("任务包缺失：files/taskpacks/whmx")
+            log("任务包缺失：files/taskpacks/whmx", LogLevel.ERR)
             toast("未找到任务包 whmx，详见日志")
             running = false
             binding.btnStartQueue.text = getString(R.string.btn_start_queue)
@@ -1039,7 +1062,8 @@ class MainActivity : AppCompatActivity() {
                     setRunState("执行中: ${item.label}", R.color.accent)
                     keepAlive("任务运行中：${item.label}")
                 }
-                log("==== 任务 ${item.label} 开始 ====")
+                log("开始任务：${item.label}", LogLevel.TRACE)
+                val taskStart = android.os.SystemClock.elapsedRealtime()
                 val r = try {
                     if (item.entry == "启动" || item.name == "启动") {
                         // 「启动」= 先进虚拟屏把游戏投进去，再用引擎收口到主页
@@ -1056,7 +1080,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         if (ShizukuShell.syncVdMode()) {
                             val rr = MaaBridge.runTask(whmxDir, item.entry, logDir, "{}") { msg ->
-                                runOnUiThread { log(msg) }
+                                runOnUiThread { logEngine(msg) }
                             }
                             runOnUiThread {
                                 setRunState(
@@ -1102,26 +1126,34 @@ class MainActivity : AppCompatActivity() {
                         } ?: "{}"
                         log("pipeline_override: $override")
                         MaaBridge.runTask(whmxDir, item.entry, logDir, override) { msg ->
-                            runOnUiThread { log(msg) }
+                            runOnUiThread { logEngine(msg) }
                         }
                     }
                 } catch (e: Throwable) {
-                    runOnUiThread { log("任务异常: $e") }
+                    runOnUiThread { log("任务异常: $e", LogLevel.ERR) }
                     false
                 }
                 runOnUiThread { log(
                     when {
-                        stopRequested -> "已停止任务 ${item.label}"
-                        r -> "✓ ${item.label} 完成"
-                        else -> "✗ ${item.label} 失败"
+                        stopRequested -> "已停止任务：${item.label}（耗时 ${costText(taskStart)}）"
+                        r -> "完成任务：${item.label} · 耗时 ${costText(taskStart)}"
+                        else -> "任务失败：${item.label} · 耗时 ${costText(taskStart)}"
+                    },
+                    when {
+                        stopRequested -> LogLevel.WRN
+                        r -> LogLevel.SUCCESS
+                        else -> LogLevel.ERR
                     }
                 ) }
                 if (!r) {
                     // 单个任务失败不再中断整个队列：否则末尾的收尾项（如「关闭游戏」）
-                    // 会因为前面任一任务失败而静默不执行——用户勾了却没生效，很难查
+                    // 会因为前面任一任务失败而静默不执行——用户勾了却没生效，很难查。
+                    // 用户主动停止不算失败，也不提示"继续执行"（后面本来就不跑了）
                     ok = false
-                    failed += item.label
-                    runOnUiThread { log("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）") }
+                    if (!stopRequested) {
+                        failed += item.label
+                        log("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）", LogLevel.WRN)
+                    }
                 }
             }
             // 任务结束：勾选「游戏启动后关闭游戏声音」时，
@@ -1139,11 +1171,10 @@ class MainActivity : AppCompatActivity() {
             // 收尾体检：Shizuku 掉了要说清"不是 MaaWH 关的"并给出保活办法，
             // 否则用户只会看到下次打开时必须重新启用 Shizuku
             if (!shizukuRunning()) {
-                runOnUiThread {
-                    log("⚠ Shizuku 已离线（MaaWH 全程只对游戏包名下命令，不会关闭 Shizuku；" +
-                        "通常是 ColorOS 回收了后台进程）。请到【快捷选项 → 防后台被杀设置】" +
-                        "把 MaaWH 与 Shizuku 加入电池优化白名单，并在 Shizuku 里开启 Watchdog。")
-                }
+                log("Shizuku 已离线（MaaWH 全程只对游戏包名下命令，不会关闭 Shizuku；" +
+                    "通常是 ColorOS 回收了后台进程）。请到【快捷选项 → 防后台被杀设置】" +
+                    "把 MaaWH 与 Shizuku 加入电池优化白名单，并在 Shizuku 里开启 Watchdog。",
+                    LogLevel.WRN)
             }
 
             runOnUiThread {
@@ -1152,20 +1183,24 @@ class MainActivity : AppCompatActivity() {
                 binding.btnStartQueue.text = getString(R.string.btn_start_queue)
                 // 队列收工：虚拟屏还活着就继续保活（游戏还在屏上，App 一死屏就没了），否则停服务
                 if (vdOn) keepAlive(getString(R.string.keepalive_vd)) else stopKeepAlive()
+                val total = costText(queueStart)
                 when {
                     stopRequested -> {
                         setRunState("✓ 任务已停止", R.color.ok_green)
                         toast("任务已停止")
+                        log("任务已停止（已跑 ${total}）", LogLevel.WRN)
                     }
                     ok -> {
                         setRunState("✓ 全部任务完成", R.color.ok_green)
                         toast("全部任务完成")
+                        log("全部任务完成，共 ${planTasks.size} 项 · 总耗时 ${total}", LogLevel.SUCCESS)
                     }
                     else -> {
                         // 失败任务点名到运行状态行：否则"哪个任务失败了"只能去日志里翻
                         val names = failed.joinToString("、")
                         setRunState("✗ 失败：$names", R.color.err_red)
                         toast("有任务失败：$names")
+                        log("任务结束：${failed.size}/${planTasks.size} 项失败（$names）· 总耗时 $total", LogLevel.ERR)
                     }
                 }
             }
@@ -1776,14 +1811,33 @@ class MainActivity : AppCompatActivity() {
         binding.tvPaths.text = "内部: ${File(filesDir, "taskpacks")}\n外部: ${getExternalFilesDir(null)}/taskpacks"
     }
 
-    private fun log(msg: String) {
-        android.util.Log.i("MaaWH", msg)
-        val line = "${timeFmt.format(Date())} $msg"
-        val text = binding.tvLog.text.toString()
-        binding.tvLog.text = if (text.length > 8000) text.takeLast(6000) + "\n" + line
-        else text + (if (text.isEmpty()) "" else "\n") + line
-        binding.scrollLog.post { binding.scrollLog.fullScroll(View.FOCUS_DOWN) }
+    /**
+     * 写一行任务日志（对标 maameow：时间 + 级别徽标 + 正文，级别自带颜色）。
+     * 可从任意线程调用；渲染合并在 [TaskLogView] 里做。
+     */
+    private fun log(msg: String, level: LogLevel = LogLevel.INFO) {
+        android.util.Log.i("MaaWH", "${level.name} $msg")
+        val time = synchronized(timeFmt) { timeFmt.format(Date()) }
+        vdHandler.post { logView?.add(time, level, msg) }
     }
+
+    /** 引擎逐节点日志：降到 TRACE（暗色），让任务时间线在日志里醒目 */
+    private fun logEngine(msg: String) = log(msg, LogLevel.TRACE)
+
+    /** 设备内存摘要（maameow 的日志里也有这行，顺带能看到跑任务前的内存压力） */
+    private fun memoryInfoText(): String = try {
+        val mi = android.app.ActivityManager.MemoryInfo()
+        getSystemService(android.app.ActivityManager::class.java).getMemoryInfo(mi)
+        val avail = mi.availMem / 1024 / 1024
+        val total = mi.totalMem / 1024 / 1024
+        val used = if (mi.totalMem > 0) (mi.totalMem - mi.availMem) * 100 / mi.totalMem else 0
+        "设备内存：可用 ${avail}MB / 共 ${total}MB（已用 ${used}%）"
+    } catch (e: Throwable) {
+        "设备内存：查询失败"
+    }
+
+    private fun costText(startMs: Long): String =
+        String.format(Locale.getDefault(), "%.2fs", (android.os.SystemClock.elapsedRealtime() - startMs) / 1000.0)
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 

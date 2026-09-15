@@ -6,6 +6,7 @@
     <color name="text_secondary">#8E9AAB</color>
     <color name="accent">#4C9AFF</color>
     <color name="ok_green">#3DDC84</color>
+    <color name="warn_orange">#FFB454</color>
     <color name="err_red">#FF6B6B</color>
     <color name="ic_launcher_background">#2D2D2D</color>
 </resources>
