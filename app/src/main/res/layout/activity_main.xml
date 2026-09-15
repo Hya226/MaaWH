@@ -141,14 +141,32 @@
                     android:orientation="vertical"
                     android:padding="10dp">
 
+                    <!-- 标题 + 归属切换按钮（调试完把流程挪进正式任务）。
+                         按钮单独一行：面板窄（约 300px），和标题同排会把标题挤成竖排 -->
                     <TextView
                         android:id="@+id/tvEditTitle"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/edit_title"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnEditMove"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:background="@drawable/bg_card"
+                        android:maxLines="1"
+                        android:paddingStart="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="4dp"
+                        android:text="@string/move_to_tools"
+                        android:textColor="@color/accent"
+                        android:textSize="11sp"
+                        android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/tvEditHint"
@@ -280,14 +298,31 @@
                             android:orientation="vertical"
                             android:padding="10dp">
 
+                        <!-- 标题 + 归属切换按钮（调试完把流程挪回一键长草） -->
                         <TextView
                             android:id="@+id/tvToolsEditTitle"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="@string/edit_title"
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/btnToolsEditMove"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/bg_card"
+                            android:maxLines="1"
+                            android:paddingStart="8dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="4dp"
+                            android:text="@string/move_to_main"
+                            android:textColor="@color/accent"
+                            android:textSize="11sp"
+                            android:visibility="gone" />
 
                         <TextView
                             android:id="@+id/tvToolsEditHint"

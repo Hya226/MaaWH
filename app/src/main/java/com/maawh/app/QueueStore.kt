@@ -43,7 +43,14 @@ object QueueStore {
         val tools: List<SavedTask>,
         val tab: String,
         val mute: Boolean,
-        val closeAfter: Boolean
+        val closeAfter: Boolean,
+        /**
+         * 任务归属：任务名 → "main"（一键长草）/ "tools"（小工具）。
+         * 清单的 group 只决定**默认**归属；用户手动挪过位置的任务记在这里，
+         * 否则每次开机又会被 group 拉回原处（「调试完转正式任务」就靠它）。
+         * 老存档没有这个字段 → 空表 → 全部按 group 默认。
+         */
+        val home: Map<String, String> = emptyMap()
     )
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
@@ -100,7 +107,8 @@ object QueueStore {
             tools = parseList(root.optJSONArray("tools")),
             tab = root.optString("tab", "oneclick"),
             mute = root.optBoolean("mute", false),
-            closeAfter = root.optBoolean("closeAfter", false)
+            closeAfter = root.optBoolean("closeAfter", false),
+            home = toMap(root.optJSONObject("home"))
         )
     }
 
@@ -160,6 +168,7 @@ object QueueStore {
             }
         })
         put("tools", listJson(state.tools))
+        if (state.home.isNotEmpty()) put("home", mapJson(state.home))
     }
 
     private fun listJson(list: List<SavedTask>) = JSONArray().apply {
