@@ -1029,6 +1029,7 @@ class MainActivity : AppCompatActivity() {
             ShizukuShell.syncVdMode()
             if (muteEnabled) setMusicVolume(0)
             var ok = true
+            val failed = ArrayList<String>()
             for (item in planTasks) {
                 if (stopRequested) {
                     runOnUiThread { log("任务已停止：剩余队列不再执行") }
@@ -1071,8 +1072,28 @@ class MainActivity : AppCompatActivity() {
                     } else if (item.entry == "关闭游戏" || item.name == "关闭游戏") {
                         // 关闭游戏：强杀游戏进程（放在一键长草末尾，跑完即退出游戏）
                         runOnUiThread { log("关闭游戏：force-stop ${GAME_PKG}") }
-                        runCatching { ShizukuShell.execBlocking("am", "force-stop", GAME_PKG) }
-                        true
+                        val wasRunning = gameAlive()
+                        val cmdOk = runCatching {
+                            ShizukuShell.execBlocking("am", "force-stop", GAME_PKG)
+                        }.isSuccess
+                        // force-stop 是异步清理：本机游戏主进程约 1GB，实测要几秒才真正消失，
+                        // 所以轮询到 10s 再下结论，别在进程还在收尾时就报失败
+                        var alive = wasRunning
+                        var waited = 0
+                        while (cmdOk && alive && waited < 10_000) {
+                            Thread.sleep(500)
+                            waited += 500
+                            alive = gameAlive()
+                        }
+                        runOnUiThread {
+                            when {
+                                !cmdOk -> log("✗ 关闭游戏失败：force-stop 未能执行（Shizuku 是否在线？）")
+                                !wasRunning -> log("游戏本来就没在运行")
+                                alive -> log("✗ 关闭游戏：命令已执行，但 10s 后游戏进程仍在 ${gamePids()}")
+                                else -> log("✓ 游戏已退出（force-stop 后 ${waited}ms 内）")
+                            }
+                        }
+                        cmdOk && !alive
                     } else {
                         // 其余任务：按清单 option 生成 pipeline_override 后交给引擎
                         val override = manifest?.let { m ->
@@ -1096,8 +1117,11 @@ class MainActivity : AppCompatActivity() {
                     }
                 ) }
                 if (!r) {
+                    // 单个任务失败不再中断整个队列：否则末尾的收尾项（如「关闭游戏」）
+                    // 会因为前面任一任务失败而静默不执行——用户勾了却没生效，很难查
                     ok = false
-                    break
+                    failed += item.label
+                    runOnUiThread { log("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）") }
                 }
             }
             // 任务结束：勾选「游戏启动后关闭游戏声音」时，
@@ -1109,13 +1133,8 @@ class MainActivity : AppCompatActivity() {
                 runCatching { ShizukuShell.execBlocking("am", "force-stop", GAME_PKG) }
             }
             if (muteEnabled && prevVolume > 0) {
-                val gameAlive = try {
-                    ShizukuShell.execBlocking("pidof", GAME_PKG)
-                        .toString(Charsets.UTF_8).trim().isNotEmpty()
-                } catch (e: Throwable) {
-                    false
-                }
-                if (!gameAlive) setMusicVolume(prevVolume)
+                // 游戏已退出（如末尾勾了关闭游戏）才恢复音量；Shizuku 掉线时按"还在跑"处理，保持静音
+                if (!gameAlive()) setMusicVolume(prevVolume)
             }
             // 收尾体检：Shizuku 掉了要说清"不是 MaaWH 关的"并给出保活办法，
             // 否则用户只会看到下次打开时必须重新启用 Shizuku
@@ -1143,8 +1162,10 @@ class MainActivity : AppCompatActivity() {
                         toast("全部任务完成")
                     }
                     else -> {
-                        setRunState("✗ 有任务失败，见日志", R.color.err_red)
-                        toast("任务失败")
+                        // 失败任务点名到运行状态行：否则"哪个任务失败了"只能去日志里翻
+                        val names = failed.joinToString("、")
+                        setRunState("✗ 失败：$names", R.color.err_red)
+                        toast("有任务失败：$names")
                     }
                 }
             }
@@ -1358,6 +1379,24 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("打开 Shizuku 应用详情") { _, _ -> openAppDetails(SHIZUKU_PKG) }
             .setNegativeButton("关闭", null)
             .show()
+    }
+
+    /** 游戏主进程是否还在跑（精确匹配进程名；Shizuku 不可用时按"在跑"处理，避免误报"已关闭"） */
+    private fun gameAlive(): Boolean = gamePids().isNotEmpty()
+
+    /**
+     * 游戏主进程的 "pid name" 列表，空 = 没在跑。
+     * 用 ps 精确比对进程名（pidof 只认精确名、且拿不到 pid 文案；子进程 :pushservice 不算主进程）。
+     */
+    private fun gamePids(): List<String> = try {
+        ShizukuShell.execBlocking("ps", "-A", "-o", "PID,NAME")
+            .toString(Charsets.UTF_8)
+            .lineSequence()
+            .map { it.trim() }
+            .filter { it.split(Regex("\\s+")).lastOrNull() == GAME_PKG }
+            .toList()
+    } catch (e: Throwable) {
+        listOf("查询失败(Shizuku 不可用)")
     }
 
     /** 停止任务：中断当前引擎任务，剩余队列不再执行 */
