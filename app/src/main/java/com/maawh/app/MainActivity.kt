@@ -112,21 +112,19 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnRequest.setOnClickListener { requestShizukuPermission() }
         binding.btnRefresh.setOnClickListener { refreshStatus() }
-        binding.btnScreenshot.setOnClickListener { takeScreenshot() }
         binding.imageShot.setOnTouchListener { _, ev -> handleImageTouch(ev) }
         binding.btnStartQueue.setOnClickListener { startQueue() }
         binding.btnQuick.setOnClickListener { showQuickMenu() }
-        binding.btnVdRun.setOnClickListener { toggleVd() }
-        binding.btnVdFull.setOnClickListener {
-            if (!vdOn) toast("请先启动虚拟屏")
-            else startActivity(android.content.Intent(this, VdFullscreenActivity::class.java))
-        }
-        // tab 切换：一键长草 / 小工具 / 配置
+        // tab 切换：一键长草 / 小工具
         binding.btnTabOneClick.setOnClickListener { switchTab(HomeTab.ONECLICK) }
         binding.btnTabTools.setOnClickListener { switchTab(HomeTab.TOOLS) }
-        binding.btnTabConfig.setOnClickListener { switchTab(HomeTab.CONFIG) }
+        // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
+        binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
         binding.btnNewProfile.setOnClickListener { createProfile() }
         buildVdOverlay()
+
+        // 视图归位（默认队列视图）；之后不再重置，免得把用户刚点的「编辑配置」撤掉
+        setConfigMode(false)
 
         setupQueue()
         // 清单加载移至任务包释放完成之后（见下方 ensureBundledTaskpack 回调）
@@ -224,11 +222,9 @@ class MainActivity : AppCompatActivity() {
         restoreToolsQueue(saved.tools)
         muteEnabled = saved.mute
         closeAfterEnabled = saved.closeAfter
-        switchTab(when (saved.tab) {
-            "tools" -> HomeTab.TOOLS
-            "config" -> HomeTab.CONFIG
-            else -> HomeTab.ONECLICK
-        })
+        switchTab(if (saved.tab == "tools") HomeTab.TOOLS else HomeTab.ONECLICK)
+        // 旧存档里的 tab="config"（配置曾是与两个 tab 平级的分区）→ 落到一键长草的队列视图。
+        // 这里**不能**再重置配置模式：清单加载比窗口可点慢，重置会把用户启动瞬间点的「编辑配置」撤销掉
         log("已载入配置「$activeProfile」（队列 ${tasks.size} 项 · 小工具 ${toolsTasks.size} 项）")
     }
 
@@ -328,11 +324,7 @@ class MainActivity : AppCompatActivity() {
                 active = activeProfile,
                 profiles = profileData.map { (name, main) -> QueueStore.Profile(name, main) },
                 tools = toolsTasks.mapIndexed { i, it -> savedTaskOf(it, toolsEnabled.getOrElse(i) { true }) },
-                tab = when (homeTab) {
-                    HomeTab.TOOLS -> "tools"
-                    HomeTab.CONFIG -> "config"
-                    else -> "oneclick"
-                },
+                tab = if (homeTab == HomeTab.TOOLS) "tools" else "oneclick",
                 mute = muteEnabled,
                 closeAfter = closeAfterEnabled
             ))
@@ -638,8 +630,6 @@ class MainActivity : AppCompatActivity() {
         if (vdFirst) {
             log("vd=1：先建虚拟屏并投游戏，再跑 [$entry]")
             vdOn = true
-            binding.btnVdRun.text = "停止虚拟屏"
-            binding.btnVdFull.isEnabled = true
             lifecycleScope.launch(Dispatchers.IO) {
                 val r = ShizukuShell.startVirtualGame()
                 runOnUiThread { log(r) }
@@ -692,16 +682,12 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 if (alive && !vdOn) {
                     vdOn = true
-                    binding.btnVdRun.text = getString(R.string.vd_stop)
-                    binding.btnVdFull.isEnabled = true
                     VdStreamer.start()
                     vdHandler.removeCallbacks(vdUiTick)
                     vdHandler.post(vdUiTick)
                     log("虚拟屏状态已同步")
                 } else if (!alive && vdOn) {
                     vdOn = false
-                    binding.btnVdRun.text = getString(R.string.vd_run)
-                    binding.btnVdFull.isEnabled = false
                 }
             }
         }
@@ -828,23 +814,32 @@ class MainActivity : AppCompatActivity() {
     /** 待落盘的上次编辑（scheduleSave 的延迟任务） */
     private var savePending: Runnable? = null
 
-    /** 主页里的三个分区 */
-    private enum class HomeTab { ONECLICK, TOOLS, CONFIG }
+    /** 主页里的两个分区 */
+    private enum class HomeTab { ONECLICK, TOOLS }
 
     private var homeTab = HomeTab.ONECLICK
 
-    /** 一键长草 / 小工具 / 配置 分区切换 */
+    /** 一键长草里的「配置管理」子视图是否展开（对标 maameow 的编辑配置/完成） */
+    private var configMode = false
+
+    /** 一键长草 / 小工具 分区切换 */
     private fun switchTab(tab: HomeTab) {
         homeTab = tab
         binding.panelOneClick.visibility = if (tab == HomeTab.ONECLICK) View.VISIBLE else View.GONE
         binding.panelTools.visibility = if (tab == HomeTab.TOOLS) View.VISIBLE else View.GONE
-        binding.panelConfig.visibility = if (tab == HomeTab.CONFIG) View.VISIBLE else View.GONE
         binding.btnTabOneClick.isChecked = tab == HomeTab.ONECLICK
         binding.btnTabTools.isChecked = tab == HomeTab.TOOLS
-        binding.btnTabConfig.isChecked = tab == HomeTab.CONFIG
-        // 配置 tab 的勾选数要反映刚才在队列里的改动
-        if (tab == HomeTab.CONFIG) refreshProfilePanel()
         scheduleSave()
+    }
+
+    /** 一键长草：队列视图 ⇄ 配置管理 */
+    private fun setConfigMode(on: Boolean) {
+        configMode = on
+        binding.panelQueue.visibility = if (on) View.GONE else View.VISIBLE
+        binding.panelConfig.visibility = if (on) View.VISIBLE else View.GONE
+        binding.tvQueueHint.text = if (on) "当前生效：$activeProfile" else getString(R.string.hint_queue)
+        binding.btnEditConfig.text = getString(if (on) R.string.config_done else R.string.config_edit)
+        if (on) refreshProfilePanel()
     }
 
     /** 刷新某任务的列表摘要显示 */
@@ -1038,8 +1033,6 @@ class MainActivity : AppCompatActivity() {
                         // 「启动」= 先进虚拟屏把游戏投进去，再用引擎收口到主页
                         runOnUiThread {
                             vdOn = true
-                            binding.btnVdRun.text = "停止虚拟屏"
-                            binding.btnVdFull.isEnabled = true
                         }
                         val vd = ShizukuShell.startVirtualGame()
                         runOnUiThread { log(vd) }
@@ -1144,6 +1137,13 @@ class MainActivity : AppCompatActivity() {
             isChecked = closeAfterEnabled
         }
         popup.menu.add(0, 3, 0, getString(R.string.quick_closegame))
+        // 虚拟屏相关：原顶部三个按钮收进这里（预览占满上方，操作按需展开）
+        popup.menu.add(0, 6, 0, getString(if (vdOn) R.string.vd_stop else R.string.vd_run)).apply {
+            isCheckable = true
+            isChecked = vdOn
+        }
+        popup.menu.add(0, 7, 0, getString(R.string.vd_full))
+        popup.menu.add(0, 8, 0, getString(R.string.quick_shot))
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> toggleMute()
@@ -1166,6 +1166,12 @@ class MainActivity : AppCompatActivity() {
                     muteEnabled = !muteEnabled
                     scheduleSave()
                 }
+                6 -> toggleVd()
+                7 -> {
+                    if (!vdOn) toast("请先在快捷选项里启动虚拟屏")
+                    else startActivity(android.content.Intent(this, VdFullscreenActivity::class.java))
+                }
+                8 -> takeScreenshot()
             }
             true
         }
@@ -1225,8 +1231,6 @@ class MainActivity : AppCompatActivity() {
         if (running) { toast("任务运行中，请先停止"); return }
         vdOn = !vdOn
         if (vdOn) {
-            binding.btnVdRun.text = "停止虚拟屏"
-            binding.btnVdFull.isEnabled = true
             setRunState("启动虚拟屏…", R.color.accent)
             log("启动虚拟屏…")
             lifecycleScope.launch(Dispatchers.IO) {
@@ -1241,8 +1245,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         } else {
-            binding.btnVdRun.text = getString(R.string.vd_run)
-            binding.btnVdFull.isEnabled = false
             VdStreamer.stop()
             vdHandler.removeCallbacks(vdUiTick)
             lifecycleScope.launch(Dispatchers.IO) { ShizukuShell.stopVirtual() }
@@ -1461,9 +1463,9 @@ class MainActivity : AppCompatActivity() {
     // 截图/预览
     // ==================================================================
 
+    /** 抓一帧物理屏刷新预览（快捷选项里的「截图」；虚拟屏运行时用它的实时帧） */
     private fun takeScreenshot() {
         if (!shizukuReady()) { log("无法截图：Shizuku 未就绪"); refreshStatus(); return }
-        binding.btnScreenshot.isEnabled = false
         lifecycleScope.launch {
             try {
                 val bmp = ShizukuShell.screencap()
@@ -1472,8 +1474,6 @@ class MainActivity : AppCompatActivity() {
                 log("预览刷新 ${bmp.width}x${bmp.height}")
             } catch (e: Exception) {
                 log("截图失败：${e.message}")
-            } finally {
-                binding.btnScreenshot.isEnabled = true
             }
         }
     }

@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 任务列表行：左侧勾选框 + 任务名 + 右侧编辑入口（整行可单击选中编辑） -->
+<!-- 任务列表行：左侧勾选框 + 任务名 + 右侧编辑入口（整行可单击选中编辑）。
+     行高由 CheckBox 的 minHeight 决定（Material 默认 48dp），收紧到 34dp 让队列更紧凑 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_card"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingStart="6dp"
-    android:paddingTop="4dp"
-    android:paddingEnd="4dp"
-    android:paddingBottom="4dp">
+    android:paddingStart="2dp"
+    android:paddingTop="1dp"
+    android:paddingEnd="2dp"
+    android:paddingBottom="1dp">
 
     <CheckBox
         android:id="@+id/itemCheck"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:minWidth="0dp"
+        android:minHeight="34dp" />
 
     <TextView
         android:id="@+id/itemName"
@@ -28,7 +31,7 @@
         android:id="@+id/itemCount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingEnd="6dp"
+        android:paddingEnd="4dp"
         android:textColor="@color/text_secondary"
         android:textSize="12sp" />
 
@@ -36,8 +39,8 @@
         android:id="@+id/itemDel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingStart="10dp"
-        android:paddingEnd="8dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="6dp"
         android:text="✕"
         android:textColor="@color/err_red"
         android:textSize="16sp" />
