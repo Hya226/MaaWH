@@ -121,9 +121,11 @@ class MainActivity : AppCompatActivity() {
             if (!vdOn) toast("请先启动虚拟屏")
             else startActivity(android.content.Intent(this, VdFullscreenActivity::class.java))
         }
-        // tab 切换：一键长草 / 小工具
-        binding.btnTabOneClick.setOnClickListener { switchTab(oneClick = true) }
-        binding.btnTabTools.setOnClickListener { switchTab(oneClick = false) }
+        // tab 切换：一键长草 / 小工具 / 配置
+        binding.btnTabOneClick.setOnClickListener { switchTab(HomeTab.ONECLICK) }
+        binding.btnTabTools.setOnClickListener { switchTab(HomeTab.TOOLS) }
+        binding.btnTabConfig.setOnClickListener { switchTab(HomeTab.CONFIG) }
+        binding.btnNewProfile.setOnClickListener { createProfile() }
         buildVdOverlay()
 
         setupQueue()
@@ -191,9 +193,350 @@ class MainActivity : AppCompatActivity() {
             val toolCount = toolsTasks.size
             if (toolCount > 0) log("小工具任务 $toolCount 个（在「小工具」tab）")
         }
+        // 载入存档：配置列表 + 各配置内容（下面 restore 要用），并决定当前生效的配置
+        val saved = QueueStore.load(this)
+        val usable = saved != null && (m == null || saved.pack == m.name)
+        profileData.clear()
+        saved?.profiles?.forEach { profileData[it.name] = it.main }
+        if (profileData.isEmpty()) profileData[DEFAULT_PROFILE] = emptyList()
+        activeProfile = if (usable && profileData.containsKey(saved!!.active)) saved.active
+                        else profileData.keys.first()
+        // 按当前配置覆盖默认队列（勾选/参数/顺序/删除 + 快捷选项 + 所在 tab）
+        restoreSavedEdits(if (usable) saved else null)
+        refreshProfilePanel()
         adapter.notifyDataSetChanged()
         toolsAdapter.notifyDataSetChanged()
         if (tasks.isNotEmpty()) selectTask(0)
+    }
+
+    // ==================================================================
+    // 配置（多套任务队列）的恢复与保存
+    // ==================================================================
+
+    /**
+     * 用存档覆盖刚按清单构建的默认队列。
+     * 存档按任务 name 匹配：对不上的（清单已改）保持默认，不会带进过期参数。
+     */
+    private fun restoreSavedEdits(saved: QueueStore.State?) {
+        val m = manifest
+        if (saved == null || m == null || saved.pack != m.name) return
+        restoreMainQueue(profileData[activeProfile] ?: emptyList())
+        restoreToolsQueue(saved.tools)
+        muteEnabled = saved.mute
+        closeAfterEnabled = saved.closeAfter
+        switchTab(when (saved.tab) {
+            "tools" -> HomeTab.TOOLS
+            "config" -> HomeTab.CONFIG
+            else -> HomeTab.ONECLICK
+        })
+        log("已载入配置「$activeProfile」（队列 ${tasks.size} 项 · 小工具 ${toolsTasks.size} 项）")
+    }
+
+    /** 主队列：存档顺序即配置里的顺序，清单删掉的任务丢弃，清单新增的按默认追加到末尾 */
+    private fun restoreMainQueue(saved: List<QueueStore.SavedTask>) {
+        val newTasks = ArrayList<TaskItem>()
+        val newEnabled = ArrayList<Boolean>()
+        val seen = HashSet<String>()
+        for (s in saved) {
+            val idx = tasks.indexOfFirst { it.name == s.name }
+            if (idx < 0 || !seen.add(s.name)) continue
+            val item = tasks[idx]
+            applySavedSelection(item, s)
+            item.summary = summarize(item)
+            newTasks.add(item)
+            newEnabled.add(s.enabled)
+        }
+        tasks.forEachIndexed { i, item ->
+            if (seen.contains(item.name)) return@forEachIndexed
+            newTasks.add(item)
+            newEnabled.add(enabled.getOrElse(i) { true })
+        }
+        tasks.clear()
+        tasks.addAll(newTasks)
+        enabled.clear()
+        enabled.addAll(newEnabled)
+    }
+
+    /** 小工具队列：清单声明的工具任务取原对象（带 option），adb 直达条目按存档的 entry 重建 */
+    private fun restoreToolsQueue(saved: List<QueueStore.SavedTask>) {
+        val newTasks = ArrayList<TaskItem>()
+        val newEnabled = ArrayList<Boolean>()
+        val seen = HashSet<String>()
+        for (s in saved) {
+            if (!seen.add(s.name)) continue
+            val idx = toolsTasks.indexOfFirst { it.name == s.name }
+            val item = if (idx >= 0) toolsTasks[idx]
+                       else TaskItem(manifest?.name ?: "whmx", s.name, s.entry)
+            if (idx >= 0) applySavedSelection(item, s)
+            item.summary = summarize(item)
+            newTasks.add(item)
+            newEnabled.add(s.enabled)
+        }
+        toolsTasks.forEachIndexed { i, item ->
+            if (seen.contains(item.name)) return@forEachIndexed
+            newTasks.add(item)
+            newEnabled.add(toolsEnabled.getOrElse(i) { true })
+        }
+        toolsTasks.clear()
+        toolsTasks.addAll(newTasks)
+        toolsEnabled.clear()
+        toolsEnabled.addAll(newEnabled)
+    }
+
+    /** 把存档取值填回任务：只认清单声明的 option，case 名已不存在时保持清单默认 */
+    private fun applySavedSelection(item: TaskItem, s: QueueStore.SavedTask) {
+        val m = manifest ?: return
+        val def = m.tasks.firstOrNull { it.name == item.name } ?: return
+        for (key in def.options) {
+            val o = m.option(key) ?: continue
+            if (o.type == "input") {
+                for (inp in o.inputs) {
+                    s.inputOf[inp.name]?.let { item.selection.inputOf[inp.name] = it }
+                }
+            } else {
+                val v = s.caseOf[key] ?: continue
+                if (o.cases.any { it.name == v }) item.selection.caseOf[key] = v
+            }
+        }
+    }
+
+    private fun savedTaskOf(item: TaskItem, on: Boolean) = QueueStore.SavedTask(
+        name = item.name,
+        entry = item.entry,
+        enabled = on,
+        caseOf = HashMap(item.selection.caseOf),
+        inputOf = HashMap(item.selection.inputOf)
+    )
+
+    /** 当前编辑中的主队列的存档形态 */
+    private fun liveMainSaved(): List<QueueStore.SavedTask> =
+        tasks.mapIndexed { i, it -> savedTaskOf(it, enabled.getOrElse(i) { true }) }
+
+    /**
+     * 写盘。
+     * flushLive = true：把当前编辑中的队列写进生效配置（常规保存 / 切配置前）；
+     * false：只写配置表本身——刚新建或复制出配置、队列还没按它重建时用，
+     *        否则会把上一个配置的队列内容误写进新配置。
+     */
+    private fun persist(flushLive: Boolean) {
+        val m = manifest ?: return   // 清单还没加载完，别把空队列写进存档
+        if (flushLive) profileData[activeProfile] = liveMainSaved()
+        try {
+            QueueStore.save(this, QueueStore.State(
+                pack = m.name,
+                manifestVersion = m.version,
+                active = activeProfile,
+                profiles = profileData.map { (name, main) -> QueueStore.Profile(name, main) },
+                tools = toolsTasks.mapIndexed { i, it -> savedTaskOf(it, toolsEnabled.getOrElse(i) { true }) },
+                tab = when (homeTab) {
+                    HomeTab.TOOLS -> "tools"
+                    HomeTab.CONFIG -> "config"
+                    else -> "oneclick"
+                },
+                mute = muteEnabled,
+                closeAfter = closeAfterEnabled
+            ))
+        } catch (e: Throwable) {
+            log("保存配置失败: $e")
+        }
+    }
+
+    /** 编辑变更后延迟落盘（合并连续输入/拖动），队列重建与 onPause 时立即写 */
+    private fun scheduleSave() {
+        savePending?.let { vdHandler.removeCallbacks(it) }
+        val r = Runnable {
+            savePending = null
+            saveNow()
+        }
+        savePending = r
+        vdHandler.postDelayed(r, 400)
+    }
+
+    private fun saveNow() {
+        savePending?.let { vdHandler.removeCallbacks(it) }
+        savePending = null
+        persist(flushLive = true)
+    }
+
+    // ==================================================================
+    // 配置管理（新建 / 改名 / 复制 / 删除 / 切换生效）
+    // ==================================================================
+
+    /** 已生成的配置名：名字 → 该配置的主队列内容（生效配置的内容可能滞后，以 tasks 为准） */
+    private val profileData = LinkedHashMap<String, List<QueueStore.SavedTask>>()
+    private var activeProfile = ""
+
+    /**
+     * 配置表改动 → 落盘 → 重建队列。
+     * `loadManifestIntoQueue()` 是「以存档为准」重建的，所以配置表必须**先落盘**再重建，
+     * 否则内存里的改动会被磁盘上的旧存档盖回去（新建/切换会被静默撤销）。
+     */
+    private fun applyProfileTableChange(change: () -> Unit) {
+        saveNow()                  // 当前队列的编辑先写回旧生效配置
+        change()                   // 改内存里的配置表（含 activeProfile）
+        persist(flushLive = false) // 配置表落盘，后面重建才读得到
+        loadManifestIntoQueue()    // 按新生效配置重建队列（内部会重画配置列表）
+        saveNow()                  // 把重建出来的队列写进新生效配置
+    }
+
+    /** 一个还没被占用的配置名，如「配置-2」 */
+    private fun uniqueProfileName(base: String): String {
+        var i = 1
+        while (profileData.containsKey("$base-$i")) i++
+        return "$base-$i"
+    }
+
+    /** 切换生效配置 */
+    private fun activateProfile(name: String) {
+        if (name == activeProfile || !profileData.containsKey(name)) return
+        applyProfileTableChange { activeProfile = name }
+        log("已切换到配置「$name」")
+        toast("配置：$name")
+    }
+
+    /** 新建配置：内容留空 = 全部任务取清单默认值（要保留当前队列用「复制」） */
+    private fun createProfile() {
+        val name = uniqueProfileName("配置")
+        applyProfileTableChange {
+            profileData[name] = emptyList()
+            activeProfile = name
+        }
+        log("已新建配置「$name」（全默认队列）")
+        toast("已新建：$name")
+    }
+
+    /** 复制配置：内容照搬源配置，插在源配置后面别打乱列表顺序 */
+    private fun duplicateProfile(src: String) {
+        if (!profileData.containsKey(src)) return
+        val name = uniqueProfileName(src)
+        applyProfileTableChange {
+            val rebuilt = LinkedHashMap<String, List<QueueStore.SavedTask>>()
+            profileData.forEach { (k, v) ->
+                rebuilt[k] = v
+                if (k == src) rebuilt[name] = v
+            }
+            profileData.clear()
+            profileData.putAll(rebuilt)
+            activeProfile = name
+        }
+        log("已复制配置「$src」→「$name」")
+        toast("已复制：$name")
+    }
+
+    /** 重命名配置（不改内容，保持列表顺序） */
+    private fun renameProfile(name: String) {
+        val et = EditText(this).apply {
+            setText(name)
+            setSelection(name.length)
+            setSingleLine()
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.config_rename)
+            .setView(et)
+            .setPositiveButton("确定") { _, _ ->
+                val nn = et.text.toString().trim()
+                when {
+                    nn.isEmpty() -> toast("名称不能为空")
+                    nn == name -> {}
+                    profileData.containsKey(nn) -> toast("已有同名配置：$nn")
+                    else -> {
+                        saveNow()
+                        val rebuilt = LinkedHashMap<String, List<QueueStore.SavedTask>>()
+                        profileData.forEach { (k, v) -> rebuilt[if (k == name) nn else k] = v }
+                        profileData.clear()
+                        profileData.putAll(rebuilt)
+                        if (activeProfile == name) activeProfile = nn
+                        refreshProfilePanel()
+                        saveNow()
+                        log("配置「$name」已改名为「$nn」")
+                    }
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    /** 删除配置；删的是生效配置时自动落到第一个，至少留一个 */
+    private fun deleteProfile(name: String) {
+        if (!profileData.containsKey(name)) return
+        if (profileData.size <= 1) {
+            toast("至少保留一个配置")
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.config_delete)
+            .setMessage("删除配置「$name」？该配置里的任务编辑会一起丢掉。")
+            .setPositiveButton("删除") { _, _ ->
+                applyProfileTableChange {
+                    profileData.remove(name)
+                    if (activeProfile == name) activeProfile = profileData.keys.first()
+                }
+                log("已删除配置「$name」")
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    /** 重画「配置」tab 里的配置列表（单选=生效 / ✎改名 / ⧉复制 / ✕删除） */
+    private fun refreshProfilePanel() {
+        val box = binding.layoutProfiles
+        box.removeAllViews()
+        if (manifest == null) {
+            box.addView(hintText(getString(R.string.config_no_manifest)))
+            return
+        }
+        box.addView(hintText(getString(R.string.config_hint)))
+        for ((name, main) in profileData) {
+            val active = name == activeProfile
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = getDrawable(R.drawable.bg_card)
+                setPadding(dp(10), dp(10), dp(8), dp(10))
+                val lp = LinearLayout.LayoutParams(match(), wrap())
+                lp.topMargin = dp(6)
+                layoutParams = lp
+            }
+            val label = TextView(this).apply {
+                // 生效配置以内存里的队列为准（正编辑的那个），其余显示存档里的勾选数
+                val on = if (active) enabled.count { it } else main.count { it.enabled }
+                val total = if (active) tasks.size else main.size
+                text = "${if (active) "◉" else "○"}  $name"
+                append("\n$on/$total 项勾选${if (active) " · 生效中" else ""}")
+                textSize = 13f
+                setTextColor(getColorCompat(if (active) R.color.accent else R.color.text_primary))
+                setPadding(0, 0, dp(6), 0)
+                layoutParams = LinearLayout.LayoutParams(0, wrap(), 1f)
+                isClickable = true
+                setOnClickListener {
+                    // 生效配置 → 回队列改勾选/参数；其它 → 切换生效
+                    if (active) switchTab(HomeTab.ONECLICK) else activateProfile(name)
+                }
+            }
+            row.addView(label)
+            row.addView(glyphButton("✎", R.string.config_rename) { renameProfile(name) })
+            row.addView(glyphButton("⧉", R.string.config_duplicate) { duplicateProfile(name) })
+            row.addView(glyphButton("✕", R.string.config_delete) { deleteProfile(name) })
+            box.addView(row)
+        }
+    }
+
+    private fun hintText(s: String) = TextView(this).apply {
+        text = s
+        textSize = 11f
+        setTextColor(getColorCompat(R.color.text_secondary))
+        setPadding(0, dp(6), 0, dp(2))
+    }
+
+    private fun glyphButton(glyph: String, labelRes: Int, onClick: () -> Unit) = TextView(this).apply {
+        text = glyph
+        textSize = 17f
+        setTextColor(getColorCompat(R.color.text_secondary))
+        setPadding(dp(11), dp(4), dp(11), dp(4))
+        contentDescription = getString(labelRes)
+        isClickable = true
+        setOnClickListener { onClick() }
     }
 
     /** 计算任务参数摘要（显示在列表右侧），如「次数 3」「办公室物资购买 开」 */
@@ -290,7 +633,7 @@ class MainActivity : AppCompatActivity() {
         // 工具入口：只进小工具队列并切到小工具 tab，绝不改动一键长草主队列
         val toolItem = TaskItem(pack, entry, entry)
         addToolTask(toolItem)
-        switchTab(oneClick = false)
+        switchTab(HomeTab.TOOLS)
         log("工具入口: [$entry] 已加入小工具队列")
         if (vdFirst) {
             log("vd=1：先建虚拟屏并投游戏，再跑 [$entry]")
@@ -336,6 +679,12 @@ class MainActivity : AppCompatActivity() {
         syncVdUi()
     }
 
+    override fun onPause() {
+        super.onPause()
+        // 切后台可能被 LMKD 直接回收，编辑状态在这里立即落盘，不等 400ms 防抖
+        saveNow()
+    }
+
     /** 按服务端虚拟屏状态同步 UI：避免 vdOn 标志丢失导致预览黑屏/点击不注入 */
     private fun syncVdUi() {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -366,7 +715,12 @@ class MainActivity : AppCompatActivity() {
         adapter = TaskQueueAdapter(
             tasks,
             enabled,
-            { i, checked -> if (i < enabled.size) enabled[i] = checked },
+            { i, checked ->
+                if (i < enabled.size) {
+                    enabled[i] = checked
+                    scheduleSave()
+                }
+            },
             { i -> deleteTask(i) },
             { i -> selectTask(i) }
         )
@@ -386,6 +740,7 @@ class MainActivity : AppCompatActivity() {
                 adapter.onMove(from, to)
                 val e = enabled.removeAt(from)
                 enabled.add(to, e)
+                scheduleSave()
                 return true
             }
 
@@ -397,7 +752,12 @@ class MainActivity : AppCompatActivity() {
         toolsAdapter = TaskQueueAdapter(
             toolsTasks,
             toolsEnabled,
-            { i, checked -> if (i < toolsEnabled.size) toolsEnabled[i] = checked },
+            { i, checked ->
+                if (i < toolsEnabled.size) {
+                    toolsEnabled[i] = checked
+                    scheduleSave()
+                }
+            },
             { i -> deleteToolTask(i) },
             { i -> selectToolTask(i) }
         )
@@ -417,6 +777,7 @@ class MainActivity : AppCompatActivity() {
         if (i < enabled.size) enabled.removeAt(i)
         adapter.notifyItemRemoved(i)
         log("已删除: ${removed.label}")
+        scheduleSave()
     }
 
     // ==================================================================
@@ -437,6 +798,7 @@ class MainActivity : AppCompatActivity() {
             toolsEnabled.removeAt(0)
         }
         toolsAdapter.notifyDataSetChanged()
+        scheduleSave()
     }
 
     private fun deleteToolTask(i: Int) {
@@ -445,6 +807,7 @@ class MainActivity : AppCompatActivity() {
         if (i < toolsEnabled.size) toolsEnabled.removeAt(i)
         toolsAdapter.notifyItemRemoved(i)
         log("已从工具队列删除: ${removed.label}")
+        scheduleSave()
     }
 
     private fun selectToolTask(i: Int) {
@@ -462,12 +825,26 @@ class MainActivity : AppCompatActivity() {
 
     private var editingIndex = -1
 
-    /** 一键长草 / 小工具 分区切换 */
-    private fun switchTab(oneClick: Boolean) {
-        binding.panelOneClick.visibility = if (oneClick) View.VISIBLE else View.GONE
-        binding.panelTools.visibility = if (oneClick) View.GONE else View.VISIBLE
-        binding.btnTabOneClick.isChecked = oneClick
-        binding.btnTabTools.isChecked = !oneClick
+    /** 待落盘的上次编辑（scheduleSave 的延迟任务） */
+    private var savePending: Runnable? = null
+
+    /** 主页里的三个分区 */
+    private enum class HomeTab { ONECLICK, TOOLS, CONFIG }
+
+    private var homeTab = HomeTab.ONECLICK
+
+    /** 一键长草 / 小工具 / 配置 分区切换 */
+    private fun switchTab(tab: HomeTab) {
+        homeTab = tab
+        binding.panelOneClick.visibility = if (tab == HomeTab.ONECLICK) View.VISIBLE else View.GONE
+        binding.panelTools.visibility = if (tab == HomeTab.TOOLS) View.VISIBLE else View.GONE
+        binding.panelConfig.visibility = if (tab == HomeTab.CONFIG) View.VISIBLE else View.GONE
+        binding.btnTabOneClick.isChecked = tab == HomeTab.ONECLICK
+        binding.btnTabTools.isChecked = tab == HomeTab.TOOLS
+        binding.btnTabConfig.isChecked = tab == HomeTab.CONFIG
+        // 配置 tab 的勾选数要反映刚才在队列里的改动
+        if (tab == HomeTab.CONFIG) refreshProfilePanel()
+        scheduleSave()
     }
 
     /** 刷新某任务的列表摘要显示 */
@@ -525,6 +902,7 @@ class MainActivity : AppCompatActivity() {
                         item.selection.caseOf[o.key] = it.name
                         item.summary = summarize(item)
                         refreshRow(item)
+                        scheduleSave()
                     }
                 }
                 override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
@@ -548,6 +926,7 @@ class MainActivity : AppCompatActivity() {
                 item.selection.caseOf[o.key] = if (checked) "Yes" else "No"
                 item.summary = summarize(item)
                 refreshRow(item)
+                scheduleSave()
             }
         }
         parent.addView(cb)
@@ -580,6 +959,7 @@ class MainActivity : AppCompatActivity() {
                         val bad = inp.verify?.let { v.isNotEmpty() && !Regex(it).matches(v) } ?: false
                         error = if (bad) inp.patternMsg ?: "输入不合法" else null
                         refreshRow(item)
+                        scheduleSave()
                     }
                     override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
                     override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
@@ -600,8 +980,8 @@ class MainActivity : AppCompatActivity() {
             stopNow()
             return
         }
-        // 按当前 tab 决定跑哪个队列：小工具 tab 跑工具队列，否则跑一键长草主队列
-        val onTools = binding.panelTools.visibility == View.VISIBLE
+        // 按当前 tab 决定跑哪个队列：小工具 tab 跑工具队列，其余（含配置 tab）跑生效配置的主队列
+        val onTools = homeTab == HomeTab.TOOLS
         val plan = if (onTools) {
             toolsTasks.indices.filter { toolsEnabled.getOrElse(it) { false } }.map { toolsTasks[it] }
         } else {
@@ -616,6 +996,7 @@ class MainActivity : AppCompatActivity() {
             refreshStatus()
             return
         }
+        log("运行配置「$activeProfile」：${plan.joinToString(" → ") { it.label }}")
         runQueue(plan)
     }
 
@@ -766,7 +1147,10 @@ class MainActivity : AppCompatActivity() {
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 1 -> toggleMute()
-                2 -> closeAfterEnabled = !closeAfterEnabled
+                2 -> {
+                    closeAfterEnabled = !closeAfterEnabled
+                    scheduleSave()
+                }
                 3 -> {
                     toast("正在关闭游戏…")
                     log("快捷操作：关闭游戏")
@@ -778,7 +1162,10 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-                4 -> muteEnabled = !muteEnabled
+                4 -> {
+                    muteEnabled = !muteEnabled
+                    scheduleSave()
+                }
             }
             true
         }
@@ -1214,6 +1601,8 @@ class MainActivity : AppCompatActivity() {
         private const val CASE_NOT_GRANTED = 3
         /** 《物华弥新》游戏包名 */
         private const val GAME_PKG = "com.cipaishe.wuhua.bilibili"
+        /** 全新安装时的第一个配置名（对标 maameow 的「日常」） */
+        private const val DEFAULT_PROFILE = "日常"
         private const val MATCH_PARENT = -1
     }
 }

@@ -223,7 +223,11 @@ object TaskPack {
             when (opt.type) {
                 "select", "switch" -> {
                     val chosen = sel.get(key, opt.defaultCase)
-                    val case = opt.cases.firstOrNull { it.name == chosen } ?: continue
+                    // 用户选过/存档恢复的 case 名可能已随任务包升级失效：
+                    // 回退到 default_case，否则该 option 的参数会静默丢失
+                    val case = opt.cases.firstOrNull { it.name == chosen }
+                        ?: opt.cases.firstOrNull { it.name == opt.defaultCase }
+                        ?: continue
                     case.override?.let { deepMerge(merged, it) }
                 }
                 "input" -> {
