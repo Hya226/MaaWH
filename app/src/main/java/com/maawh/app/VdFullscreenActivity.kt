@@ -121,8 +121,8 @@ class VdFullscreenActivity : AppCompatActivity() {
     private fun vdDims(): Pair<Int, Int> {
         val bmp = VdShared.frame
         return Pair(
-            if (bmp != null) (bmp.width * 2) else ShizukuShell.VD_W,
-            if (bmp != null) (bmp.height * 2) else ShizukuShell.VD_H
+            if (bmp != null) (bmp.width * 2) else MaaConst.VD_W,
+            if (bmp != null) (bmp.height * 2) else MaaConst.VD_H
         )
     }
 

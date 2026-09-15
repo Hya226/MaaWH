@@ -129,9 +129,6 @@ class MaaCustomControllerCallbacks : Structure() {
  */
 object MaaBridge {
 
-    private const val STATUS_SUCCEEDED = 3000
-    private const val STATUS_FAILED = 4000
-
     private val loadLock = Any()
     private var libsLoaded = false
 
@@ -231,7 +228,7 @@ object MaaBridge {
             res = lib.MaaResourceCreate()
             val resource = checkNotNull(res) { "MaaResourceCreate 失败" }
             val id = lib.MaaResourcePostBundle(resource, bundleDir.absolutePath)
-            if (lib.MaaResourceWait(resource, id) != STATUS_SUCCEEDED) return null
+            if (lib.MaaResourceWait(resource, id) != MaaConst.STATUS_SUCCEEDED) return null
             val list = lib.MaaStringListBufferCreate()
             try {
                 if (lib.MaaResourceGetNodeList(resource, list).toInt() == 0) return null
@@ -292,7 +289,7 @@ object MaaBridge {
             // 打开引擎日志，便于诊断
             logDir.mkdirs()
             runCatching {
-                lib.MaaGlobalSetOption(1, logDir.absolutePath, logDir.absolutePath.length.toLong())
+                lib.MaaGlobalSetOption(MaaConst.OPT_GLOBAL_LOG_DIR, logDir.absolutePath, logDir.absolutePath.length.toLong())
             }
             onLog("引擎日志目录: ${logDir.absolutePath}")
 
@@ -302,7 +299,7 @@ object MaaBridge {
             val resId = lib.MaaResourcePostBundle(resource, bundleDir.absolutePath)
             val resStatus = lib.MaaResourceWait(resource, resId)
             onLog("资源加载: status=$resStatus ${statusText(resStatus)}")
-            if (resStatus != STATUS_SUCCEEDED) return false
+            if (resStatus != MaaConst.STATUS_SUCCEEDED) return false
 
             // 2) 控制器：自定义控制器 -> Shizuku
             callbacks = buildCallbacks(onLog)
@@ -312,12 +309,12 @@ object MaaBridge {
             // 关闭引擎的截图缩放/旋转归一化，按原始分辨率识别（模板按原分辨率制作）
             val rawValue = Memory(4)
             rawValue.setInt(0, 1)
-            lib.MaaControllerSetOption(controller, 3 /* ScreenshotUseRawSize */, rawValue, 4)
+            lib.MaaControllerSetOption(controller, MaaConst.OPT_CTRL_SCREENSHOT_USE_RAW_SIZE /* ScreenshotUseRawSize */, rawValue, 4)
 
             val connId = lib.MaaControllerPostConnection(controller)
             val connStatus = lib.MaaControllerWait(controller, connId)
             onLog("控制器连接: status=$connStatus ${statusText(connStatus)}")
-            if (connStatus != STATUS_SUCCEEDED || lib.MaaControllerConnected(controller).toInt() == 0) {
+            if (connStatus != MaaConst.STATUS_SUCCEEDED || lib.MaaControllerConnected(controller).toInt() == 0) {
                 onLog("控制器连接失败")
                 return false
             }
@@ -340,7 +337,7 @@ object MaaBridge {
                 // 真正空闲再销毁（固定 sleep 缓冲不够，9-10 实测仍 FORTIFY abort）
                 waitEngineIdle(lib, taskerHandle, onLog)
             }
-            return taskStatus == STATUS_SUCCEEDED
+            return taskStatus == MaaConst.STATUS_SUCCEEDED
         } catch (e: Throwable) {
             onLog("引擎异常: $e")
             tasker?.let { t ->
@@ -357,10 +354,10 @@ object MaaBridge {
     }
 
     private fun statusText(s: Int): String = when (s) {
-        STATUS_SUCCEEDED -> "成功"
-        STATUS_FAILED -> "失败"
-        1000 -> "等待中"
-        2000 -> "运行中"
+        MaaConst.STATUS_SUCCEEDED -> "成功"
+        MaaConst.STATUS_FAILED -> "失败"
+        MaaConst.STATUS_PENDING -> "等待中"
+        MaaConst.STATUS_RUNNING -> "运行中"
         else -> "($s)"
     }
 

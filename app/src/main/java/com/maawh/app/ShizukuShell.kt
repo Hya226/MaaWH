@@ -29,9 +29,17 @@ import kotlin.concurrent.thread
  */
 object ShizukuShell {
 
-    /** 虚拟屏基准尺寸：必须与 whmx 模板/坐标基准帧(1280×720)一致（标准 16:9 720p） */
-    const val VD_W = 1280
-    const val VD_H = 720
+    /**
+     * 错误上报钩子：App 侧挂到日志页（ShizukuShell 不依赖 UI）。
+     * 此前一批 catch (Throwable) {} 把真实故障吞成"没反应"，这里分级上报：
+     * 用户主动操作失败 → WRN；高频路径（引擎截图/手势 MOVE）→ TRACE 防刷屏。
+     */
+    @Volatile
+    var errorHook: ((LogLevel, String) -> Unit)? = null
+
+    private fun report(level: LogLevel, msg: String) {
+        try { errorHook?.invoke(level, msg) } catch (ignored: Throwable) {}
+    }
 
     private var appContext: Context? = null
 
@@ -91,6 +99,7 @@ object ShizukuShell {
         vdMode = try {
             ensureService().isVdAlive()
         } catch (e: Throwable) {
+            report(LogLevel.WRN, "虚拟屏状态同步失败（Shizuku 未就绪？）: ${e.message}")
             false
         }
         return vdMode
@@ -100,6 +109,8 @@ object ShizukuShell {
     fun grabVirtualFrame(): ByteArray = try {
         ensureService().grabVirtualFrame() ?: ByteArray(0)
     } catch (e: Throwable) {
+        // 引擎截图每轮都走这里，Shizuku 掉线时会高频触发 → TRACE 防刷屏
+        report(LogLevel.TRACE, "抓虚拟屏帧失败: ${e.message}")
         ByteArray(0)
     }
 
@@ -107,6 +118,7 @@ object ShizukuShell {
         ensureService().stopVirtual()
         vdMode = false
     } catch (e: Throwable) {
+        report(LogLevel.WRN, "停止虚拟屏失败: $e")
     }
 
     /** 虚拟屏是否存活（服务端权威状态） */
@@ -127,24 +139,28 @@ object ShizukuShell {
     fun setMusicVolume(index: Int) = try {
         ensureService().setStreamVolume(android.media.AudioManager.STREAM_MUSIC, index)
     } catch (e: Throwable) {
+        report(LogLevel.WRN, "设置音量失败: ${e.message}")
     }
 
     /** 流式触摸注入（实时手势）：按下 */
     fun touchDown(x: Int, y: Int) = try {
         ensureService().touchDown(x, y)
     } catch (e: Throwable) {
+        report(LogLevel.WRN, "触摸注入(按下)失败: ${e.message}")
     }
 
-    /** 流式触摸注入（实时手势）：移动 */
+    /** 流式触摸注入（实时手势）：移动（手势中逐点调用，失败只打 TRACE 防刷屏） */
     fun touchMove(x: Int, y: Int) = try {
         ensureService().touchMove(x, y)
     } catch (e: Throwable) {
+        report(LogLevel.TRACE, "触摸注入(移动)失败: ${e.message}")
     }
 
     /** 流式触摸注入（实时手势）：抬起 */
     fun touchUp(x: Int, y: Int) = try {
         ensureService().touchUp(x, y)
     } catch (e: Throwable) {
+        report(LogLevel.TRACE, "触摸注入(抬起)失败: ${e.message}")
     }
 
     /** 向虚拟屏注入点击（原生分辨率坐标） */

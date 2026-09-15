@@ -320,14 +320,13 @@ public class ShellUserService extends IUserService.Stub {
     private volatile android.media.ImageReader mReader;
     private volatile int mVdId = -1;
 
-    // M4-④：虚拟屏必须与 whmx 模板/坐标基准帧同尺寸(1280x720 标准 16:9)，
-    // 否则游戏画面布局(模板/固定坐标)与校准不一致，识别失效。
-    private static final int VD_W = 1280;
-    private static final int VD_H = 720;
-    private static final int VD_DPI = 320;
+    // 常量统一收口在 MaaConst（同 APK 同 classloader，Java 可直接引用其静态字段），
+    // 别在这里再写一份数值——虚拟屏尺寸改了模板基准就废，游戏包名两份不一致会查半天
+    private static final int VD_W = MaaConst.VD_W;
+    private static final int VD_H = MaaConst.VD_H;
+    private static final int VD_DPI = MaaConst.VD_DPI;
 
-    private static final String GAME_PKG = "com.cipaishe.wuhua.bilibili";
-    private static final String GAME_ACT = "com.cipaishe.wuhua.bilibili/.activity.ONESDKLaunchActivity";
+    private static final String GAME_PKG = MaaConst.GAME_PKG;
 
     @Override
     public synchronized String startVirtualGame() {
@@ -392,7 +391,7 @@ public class ShellUserService extends IUserService.Stub {
         try {
             runCmd("/system/bin/am", "force-stop", GAME_PKG);
             android.content.Intent intent = new android.content.Intent();
-            intent.setClassName(GAME_PKG, "com.cipaishe.wuhua.bilibili.activity.ONESDKLaunchActivity");
+            intent.setClassName(GAME_PKG, MaaConst.GAME_ACT_CLS);
             // EXCLUDE_FROM_RECENTS：游戏只能活在虚拟屏里，最近任务(后台)不显示它（仿 MAA-Meow）
             intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
                 | android.content.Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
