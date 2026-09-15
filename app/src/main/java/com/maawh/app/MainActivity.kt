@@ -63,14 +63,16 @@ class MainActivity : AppCompatActivity() {
     /** 当前任务包清单（interface.json）；加载失败为 null，此时队列为空并提示 */
     private var manifest: TaskPack.Manifest? = null
 
-    private var running = false
     @Volatile
     private var muteEnabled = false
     @Volatile
     private var closeAfterEnabled = false
     private var vdOn = false
-    @Volatile
-    private var stopRequested = false
+
+    /** 当前队列执行器（null = 本此 App 启动还没跑过队列）；运行状态以它为准 */
+    private var queueRunner: QueueRunner? = null
+    private val isTaskRunning: Boolean get() = queueRunner?.running == true
+
     private val vdHandler = Handler(Looper.getMainLooper())
     private lateinit var vdOverlay: FrameLayout
     private lateinit var vdFullImg: ImageView
@@ -91,6 +93,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         ShizukuShell.init(applicationContext)
+        // ShizukuShell 内部吞掉的故障（停虚拟屏失败、注入失败等）上报到日志页
+        ShizukuShell.errorHook = { level, msg -> log(msg, level) }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // 任务日志：时间 + 级别徽标 + 颜色（TRACE 灰 / INFO 蓝 / SUCCESS 绿 / WRN 橙 / ERR 红）
@@ -766,7 +770,7 @@ class MainActivity : AppCompatActivity() {
         queuedStart?.let { binding.btnStartQueue.removeCallbacks(it) }
         queuedStart = Runnable {
             when {
-                running -> {}
+                isTaskRunning -> {}
                 !shizukuRunning() -> {
                     log("Shizuku 未运行，任务未执行：请启动 Shizuku 后重新触发", LogLevel.ERR)
                     refreshStatus()
@@ -811,7 +815,7 @@ class MainActivity : AppCompatActivity() {
                     log("虚拟屏状态已同步")
                 } else if (!alive && vdOn) {
                     vdOn = false
-                    if (!running) stopKeepAlive()
+                    if (!isTaskRunning) stopKeepAlive()
                 }
             }
         }
@@ -1132,7 +1136,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startQueue() {
         // 运行中再点本按钮 = 停止任务（按钮文字已切换为「停止任务」）
-        if (running) {
+        if (isTaskRunning) {
             stopNow()
             return
         }
@@ -1156,16 +1160,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun runQueue(planTasks: List<TaskItem>) {
-        // 队列抬头（对标 maameow 的「开始执行任务，共 N 项」+ 设备内存）
-        log("开始执行任务，共 ${planTasks.size} 项：${planTasks.joinToString(" → ") { it.label }}")
-        log(memoryInfoText())
-        val queueStart = android.os.SystemClock.elapsedRealtime()
-        running = true
-        stopRequested = false
-        MaaBridge.clearStop()
-        binding.btnStartQueue.text = getString(R.string.quick_stop)
-        setRunState("任务运行中…", R.color.accent)
-
         // Android 16 FUSE 下，adb 以 shell 身份推入外部目录的文件 App 自身无权读取，
         // MaaFramework 原生层 stat 失败会抛未捕获异常直接 abort 整个进程；
         // 故优先用内部 taskpacks（adb 可经 run-as 铺内），不存在时回退外部目录
@@ -1173,181 +1167,38 @@ class MainActivity : AppCompatActivity() {
         if (whmxDir == null) {
             log("任务包缺失：files/taskpacks/whmx", LogLevel.ERR)
             toast("未找到任务包 whmx，详见日志")
-            running = false
-            binding.btnStartQueue.text = getString(R.string.btn_start_queue)
             return
         }
-        val logDir = File(filesDir, "maa_logs")
-        val prevVolume = if (muteEnabled) getMusicVolume() else -1
-
         // 保活：任务期间挂前台服务（通知权限顺手要一下，通知可见性影响系统对待方式）
         requestNotifPermission()
-        keepAlive(getString(R.string.keepalive_running))
-
+        queueRunner = QueueRunner(
+            context = applicationContext,
+            whmxDir = whmxDir,
+            logDir = File(filesDir, "maa_logs"),
+            manifest = manifest,
+            cb = object : QueueRunner.Callbacks {
+                override fun onLog(msg: String, level: LogLevel) = log(msg, level)
+                override fun onRunState(text: String, colorRes: Int) = setRunState(text, colorRes)
+                override fun onQueueStarted() {
+                    binding.btnStartQueue.text = getString(R.string.quick_stop)
+                }
+                override fun onQueueFinished() {
+                    binding.btnStartQueue.isEnabled = true
+                    binding.btnStartQueue.text = getString(R.string.btn_start_queue)
+                }
+                override fun onVdFlagSet() { vdOn = true }
+                override fun onGameEnteredVd() {
+                    VdStreamer.start()
+                    vdHandler.removeCallbacks(vdUiTick)
+                    vdHandler.post(vdUiTick)
+                    setRunState("游戏已进虚拟屏，收口中…", R.color.accent)
+                }
+                override fun isVdOn() = vdOn
+                override fun onToast(msg: String) = toast(msg)
+            }
+        )
         lifecycleScope.launch(Dispatchers.IO) {
-            // M4-④a：以服务端权威状态同步虚拟屏路由(截图/点击目标屏)
-            ShizukuShell.syncVdMode()
-            if (muteEnabled) setMusicVolume(0)
-            var ok = true
-            val failed = ArrayList<String>()
-            // 跟读引擎日志：把"识别失败 / 超时 / 节点失败 / 包校验失败"按性质打进日志区
-            val stopTail = startEngineLogTail(whmxDir)
-            try {
-            for (item in planTasks) {
-                if (stopRequested) {
-                    runOnUiThread { log("任务已停止：剩余队列不再执行") }
-                    break
-                }
-                runOnUiThread {
-                    setRunState("执行中: ${item.label}", R.color.accent)
-                    keepAlive("任务运行中：${item.label}")
-                }
-                log("开始任务：${item.label}", LogLevel.TRACE)
-                val taskStart = android.os.SystemClock.elapsedRealtime()
-                val r = try {
-                    if (item.entry == "启动" || item.name == "启动") {
-                        // 「启动」= 先进虚拟屏把游戏投进去，再用引擎收口到主页
-                        runOnUiThread {
-                            vdOn = true
-                        }
-                        val vd = ShizukuShell.startVirtualGame()
-                        runOnUiThread { log(vd) }
-                        runOnUiThread {
-                            VdStreamer.start()
-                            vdHandler.removeCallbacks(vdUiTick)
-                            vdHandler.post(vdUiTick)
-                            setRunState("游戏已进虚拟屏，收口中…", R.color.accent)
-                        }
-                        if (ShizukuShell.syncVdMode()) {
-                            val rr = MaaBridge.runTask(whmxDir, item.entry, logDir, "{}") { msg ->
-                                runOnUiThread { logEngine(msg) }
-                            }
-                            runOnUiThread {
-                                setRunState(
-                                    if (rr) "游戏已进入主页(虚拟屏)" else "✗ 到主页失败",
-                                    if (rr) R.color.ok_green else R.color.err_red
-                                )
-                            }
-                            rr
-                        } else {
-                            runOnUiThread { log("虚拟屏未就绪，跳过收口") }
-                            true
-                        }
-                    } else if (item.entry == "关闭游戏" || item.name == "关闭游戏") {
-                        // 关闭游戏：强杀游戏进程（放在一键长草末尾，跑完即退出游戏）
-                        runOnUiThread { log("关闭游戏：force-stop ${GAME_PKG}") }
-                        val wasRunning = gameAlive()
-                        val cmdOk = runCatching {
-                            ShizukuShell.execBlocking("am", "force-stop", GAME_PKG)
-                        }.isSuccess
-                        // force-stop 是异步清理：本机游戏主进程约 1GB，实测要几秒才真正消失，
-                        // 所以轮询到 10s 再下结论，别在进程还在收尾时就报失败
-                        var alive = wasRunning
-                        var waited = 0
-                        while (cmdOk && alive && waited < 10_000) {
-                            Thread.sleep(500)
-                            waited += 500
-                            alive = gameAlive()
-                        }
-                        runOnUiThread {
-                            when {
-                                !cmdOk -> log("✗ 关闭游戏失败：force-stop 未能执行（Shizuku 是否在线？）")
-                                !wasRunning -> log("游戏本来就没在运行")
-                                alive -> log("✗ 关闭游戏：命令已执行，但 10s 后游戏进程仍在 ${gamePids()}")
-                                else -> log("✓ 游戏已退出（force-stop 后 ${waited}ms 内）")
-                            }
-                        }
-                        cmdOk && !alive
-                    } else {
-                        // 其余任务：按清单 option 生成 pipeline_override 后交给引擎
-                        // （name 对不上时用 entry 兜底：adb 直达入口的 TaskItem 只有 entry 可用）
-                        val override = manifest?.let { m ->
-                            m.tasks.firstOrNull { it.name == item.name || it.entry == item.entry }
-                                ?.let { TaskPack.buildOverride(m, it, item.selection) }
-                        } ?: "{}"
-                        log("pipeline_override: $override")
-                        MaaBridge.runTask(whmxDir, item.entry, logDir, override) { msg ->
-                            runOnUiThread { logEngine(msg) }
-                        }
-                    }
-                } catch (e: Throwable) {
-                    runOnUiThread { log("任务异常: $e", LogLevel.ERR) }
-                    false
-                }
-                runOnUiThread { log(
-                    when {
-                        stopRequested -> "已停止任务：${item.label}（耗时 ${costText(taskStart)}）"
-                        r -> "完成任务：${item.label} · 耗时 ${costText(taskStart)}"
-                        else -> "任务失败：${item.label} · 耗时 ${costText(taskStart)}"
-                    },
-                    when {
-                        stopRequested -> LogLevel.WRN
-                        r -> LogLevel.SUCCESS
-                        else -> LogLevel.ERR
-                    }
-                ) }
-                if (!r) {
-                    // 单个任务失败不再中断整个队列：否则末尾的收尾项（如「关闭游戏」）
-                    // 会因为前面任一任务失败而静默不执行——用户勾了却没生效，很难查。
-                    // 用户主动停止不算失败，也不提示"继续执行"（后面本来就不跑了）
-                    ok = false
-                    if (!stopRequested) {
-                        failed += item.label
-                        log("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）", LogLevel.WRN)
-                    }
-                }
-            }
-            } finally {
-                stopTail()          // 收尾：把折叠掉的重复次数与归类小结打出来
-            }
-            // 任务结束：勾选「游戏启动后关闭游戏声音」时，
-            // 若游戏仍在运行（虚拟屏未退出）则保持静音效果，不主动恢复声音；
-            // 仅当游戏已退出（如本队列末尾勾选了关闭游戏）才恢复音量。
-            // 这里的调用必须兜异常：Shizuku 若在任务期间被系统回收，execBlocking 会抛异常，
-            // 而本协程没有外层 catch —— 未捕获异常会直接把 App 打崩（虚拟屏也随之没）。
-            if (closeAfterEnabled) {
-                runCatching { ShizukuShell.execBlocking("am", "force-stop", GAME_PKG) }
-            }
-            if (muteEnabled && prevVolume > 0) {
-                // 游戏已退出（如末尾勾了关闭游戏）才恢复音量；Shizuku 掉线时按"还在跑"处理，保持静音
-                if (!gameAlive()) setMusicVolume(prevVolume)
-            }
-            // 收尾体检：Shizuku 掉了要说清"不是 MaaWH 关的"并给出保活办法，
-            // 否则用户只会看到下次打开时必须重新启用 Shizuku
-            if (!shizukuRunning()) {
-                log("Shizuku 已离线（MaaWH 全程只对游戏包名下命令，不会关闭 Shizuku；" +
-                    "通常是 ColorOS 回收了后台进程）。请到【快捷选项 → 防后台被杀设置】" +
-                    "把 MaaWH 与 Shizuku 加入电池优化白名单，并在 Shizuku 里开启 Watchdog。",
-                    LogLevel.WRN)
-            }
-
-            runOnUiThread {
-                running = false
-                binding.btnStartQueue.isEnabled = true
-                binding.btnStartQueue.text = getString(R.string.btn_start_queue)
-                // 队列收工：虚拟屏还活着就继续保活（游戏还在屏上，App 一死屏就没了），否则停服务
-                if (vdOn) keepAlive(getString(R.string.keepalive_vd)) else stopKeepAlive()
-                val total = costText(queueStart)
-                when {
-                    stopRequested -> {
-                        setRunState("✓ 任务已停止", R.color.ok_green)
-                        toast("任务已停止")
-                        log("任务已停止（已跑 ${total}）", LogLevel.WRN)
-                    }
-                    ok -> {
-                        setRunState("✓ 全部任务完成", R.color.ok_green)
-                        toast("全部任务完成")
-                        log("全部任务完成，共 ${planTasks.size} 项 · 总耗时 ${total}", LogLevel.SUCCESS)
-                    }
-                    else -> {
-                        // 失败任务点名到运行状态行：否则"哪个任务失败了"只能去日志里翻
-                        val names = failed.joinToString("、")
-                        setRunState("✗ 失败：$names", R.color.err_red)
-                        toast("有任务失败：$names")
-                        log("任务结束：${failed.size}/${planTasks.size} 项失败（$names）· 总耗时 $total", LogLevel.ERR)
-                    }
-                }
-            }
+            queueRunner?.run(planTasks, muteEnabled, closeAfterEnabled)
         }
     }
 
@@ -1381,13 +1232,13 @@ class MainActivity : AppCompatActivity() {
                 3 -> {
                     toast("正在关闭游戏…")
                     log("快捷操作：关闭游戏")
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        try {
-                            ShizukuShell.execBlocking("am", "force-stop", GAME_PKG)
-                        } catch (e: Throwable) {
-                            log("关闭游戏失败: ${e.message}")
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            try {
+                                ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG)
+                            } catch (e: Throwable) {
+                                log("关闭游戏失败: ${e.message}")
+                            }
                         }
-                    }
                 }
                 4 -> {
                     muteEnabled = !muteEnabled
@@ -1458,7 +1309,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun checkKeepAliveSetup() {
         val self = ignoringBattery(packageName)
-        val sh = ignoringBattery(SHIZUKU_PKG)
+        val sh = ignoringBattery(MaaConst.SHIZUKU_PKG)
         if (self && sh) {
             log("防杀体检：MaaWH 与 Shizuku 均已在电池优化白名单")
         } else {
@@ -1473,7 +1324,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showKeepAliveDialog() {
         val self = ignoringBattery(packageName)
-        val sh = ignoringBattery(SHIZUKU_PKG)
+        val sh = ignoringBattery(MaaConst.SHIZUKU_PKG)
         // 说明 + 可点条目都放进自绘视图：AlertDialog 的 setMessage 与 setItems 同时用会只显示其一
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -1491,9 +1342,9 @@ class MainActivity : AppCompatActivity() {
         var dlg: AlertDialog? = null
         val actions = listOf<Pair<String, () -> Unit>>(
             "① 让 MaaWH 不受电池优化限制" to { requestIgnoreBattery(packageName) },
-            "② 让 Shizuku 不受电池优化限制" to { requestIgnoreBattery(SHIZUKU_PKG) },
+            "② 让 Shizuku 不受电池优化限制" to { requestIgnoreBattery(MaaConst.SHIZUKU_PKG) },
             "③ ColorOS 手动设置清单（自启动 / 应用速冻 / 锁定后台 / Watchdog）" to { showColorOsChecklist() },
-            "④ 打开 Shizuku 应用详情" to { openAppDetails(SHIZUKU_PKG) }
+            "④ 打开 Shizuku 应用详情" to { openAppDetails(MaaConst.SHIZUKU_PKG) }
         )
         for ((label, act) in actions) {
             box.addView(TextView(this).apply {
@@ -1555,38 +1406,20 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle("ColorOS 保活清单")
             .setMessage(text)
-            .setPositiveButton("打开 Shizuku 应用详情") { _, _ -> openAppDetails(SHIZUKU_PKG) }
+            .setPositiveButton("打开 Shizuku 应用详情") { _, _ -> openAppDetails(MaaConst.SHIZUKU_PKG) }
             .setNegativeButton("关闭", null)
             .show()
     }
 
-    /** 游戏主进程是否还在跑（精确匹配进程名；Shizuku 不可用时按"在跑"处理，避免误报"已关闭"） */
-    private fun gameAlive(): Boolean = gamePids().isNotEmpty()
-
-    /**
-     * 游戏主进程的 "pid name" 列表，空 = 没在跑。
-     * 用 ps 精确比对进程名（pidof 只认精确名、且拿不到 pid 文案；子进程 :pushservice 不算主进程）。
-     */
-    private fun gamePids(): List<String> = try {
-        ShizukuShell.execBlocking("ps", "-A", "-o", "PID,NAME")
-            .toString(Charsets.UTF_8)
-            .lineSequence()
-            .map { it.trim() }
-            .filter { it.split(Regex("\\s+")).lastOrNull() == GAME_PKG }
-            .toList()
-    } catch (e: Throwable) {
-        listOf("查询失败(Shizuku 不可用)")
-    }
-
     /** 停止任务：中断当前引擎任务，剩余队列不再执行 */
     private fun stopNow() {
-        if (!running) {
+        val r = queueRunner
+        if (r == null || !r.running) {
             toast("当前没有运行中的任务")
             log("无运行中任务，无需停止")
             return
         }
-        stopRequested = true
-        MaaBridge.requestStop()
+        r.requestStop()
         log("已请求停止任务…")
         toast("正在停止任务")
     }
@@ -1611,7 +1444,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toggleVd() {
-        if (running) { toast("任务运行中，请先停止"); return }
+        if (isTaskRunning) { toast("任务运行中，请先停止"); return }
         vdOn = !vdOn
         if (vdOn) {
             setRunState("启动虚拟屏…", R.color.accent)
@@ -1635,7 +1468,7 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) { ShizukuShell.stopVirtual() }
             hideFullscreen()
             // 虚拟屏没了就不用再占着前台服务（任务在跑的话保留，由 runQueue 收尾时停）
-            if (!running) stopKeepAlive()
+            if (!isTaskRunning) stopKeepAlive()
             setRunState(getString(R.string.run_ready), R.color.text_secondary)
             log("已停止虚拟屏")
         }
@@ -1720,7 +1553,7 @@ class MainActivity : AppCompatActivity() {
     private var lastPromptedCase = 0
 
     private fun isShizukuInstalled(): Boolean = try {
-        packageManager.getPackageInfo(SHIZUKU_PKG, 0); true
+        packageManager.getPackageInfo(MaaConst.SHIZUKU_PKG, 0); true
     } catch (e: Throwable) {
         false
     }
@@ -1785,7 +1618,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openShizukuApp() {
-        val i = packageManager.getLaunchIntentForPackage(SHIZUKU_PKG)
+        val i = packageManager.getLaunchIntentForPackage(MaaConst.SHIZUKU_PKG)
         if (i != null) {
             startActivity(i)
         } else {
@@ -1965,119 +1798,7 @@ class MainActivity : AppCompatActivity() {
         vdHandler.post { logView?.add(time, level, msg) }
     }
 
-    /** 引擎逐节点日志：降到 TRACE（暗色），让任务时间线在日志里醒目 */
-    private fun logEngine(msg: String) = log(msg, LogLevel.TRACE)
-
-    /**
-     * 跟读引擎日志，把"任务为什么失败"按性质打进日志区。
-     *
-     * 引擎只把逐节点细节写进 `files/maa_logs/maafw.log`（App 没注册引擎的通知接口，
-     * 所以收不到事件流）—— 这里增量读它，解析成【识别失败】/【超时】/【节点失败】/
-     * 【动作失败】/【引擎错误】/【任务包校验失败】，并**把该节点该认得什么（模板/期望文字/
-     * 阈值/ROI）补在括号里**：光看节点名判断不出"是识别没过还是等超时"。
-     * 同一种错 + 同一个节点连续重复只提示一次（一次运行里能重复几百次，刷屏会把
-     * 有用的信息顶掉），收尾时再打一条归类小结。
-     *
-     * 返回一个 stop()：停止跟读并等它把小结算打完（在任务队列收尾时调用）。
-     */
-    private fun startEngineLogTail(bundleDir: File): () -> Unit {
-        val file = File(File(filesDir, "maa_logs"), "maafw.log")
-        val stopped = java.util.concurrent.atomic.AtomicBoolean(false)
-        val thread = Thread {
-            var offset = if (file.exists()) file.length() else 0L   // 只读"从现在往后"
-            var partial = ""                      // 上一轮读到的半行
-            var lastKey = ""
-            var repeats = 0
-            var readOnce = false
-            var errOnce = false
-            val totals = LinkedHashMap<String, Int>()
-            log("引擎日志跟读已启动：只提示【识别失败】【超时】等错误（同一条不重复刷屏）",
-                LogLevel.TRACE)
-            fun flushRepeats() {
-                if (repeats > 0) {
-                    log("   ↳ 上面这条又连续重复了 $repeats 次（同一条只提示一次）", LogLevel.TRACE)
-                    repeats = 0
-                }
-            }
-            while (!stopped.get()) {
-                try {
-                    if (file.exists() && file.length() < offset) {
-                        offset = 0L                    // 日志轮转过 → 从头再跟
-                        partial = ""
-                    }
-                    if (file.exists() && file.length() > offset) {
-                        val len = (file.length() - offset).toInt()
-                        java.io.RandomAccessFile(file, "r").use { raf ->
-                            raf.seek(offset)
-                            val buf = ByteArray(len)
-                            raf.readFully(buf)
-                            offset += len
-                            val lines = (partial + String(buf, Charsets.UTF_8)).split("\n")
-                            partial = lines.last()     // 可能是半行，留到下一轮
-                            if (!readOnce) {
-                                readOnce = true
-                                log("   ↳ 已接到引擎日志（+$len 字节，共 ${lines.size - 1} 行）",
-                                    LogLevel.TRACE)
-                            }
-                            for (i in 0 until lines.size - 1) {
-                                val ev = EngineLog.parse(lines[i], bundleDir) ?: continue
-                                if (ev.key == lastKey) {
-                                    repeats++
-                                    continue
-                                }
-                                flushRepeats()
-                                lastKey = ev.key
-                                totals[ev.line] = (totals[ev.line] ?: 0) + 1
-                                log(ev.line, ev.kind.level)
-                            }
-                        }
-                    }
-                } catch (e: Throwable) {
-                    // 读日志失败不能影响任务本身；但第一条要说一声，否则"什么都没输出"很难查
-                    if (!errOnce) {
-                        errOnce = true
-                        val why = e.cause?.let { " ← ${it::class.java.name}: ${it.message}" } ?: ""
-                        val at = e.stackTrace.firstOrNull()?.toString() ?: ""
-                        log("引擎日志跟读出错（不影响任务）：$e$why @$at", LogLevel.TRACE)
-                    }
-                }
-                try {
-                    Thread.sleep(500)
-                } catch (e: InterruptedException) {
-                    break
-                }
-            }
-            flushRepeats()
-            if (totals.isNotEmpty()) {
-                log("—— 本次运行的报错归类（按出现次数） ——", LogLevel.WRN)
-                totals.entries.sortedByDescending { it.value }.forEach { (k, v) ->
-                    log("   ${if (v > 1) "$v × " else ""}$k", LogLevel.TRACE)
-                }
-            }
-        }
-        thread.isDaemon = true
-        thread.start()
-        return {
-            stopped.set(true)
-            thread.join(2000)      // 等小结打完，别让它在"任务失败"之后才冒出来
-            Unit
-        }
-    }
-
-    /** 设备内存摘要（maameow 的日志里也有这行，顺带能看到跑任务前的内存压力） */
-    private fun memoryInfoText(): String = try {
-        val mi = android.app.ActivityManager.MemoryInfo()
-        getSystemService(android.app.ActivityManager::class.java).getMemoryInfo(mi)
-        val avail = mi.availMem / 1024 / 1024
-        val total = mi.totalMem / 1024 / 1024
-        val used = if (mi.totalMem > 0) (mi.totalMem - mi.availMem) * 100 / mi.totalMem else 0
-        "设备内存：可用 ${avail}MB / 共 ${total}MB（已用 ${used}%）"
-    } catch (e: Throwable) {
-        "设备内存：查询失败"
-    }
-
-    private fun costText(startMs: Long): String =
-        String.format(Locale.getDefault(), "%.2fs", (android.os.SystemClock.elapsedRealtime() - startMs) / 1000.0)
+    /** 引擎逐节点日志的展示回调已并入 QueueRunner（统一走 TRACE） */
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
@@ -2096,14 +1817,10 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val REQ_SHIZUKU = 1001
         private const val REQ_NOTIF = 1002
-        /** Shizuku 管理器包名（引导用户去启动服务用） */
-        private const val SHIZUKU_PKG = "moe.shizuku.privileged.api"
         private const val SHIZUKU_GUIDE_URL = "https://shizuku.rikka.app/zh-hans/"
         private const val CASE_NOT_INSTALLED = 1
         private const val CASE_NOT_RUNNING = 2
         private const val CASE_NOT_GRANTED = 3
-        /** 《物华弥新》游戏包名 */
-        private const val GAME_PKG = "com.cipaishe.wuhua.bilibili"
         /** 全新安装时的第一个配置名（对标 maameow 的「日常」） */
         private const val DEFAULT_PROFILE = "日常"
         /** 任务归属两处：一键长草主队列 / 小工具队列（见 homeOf） */
