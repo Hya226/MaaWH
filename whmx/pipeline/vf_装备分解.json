@@ -1,0 +1,178 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-15T22:14:52+08:00",
+        "flowFile": "装备分解.flow.json",
+        "flowHash": "sha256:9ca7ed1c3f324471161d3e77ee60cef9aa4231cf0f71e2eea49b5392651b8207",
+        "pipelineHash": "sha256:7c32323b6d1d461b9c3f4f6b2805c05b0e1e20e24647304ff6c1fed16219397a",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_装备分解": {
+        "next": [
+            "VF_装备分解_11"
+        ]
+    },
+    "VF_装备分解_11": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_装备分解_11_Hit"
+        ],
+        "on_error": [
+            "VF_装备分解_End"
+        ]
+    },
+    "VF_装备分解_11_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "wuziku.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_装备分解_01"
+        ]
+    },
+    "VF_装备分解_01": {
+        "recognition": "TemplateMatch",
+        "template": "wuziku.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "timeout": 5000,
+        "post_delay": 800,
+        "order_by": "Score",
+        "post_wait_freezes": 1200,
+        "next": [
+            "VF_装备分解_10"
+        ]
+    },
+    "VF_装备分解_02": {
+        "recognition": "TemplateMatch",
+        "template": "fenjie.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "timeout": 5000,
+        "post_delay": 800,
+        "order_by": "Score",
+        "post_wait_freezes": 1200,
+        "next": [
+            "VF_装备分解_03"
+        ]
+    },
+    "VF_装备分解_03": {
+        "action": "Click",
+        "target": [
+            548,
+            175
+        ],
+        "post_delay": 800,
+        "timeout": 3000,
+        "next": [
+            "VF_装备分解_09"
+        ]
+    },
+    "VF_装备分解_04": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 5000,
+        "post_delay": 800,
+        "order_by": "Score",
+        "post_wait_freezes": 1000,
+        "next": [
+            "VF_装备分解_08"
+        ]
+    },
+    "VF_装备分解_05": {
+        "recognition": "TemplateMatch",
+        "template": "duigou2.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 5000,
+        "post_delay": 800,
+        "order_by": "Score",
+        "post_wait_freezes": 1000,
+        "next": [
+            "VF_装备分解_06"
+        ]
+    },
+    "VF_装备分解_06": {
+        "action": "Click",
+        "target": [
+            640,
+            360
+        ],
+        "post_delay": 800,
+        "timeout": 3000,
+        "next": [
+            "VF_装备分解_07"
+        ]
+    },
+    "VF_装备分解_07": {
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "VF_装备分解_08": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_装备分解_08_Hit"
+        ],
+        "on_error": [
+            "VF_装备分解_End"
+        ]
+    },
+    "VF_装备分解_08_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou2.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_装备分解_05"
+        ]
+    },
+    "VF_装备分解_09": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_装备分解_09_Hit"
+        ],
+        "on_error": [
+            "VF_装备分解_End"
+        ]
+    },
+    "VF_装备分解_09_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_装备分解_04"
+        ]
+    },
+    "VF_装备分解_10": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_装备分解_10_Hit"
+        ],
+        "on_error": [
+            "VF_装备分解_End"
+        ]
+    },
+    "VF_装备分解_10_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "fenjie.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_装备分解_02"
+        ]
+    },
+    "VF_装备分解_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

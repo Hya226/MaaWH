@@ -1,0 +1,612 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-15T22:14:21+08:00",
+        "flowFile": "刷冬谷币.flow.json",
+        "flowHash": "sha256:c5fa2ed6ded8db67005ba1cfec5e25ee1799c7b797935b18e1d8d7391cfa6742",
+        "pipelineHash": "sha256:2857de204096699fcc48f6bb0f585ef4fc89e15fe2be3a31116084de05af222b",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_刷冬谷币": {
+        "next": [
+            "VF_刷冬谷币_01"
+        ]
+    },
+    "VF_刷冬谷币_01": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 1000,
+        "next": [
+            "VF_刷冬谷币_20_J1"
+        ]
+    },
+    "VF_刷冬谷币_02": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "roi": [
+            822,
+            20,
+            458,
+            220
+        ],
+        "next": [
+            "VF_刷冬谷币_20_J1"
+        ]
+    },
+    "VF_刷冬谷币_03": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_刷冬谷币_03_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_03_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_刷冬谷币_02"
+        ]
+    },
+    "VF_刷冬谷币_04": {
+        "action": "DoNothing",
+        "timeout": 150000,
+        "next": [
+            "VF_刷冬谷币_04_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_04_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "进入游戏",
+            "点击任意处",
+            "任意处进入",
+            "久进",
+            "进斿戈"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            191,
+            120,
+            1000,
+            480
+        ],
+        "rate_limit": 800,
+        "next": [
+            "VF_刷冬谷币_05"
+        ]
+    },
+    "VF_刷冬谷币_05": {
+        "action": "Click",
+        "target": [
+            640,
+            360
+        ],
+        "post_delay": 2500,
+        "pre_delay": 500,
+        "next": [
+            "VF_刷冬谷币_20_J1"
+        ]
+    },
+    "VF_刷冬谷币_06": {
+        "recognition": "TemplateMatch",
+        "template": "yanxun.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "roi": [
+            580,
+            100,
+            700,
+            460
+        ],
+        "next": [
+            "VF_刷冬谷币_07"
+        ]
+    },
+    "VF_刷冬谷币_07": {
+        "recognition": "TemplateMatch",
+        "template": "kaishi_xunlian.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "timeout": 6000,
+        "post_delay": 800,
+        "order_by": "Score",
+        "next": [
+            "VF_刷冬谷币_24_J1"
+        ]
+    },
+    "VF_刷冬谷币_24_J1": {
+        "action": "DoNothing",
+        "timeout": 6000,
+        "next": [
+            "VF_刷冬谷币_24_J1_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_24_J2"
+        ]
+    },
+    "VF_刷冬谷币_24_J1_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "05冬谷币：辰",
+            "冬谷币：辰"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            236,
+            150,
+            1000,
+            520
+        ],
+        "next": [
+            "VF_刷冬谷币_26"
+        ]
+    },
+    "VF_刷冬谷币_24_J2": {
+        "action": "DoNothing",
+        "timeout": 6000,
+        "next": [
+            "VF_刷冬谷币_24_J2_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_24_J2_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "donggubi.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "roi": [
+            436,
+            200,
+            800,
+            400
+        ],
+        "next": [
+            "VF_刷冬谷币_27"
+        ]
+    },
+    "VF_刷冬谷币_23": {
+        "recognition": "TemplateMatch",
+        "template": "donggubi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "roi": [
+            436,
+            200,
+            800,
+            400
+        ],
+        "post_wait_freezes": 1000,
+        "next": [
+            "VF_刷冬谷币_09"
+        ]
+    },
+    "VF_刷冬谷币_27": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_刷冬谷币_27_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_27_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "donggubi.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "roi": [
+            436,
+            200,
+            800,
+            400
+        ],
+        "next": [
+            "VF_刷冬谷币_23"
+        ]
+    },
+    "VF_刷冬谷币_08": {
+        "recognition": "OCR",
+        "expected": [
+            "05冬谷币：辰",
+            "冬谷币：辰"
+        ],
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "roi": [
+            236,
+            150,
+            1000,
+            520
+        ],
+        "next": [
+            "VF_刷冬谷币_09"
+        ]
+    },
+    "VF_刷冬谷币_26": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_刷冬谷币_26_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_26_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "05冬谷币：辰",
+            "冬谷币：辰"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            236,
+            150,
+            1000,
+            520
+        ],
+        "next": [
+            "VF_刷冬谷币_08"
+        ]
+    },
+    "VF_刷冬谷币_09": {
+        "recognition": "TemplateMatch",
+        "template": "sutong.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 1500,
+        "roi": [
+            922,
+            600,
+            358,
+            120
+        ],
+        "order_by": "Score",
+        "next": [
+            "VF_刷冬谷币_10"
+        ]
+    },
+    "VF_刷冬谷币_10": {
+        "action": "DoNothing",
+        "timeout": 6000,
+        "next": [
+            "VF_刷冬谷币_10_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_18"
+        ]
+    },
+    "VF_刷冬谷币_10_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "sutong_dialog.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_刷冬谷币_11"
+        ]
+    },
+    "VF_刷冬谷币_11": {
+        "recognition": "TemplateMatch",
+        "template": "sutong_minus.png",
+        "threshold": 0.85,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "roi": [
+            566,
+            300,
+            390,
+            85
+        ],
+        "repeat": 9,
+        "repeat_delay": 350,
+        "next": [
+            "VF_刷冬谷币_12"
+        ]
+    },
+    "VF_刷冬谷币_12": {
+        "recognition": "TemplateMatch",
+        "template": "sutong_plus.png",
+        "threshold": 0.85,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "roi": [
+            566,
+            300,
+            390,
+            85
+        ],
+        "pre_delay": 1400,
+        "repeat": 2,
+        "repeat_delay": 400,
+        "next": [
+            "VF_刷冬谷币_13"
+        ]
+    },
+    "VF_刷冬谷币_13": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 1500,
+        "roi": [
+            736,
+            330,
+            240,
+            160
+        ],
+        "next": [
+            "VF_刷冬谷币_22_J1"
+        ]
+    },
+    "VF_刷冬谷币_22_J1": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_刷冬谷币_22_J1_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_22_J2"
+        ]
+    },
+    "VF_刷冬谷币_22_J1_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "roi": [
+            656,
+            360,
+            240,
+            160
+        ],
+        "next": [
+            "VF_刷冬谷币_25"
+        ]
+    },
+    "VF_刷冬谷币_22_J2": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_刷冬谷币_22_J2_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_22_J2_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "完成"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            636,
+            300,
+            644,
+            420
+        ],
+        "next": [
+            "VF_刷冬谷币_15"
+        ]
+    },
+    "VF_刷冬谷币_14": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 1000,
+        "roi": [
+            656,
+            360,
+            240,
+            160
+        ],
+        "pre_delay": 1800,
+        "next": [
+            "VF_刷冬谷币_15"
+        ]
+    },
+    "VF_刷冬谷币_25": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_刷冬谷币_25_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_25_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "roi": [
+            656,
+            360,
+            240,
+            160
+        ],
+        "next": [
+            "VF_刷冬谷币_14"
+        ]
+    },
+    "VF_刷冬谷币_15": {
+        "action": "DoNothing",
+        "timeout": 420000,
+        "next": [
+            "VF_刷冬谷币_15_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_15_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "完成"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            636,
+            300,
+            644,
+            420
+        ],
+        "rate_limit": 1500,
+        "next": [
+            "VF_刷冬谷币_16"
+        ]
+    },
+    "VF_刷冬谷币_16": {
+        "recognition": "TemplateMatch",
+        "template": "claim_done.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 2000,
+        "roi": [
+            772,
+            570,
+            508,
+            150
+        ],
+        "next": [
+            "VF_刷冬谷币_17"
+        ]
+    },
+    "VF_刷冬谷币_17": {
+        "next": [
+            "Common_回主页验证"
+        ]
+    },
+    "VF_刷冬谷币_18": {
+        "action": "Click",
+        "target": [
+            107,
+            33
+        ],
+        "post_delay": 1500,
+        "next": [
+            "VF_刷冬谷币_09"
+        ]
+    },
+    "VF_刷冬谷币_19": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_刷冬谷币_19_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_19_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yanxun.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_刷冬谷币_06"
+        ]
+    },
+    "VF_刷冬谷币_20_J1": {
+        "action": "DoNothing",
+        "timeout": 240000,
+        "next": [
+            "VF_刷冬谷币_20_J1_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_20_J2"
+        ]
+    },
+    "VF_刷冬谷币_20_J1_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_刷冬谷币_03"
+        ]
+    },
+    "VF_刷冬谷币_20_J2": {
+        "action": "DoNothing",
+        "timeout": 240000,
+        "next": [
+            "VF_刷冬谷币_20_J2_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_20_J3"
+        ]
+    },
+    "VF_刷冬谷币_20_J2_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "进入游戏",
+            "点击任意处",
+            "任意处进入",
+            "久进",
+            "进斿戈"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            191,
+            120,
+            1000,
+            480
+        ],
+        "next": [
+            "VF_刷冬谷币_04"
+        ]
+    },
+    "VF_刷冬谷币_20_J3": {
+        "action": "DoNothing",
+        "timeout": 240000,
+        "next": [
+            "VF_刷冬谷币_20_J3_Hit"
+        ],
+        "on_error": [
+            "VF_刷冬谷币_End"
+        ]
+    },
+    "VF_刷冬谷币_20_J3_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yanxun.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_刷冬谷币_19"
+        ]
+    },
+    "VF_刷冬谷币_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

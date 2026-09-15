@@ -62,3 +62,7 @@ app/src/main/assets/whmx/
 
 # 预编译库来源目录（内嵌 git 仓库；so 已在 app/src/main/jniLibs）
 MaaFramework/
+
+# 迁移/修复工具写的本地备份（git 里有历史，不必入库）
+whmx/**/*.bak
+whmx/**/*.bak_*

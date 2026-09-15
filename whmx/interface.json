@@ -41,7 +41,7 @@
         {
             "name": "启动",
             "label": "启动",
-            "entry": "到主页",
+            "entry": "VF_启动",
             "default_check": true,
             "group": ["startup"],
             "description": "虚拟屏投游戏并收口到主页"
@@ -49,7 +49,7 @@
         {
             "name": "刷冬谷币",
             "label": "刷冬谷币",
-            "entry": "刷冬谷币",
+            "entry": "VF_刷冬谷币",
             "default_check": true,
             "group": ["battle"],
             "option": ["刷冬谷币次数"]
@@ -57,7 +57,7 @@
         {
             "name": "征集",
             "label": "征集",
-            "entry": "征集",
+            "entry": "VF_征集",
             "default_check": true,
             "group": ["daily"],
             "option": ["征集次数"]
@@ -65,7 +65,7 @@
         {
             "name": "行会签到",
             "label": "行会签到",
-            "entry": "签到段1",
+            "entry": "VF_行会签到",
             "default_check": true,
             "group": ["daily"]
         },
@@ -87,40 +87,40 @@
         {
             "name": "装卸装备",
             "label": "装卸装备",
-            "entry": "装卸装备",
+            "entry": "VF_装卸装备",
             "group": ["operator"],
             "option": ["目标角色"]
         },
         {
             "name": "升好感度",
             "label": "升好感度",
-            "entry": "升好感度",
+            "entry": "VF_升好感度",
             "group": ["operator"],
             "option": ["目标角色", "礼物次数"]
         },
         {
             "name": "查找器者",
             "label": "查找器者",
-            "entry": "查找器者",
+            "entry": "VF_查找器者",
             "group": ["tools"],
             "option": ["目标角色"]
         },
         {
             "name": "装备分解",
             "label": "装备分解",
-            "entry": "装备分解",
+            "entry": "VF_装备分解",
             "group": ["daily"]
         },
         {
             "name": "领取奖励",
             "label": "领取奖励",
-            "entry": "领取奖励",
+            "entry": "VF_领取奖励",
             "group": ["daily"]
         },
         {
             "name": "外勤",
             "label": "外勤",
-            "entry": "外勤",
+            "entry": "VF_外勤",
             "group": ["daily"]
         },
         {
@@ -128,6 +128,23 @@
             "label": "关闭游戏",
             "entry": "关闭游戏",
             "group": ["other"]
+        },
+        {
+            // 由流程编辑器生成（pipeline/vf_刷活动关.json）。之前只注册在手机的运行副本上，
+            // 重装 App 会整包重建清单 → 这条任务连同参数一起消失，故落进仓库。
+            "name": "刷活动关",
+            "label": "刷活动关",
+            "entry": "VF_刷活动关",
+            "group": ["tools"],
+            "option": ["刷取次数"]
+        },
+        {
+            // 同上：编辑器生成的 pipeline/vf_博物研学.json
+            "name": "博物研学",
+            "label": "博物研学",
+            "entry": "VF_博物研学",
+            "group": ["tools"],
+            "option": ["器者1", "器者2", "器者3", "器者4"]
         }
     ],
 
@@ -138,66 +155,16 @@
             "label": "刷冬谷币次数",
             "default_case": "3",
             "cases": [
-                {
-                    "name": "1",
-                    "pipeline_override": {
-                        "刷谷_调次数": { "next": ["刷谷段2"] }
-                    }
-                },
-                {
-                    "name": "2",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 1 }
-                    }
-                },
-                {
-                    "name": "3",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 2 }
-                    }
-                },
-                {
-                    "name": "4",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 3 }
-                    }
-                },
-                {
-                    "name": "5",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 4 }
-                    }
-                },
-                {
-                    "name": "6",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 5 }
-                    }
-                },
-                {
-                    "name": "7",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 6 }
-                    }
-                },
-                {
-                    "name": "8",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 7 }
-                    }
-                },
-                {
-                    "name": "9",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 8 }
-                    }
-                },
-                {
-                    "name": "10",
-                    "pipeline_override": {
-                        "刷谷_加次数": { "repeat": 9 }
-                    }
-                }
+                { "name": "1", "pipeline_override": { "VF_刷冬谷币_11": { "next": ["VF_刷冬谷币_13"] } } },
+                { "name": "2", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 1 } } },
+                { "name": "3", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 2 } } },
+                { "name": "4", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 3 } } },
+                { "name": "5", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 4 } } },
+                { "name": "6", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 5 } } },
+                { "name": "7", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 6 } } },
+                { "name": "8", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 7 } } },
+                { "name": "9", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 8 } } },
+                { "name": "10", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 9 } } }
             ]
         },
 
@@ -206,30 +173,10 @@
             "label": "征集次数",
             "default_case": "1",
             "cases": [
-                {
-                    "name": "1",
-                    "pipeline_override": {
-                        "征集段2": { "next": ["ZJ_DuiGou2"] }
-                    }
-                },
-                {
-                    "name": "2",
-                    "pipeline_override": {
-                        "ZJ_JiaHao2": { "repeat": 1 }
-                    }
-                },
-                {
-                    "name": "3",
-                    "pipeline_override": {
-                        "ZJ_JiaHao2": { "repeat": 2 }
-                    }
-                },
-                {
-                    "name": "4",
-                    "pipeline_override": {
-                        "ZJ_JiaHao2": { "repeat": 3 }
-                    }
-                }
+                { "name": "1", "pipeline_override": { "征集段2": { "next": ["VF_征集_11"] } } },
+                { "name": "2", "pipeline_override": { "VF_征集_10": { "repeat": 1 } } },
+                { "name": "3", "pipeline_override": { "VF_征集_10": { "repeat": 2 } } },
+                { "name": "4", "pipeline_override": { "VF_征集_10": { "repeat": 3 } } }
             ]
         },
 
@@ -238,18 +185,14 @@
             "type": "input",
             "label": "目标角色",
             "description": "选择要操作的角色，需与 image/ 下 <角色名>.png 模板一致",
-            "inputs": [
-                {
-                    "name": "角色",
-                    "label": "角色名",
-                    "default": "蛙锣",
-                    "pipeline_type": "string"
-                }
-            ],
+            "inputs": [{ "name": "角色", "label": "角色名", "default": "蛙锣", "pipeline_type": "string" }],
             "pipeline_override": {
-                "CDZB2_Hit": { "template": "{角色}.png" },
-                "升2_Hit": { "template": "{角色}.png" },
-                "查2_Hit": { "template": "{角色}.png" }
+                "VF_装卸装备_11_Hit": { "template": "{角色}.png" },
+                "VF_装卸装备_02": { "template": "{角色}.png" },
+                "VF_升好感度_08_Hit": { "template": "{角色}.png" },
+                "VF_升好感度_02": { "template": "{角色}.png" },
+                "VF_查找器者_03_Hit": { "template": "{角色}.png" },
+                "VF_查找器者_02": { "template": "{角色}.png" }
             }
         },
 
@@ -268,8 +211,97 @@
                     "pattern_msg": "请输入 1~20 的整数"
                 }
             ],
+            "pipeline_override": { "VF_升好感度_04": { "repeat": "{礼物次数}" } }
+        },
+
+        // ===== 小工具（流程编辑器生成）：input + 变量替换到目标节点字段 =====
+        // 「刷取次数」= 加号点击次数（repeat）；节点名与生成物同源，改流程会一起变
+        "刷取次数": {
+            "type": "input",
+            "label": "刷取次数",
+            "inputs": [
+                {
+                    "name": "刷取次数",
+                    "label": "刷取次数",
+                    "default": "1",
+                    "pipeline_type": "int"
+                }
+            ],
             "pipeline_override": {
-                "升好_礼物": { "repeat": "{礼物次数}" }
+                "VF_刷活动关_07": { "repeat": "{刷取次数}" }
+            }
+        },
+
+        // 器者1/2/3：填的是【模板图名】（器者名），值被拼进 "{器者N}.png" → 必须是 string。
+        // 2026-09-15 修正：器者1/2 原先误写成 int，App 按 int 把输入框设成纯数字键盘，
+        // 中文/字母根本敲不进去（器者3 一直是 string，所以只有它好使）。
+        "器者1": {
+            "type": "input",
+            "label": "器者1",
+            "inputs": [
+                {
+                    "name": "器者1",
+                    "label": "器者1",
+                    "default": "",
+                    "pipeline_type": "string"
+                }
+            ],
+            "pipeline_override": {
+                "VF_博物研学_10_Hit": { "template": "{器者1}.png" },
+                "VF_博物研学_23": { "template": "{器者1}.png" }
+            }
+        },
+
+        "器者2": {
+            "type": "input",
+            "label": "器者2",
+            "inputs": [
+                {
+                    "name": "器者2",
+                    "label": "器者2",
+                    "default": "",
+                    "pipeline_type": "string"
+                }
+            ],
+            "pipeline_override": {
+                "VF_博物研学_15_Hit": { "template": "{器者2}.png" },
+                "VF_博物研学_26": { "template": "{器者2}.png" }
+            }
+        },
+
+        "器者4": {
+            // 2026-09-15 补：这条原本只注册在手机的运行副本上（编辑器同步只写手机），
+            // 重装 App 时被内置清单整包重建冲掉了。运行时痕迹见 maafw.log：
+            // pipeline_override = VF_博物研学_31_Hit / VF_博物研学_34 → {器者4}.png
+            "type": "input",
+            "label": "器者4",
+            "inputs": [
+                {
+                    "name": "器者4",
+                    "label": "器者4",
+                    "default": "金喇叭",
+                    "pipeline_type": "string"
+                }
+            ],
+            "pipeline_override": {
+                "VF_博物研学_31_Hit": { "template": "{器者4}.png" },
+                "VF_博物研学_34": { "template": "{器者4}.png" }
+            }
+        },
+        "器者3": {
+            "type": "input",
+            "label": "器者3",
+            "inputs": [
+                {
+                    "name": "器者3",
+                    "label": "器者3",
+                    "default": "",
+                    "pipeline_type": "string"
+                }
+            ],
+            "pipeline_override": {
+                "VF_博物研学_20_Hit": { "template": "{器者3}.png" },
+                "VF_博物研学_28": { "template": "{器者3}.png" }
             }
         }
     }

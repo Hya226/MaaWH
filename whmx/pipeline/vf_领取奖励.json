@@ -1,0 +1,177 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-15T22:14:52+08:00",
+        "flowFile": "领取奖励.flow.json",
+        "flowHash": "sha256:bed35cfb18d6f041172855229e8b03cd8267e22bbae2d994b8d90d5b5a9c6786",
+        "pipelineHash": "sha256:0741ef42d7bb128aedfe7b272cab808a5caf8593177b03247b274b671367049f",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_领取奖励": {
+        "next": [
+            "VF_领取奖励_11"
+        ]
+    },
+    "VF_领取奖励_11": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_领取奖励_11_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_End"
+        ]
+    },
+    "VF_领取奖励_11_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "renwu.png",
+        "threshold": 0.5,
+        "action": "DoNothing",
+        "next": [
+            "VF_领取奖励_01"
+        ]
+    },
+    "VF_领取奖励_01": {
+        "recognition": "TemplateMatch",
+        "template": "renwu.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "timeout": 5000,
+        "post_delay": 800,
+        "order_by": "Score",
+        "post_wait_freezes": 1200,
+        "next": [
+            "VF_领取奖励_10"
+        ]
+    },
+    "VF_领取奖励_02": {
+        "recognition": "TemplateMatch",
+        "template": "quanbulingqu.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "timeout": 4000,
+        "post_delay": 1500,
+        "order_by": "Score",
+        "next": [
+            "VF_领取奖励_03"
+        ]
+    },
+    "VF_领取奖励_03": {
+        "action": "Click",
+        "target": [
+            36,
+            600
+        ],
+        "post_delay": 500,
+        "timeout": 3000,
+        "next": [
+            "VF_领取奖励_09"
+        ]
+    },
+    "VF_领取奖励_04": {
+        "recognition": "TemplateMatch",
+        "template": "zhouchangrenwu.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "timeout": 5000,
+        "post_delay": 800,
+        "order_by": "Score",
+        "pre_delay": 1000,
+        "post_wait_freezes": 1200,
+        "next": [
+            "VF_领取奖励_08"
+        ]
+    },
+    "VF_领取奖励_05": {
+        "recognition": "TemplateMatch",
+        "template": "quanbulingqu.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "timeout": 4000,
+        "post_delay": 2000,
+        "order_by": "Score",
+        "next": [
+            "VF_领取奖励_06"
+        ]
+    },
+    "VF_领取奖励_06": {
+        "action": "Click",
+        "target": [
+            36,
+            600
+        ],
+        "post_delay": 500,
+        "timeout": 3000,
+        "next": [
+            "VF_领取奖励_07"
+        ]
+    },
+    "VF_领取奖励_07": {
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "VF_领取奖励_08": {
+        "action": "DoNothing",
+        "timeout": 5000,
+        "next": [
+            "VF_领取奖励_08_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_07"
+        ]
+    },
+    "VF_领取奖励_08_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "quanbulingqu.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_领取奖励_05"
+        ]
+    },
+    "VF_领取奖励_09": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_领取奖励_09_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_08"
+        ]
+    },
+    "VF_领取奖励_09_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhouchangrenwu.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_领取奖励_04"
+        ]
+    },
+    "VF_领取奖励_10": {
+        "action": "DoNothing",
+        "timeout": 5000,
+        "next": [
+            "VF_领取奖励_10_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_09"
+        ]
+    },
+    "VF_领取奖励_10_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "quanbulingqu.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_领取奖励_02"
+        ]
+    },
+    "VF_领取奖励_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}
