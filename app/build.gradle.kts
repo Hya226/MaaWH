@@ -106,7 +106,11 @@ android {
 
 // 打包前把 whmx 任务包同步进 assets（内置资源，首次启动释放到内部存储），
 // 并生成 version.txt 版本标记：App 启动时比对，决定是否需要重新释放
-val syncWhmxAssets = tasks.register<Copy>("syncWhmxAssets") {
+// ★ 用 Sync 而不是 Copy：Copy 只覆盖同名文件、**不删**目标里已不存在的文件，于是
+//   仓库里退役的 pipeline（如迁移后挪走的 zhengji.json）会一直留在 assets 里，
+//   装包后 App 整包重放又把它搬回手机（同名节点在同一个 bundle 里谁生效不确定）。
+//   这个目录是构建产物（.gitignore 掉），清干净才是对的。
+val syncWhmxAssets = tasks.register<Sync>("syncWhmxAssets") {
     from(rootProject.file("whmx"))
     into(file("src/main/assets/whmx"))
     doLast {

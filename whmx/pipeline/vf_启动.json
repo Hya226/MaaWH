@@ -1,0 +1,135 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-15T22:57:09+08:00",
+        "flowFile": "启动.flow.json",
+        "flowHash": "sha256:28ea965e6d8591dd413bcb64c6678d99f443eea741874a060eda33f5d2e51d1f",
+        "pipelineHash": "sha256:bc9ddd778e6f1843b5268a5924168de47a06e51e7d7b97cb529be03cee61b0d6",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_启动": {
+        "next": [
+            "VF_启动_01"
+        ]
+    },
+    "VF_启动_01": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 1000,
+        "next": [
+            "VF_启动_04"
+        ]
+    },
+    "VF_启动_04": {
+        "recognition": "TemplateMatch",
+        "template": "qd_cha.png",
+        "threshold": 0.8,
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_启动_02"
+        ]
+    },
+    "VF_启动_02": {
+        "recognition": "TemplateMatch",
+        "template": "qd_cha.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_启动_03"
+        ]
+    },
+    "VF_启动_03": {
+        "action": "Click",
+        "target": [
+            611,
+            361
+        ],
+        "post_delay": 6000,
+        "next": [
+            "VF_启动_05"
+        ]
+    },
+    "VF_启动_05": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_启动_05_Hit"
+        ],
+        "on_error": [
+            "VF_启动_08"
+        ]
+    },
+    "VF_启动_05_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "wu.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_启动_06"
+        ]
+    },
+    "VF_启动_06": {
+        "action": "Click",
+        "target": [
+            640,
+            360
+        ],
+        "post_delay": 0,
+        "next": [
+            "VF_启动_07"
+        ]
+    },
+    "VF_启动_07": {
+        "recognition": "TemplateMatch",
+        "template": "qd_cha.png",
+        "threshold": 0.85,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 6000,
+        "post_wait_freezes": 100,
+        "next": [
+            "VF_启动_08"
+        ]
+    },
+    "VF_启动_08": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_启动_08_Hit"
+        ],
+        "on_error": [
+            "VF_启动_End"
+        ]
+    },
+    "VF_启动_08_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tc_cha.png",
+        "threshold": 0.8,
+        "action": "DoNothing",
+        "rate_limit": 200,
+        "next": [
+            "VF_启动_09"
+        ]
+    },
+    "VF_启动_09": {
+        "recognition": "TemplateMatch",
+        "template": "tc_cha.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "rate_limit": 200,
+        "next": [
+            "VF_启动_08"
+        ]
+    },
+    "VF_启动_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

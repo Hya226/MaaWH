@@ -1,0 +1,240 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-15T22:14:21+08:00",
+        "flowFile": "征集.flow.json",
+        "flowHash": "sha256:8be75c425b9733cd5250256f0088b069f9ca4ee90a661d5553cc2e2bcb40b4e7",
+        "pipelineHash": "sha256:9252bd909cb4a59e0a6f03b21f2809044fa2d31fd333aa9dd37b0955b0e85436",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_征集": {
+        "next": [
+            "VF_征集_01"
+        ]
+    },
+    "VF_征集_01": {
+        "recognition": "TemplateMatch",
+        "template": "qizhezhengji.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_征集_13_J1"
+        ]
+    },
+    "VF_征集_02": {
+        "recognition": "TemplateMatch",
+        "template": "quanbuqueren.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 4000,
+        "post_delay": 600,
+        "next": [
+            "VF_征集_16"
+        ]
+    },
+    "VF_征集_03": {
+        "recognition": "TemplateMatch",
+        "template": "tiaoguochouka.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "timeout": 20000,
+        "post_delay": 1000,
+        "order_by": "Score",
+        "rate_limit": 500,
+        "pre_delay": 1000,
+        "next": [
+            "VF_征集_04"
+        ]
+    },
+    "VF_征集_16": {
+        "action": "DoNothing",
+        "timeout": 20000,
+        "next": [
+            "VF_征集_16_Hit"
+        ],
+        "on_error": [
+            "VF_征集_09"
+        ]
+    },
+    "VF_征集_16_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tiaoguochouka.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "rate_limit": 500,
+        "next": [
+            "VF_征集_03"
+        ]
+    },
+    "VF_征集_04": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 900,
+        "next": [
+            "VF_征集_05"
+        ]
+    },
+    "VF_征集_05": {
+        "next": [
+            "Common_点中间回主页"
+        ]
+    },
+    "VF_征集_06": {
+        "action": "DoNothing",
+        "timeout": 4000,
+        "next": [
+            "VF_征集_06_Hit"
+        ],
+        "on_error": [
+            "VF_征集_End"
+        ]
+    },
+    "VF_征集_06_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "quanbuqueren.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_征集_02"
+        ]
+    },
+    "VF_征集_07": {
+        "recognition": "TemplateMatch",
+        "template": "kaishizhengji.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 3000,
+        "post_delay": 600,
+        "next": [
+            "VF_征集_08"
+        ]
+    },
+    "VF_征集_08": {
+        "action": "DoNothing",
+        "timeout": 3500,
+        "next": [
+            "VF_征集_08_Hit"
+        ],
+        "on_error": [
+            "征集段2"
+        ]
+    },
+    "VF_征集_08_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "征集队列已满",
+            "队列已满",
+            "已满"
+        ],
+        "action": "DoNothing",
+        "next": [
+            "VF_征集_09"
+        ]
+    },
+    "VF_征集_09": {
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "VF_征集_10": {
+        "recognition": "TemplateMatch",
+        "template": "jiahao2.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_征集_11"
+        ]
+    },
+    "VF_征集_11": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "timeout": 6000,
+        "post_delay": 600,
+        "roi": [
+            696,
+            380,
+            200,
+            120
+        ],
+        "next": [
+            "VF_征集_09"
+        ]
+    },
+    "VF_征集_12": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_征集_12_Hit"
+        ],
+        "on_error": [
+            "VF_征集_End"
+        ]
+    },
+    "VF_征集_12_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "kaishizhengji.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_征集_07"
+        ]
+    },
+    "VF_征集_13_J1": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_征集_13_J1_Hit"
+        ],
+        "on_error": [
+            "VF_征集_13_J2"
+        ]
+    },
+    "VF_征集_13_J1_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "quanbuqueren.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_征集_06"
+        ]
+    },
+    "VF_征集_13_J2": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_征集_13_J2_Hit"
+        ],
+        "on_error": [
+            "VF_征集_End"
+        ]
+    },
+    "VF_征集_13_J2_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "kaishizhengji.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_征集_12"
+        ]
+    },
+    "征集段2": {
+        "next": [
+            "VF_征集_10"
+        ]
+    },
+    "VF_征集_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

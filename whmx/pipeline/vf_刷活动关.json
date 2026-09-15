@@ -1,0 +1,136 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-15T18:28:17+08:00",
+        "flowFile": "刷活动关.flow.json",
+        "flowHash": "sha256:4512d9e3419870798a26f58b4d93fd5391d48125460e474478b8f27e299e3013",
+        "pipelineHash": "sha256:6eaa5497f9e6e7730b300b75caca53dde880599598ff3d5e9f9dd8ef6c604401",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_刷活动关": {
+        "next": [
+            "VF_刷活动关_01"
+        ]
+    },
+    "VF_刷活动关_01": {
+        "recognition": "TemplateMatch",
+        "template": "wjwy.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_刷活动关_02"
+        ]
+    },
+    "VF_刷活动关_02": {
+        "recognition": "TemplateMatch",
+        "template": "jhft.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_刷活动关_03"
+        ]
+    },
+    "VF_刷活动关_03": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_刷活动关_03_Hit"
+        ],
+        "on_error": [
+            "VF_刷活动关_05"
+        ]
+    },
+    "VF_刷活动关_03_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "09"
+        ],
+        "action": "DoNothing",
+        "next": [
+            "VF_刷活动关_04"
+        ]
+    },
+    "VF_刷活动关_05": {
+        "action": "Swipe",
+        "begin": [
+            1000,
+            600
+        ],
+        "end": [
+            280,
+            600
+        ],
+        "duration": 900,
+        "post_delay": 600,
+        "next": [
+            "VF_刷活动关_03"
+        ]
+    },
+    "VF_刷活动关_04": {
+        "recognition": "OCR",
+        "expected": [
+            "09"
+        ],
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "next": [
+            "VF_刷活动关_06"
+        ]
+    },
+    "VF_刷活动关_06": {
+        "recognition": "TemplateMatch",
+        "template": "sutong.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_刷活动关_07"
+        ]
+    },
+    "VF_刷活动关_07": {
+        "recognition": "TemplateMatch",
+        "template": "jiahao.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_刷活动关_09"
+        ]
+    },
+    "VF_刷活动关_09": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_刷活动关_10"
+        ]
+    },
+    "VF_刷活动关_10": {
+        "recognition": "TemplateMatch",
+        "template": "wancheng_wjwy.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_刷活动关_11"
+        ]
+    },
+    "VF_刷活动关_11": {
+        "next": [
+            "Common_回主页"
+        ]
+    }
+}

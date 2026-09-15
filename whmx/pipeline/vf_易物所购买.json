@@ -1,4 +1,14 @@
 {
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-14T23:18:52+08:00",
+        "flowFile": "易物所购买.flow.json",
+        "flowHash": "sha256:9e0e8aee922101ca994e0073f5bb06832240b672610c15c29e947b4a497a4edb",
+        "pipelineHash": "sha256:f268f28b9eb67108d964ac6f24fe6913cfcb9e2f65f5756d91b6a12d0047a504",
+        "frameW": 1280,
+        "frameH": 720
+    },
     "VF_易物所购买": {
         "next": [
             "VF_易物所购买_01"
@@ -6,19 +16,126 @@
     },
     "VF_易物所购买_01": {
         "recognition": "OCR",
-        "text": [
+        "expected": [
             "易物所"
         ],
         "action": "Click",
         "timeout": 8000,
         "post_delay": 600,
         "next": [
-            "VF_易物所购买_02"
+            "VF_易物所购买_02_J1"
         ]
     },
-    "VF_易物所购买_02": {
+    "VF_易物所购买_02_J1": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_易物所购买_02_J1_Hit"
+        ],
+        "on_error": [
+            "VF_易物所购买_02_J2"
+        ]
+    },
+    "VF_易物所购买_02_J1_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhaojiyishi.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_易物所购买_03"
+        ]
+    },
+    "VF_易物所购买_02_J2": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_易物所购买_02_J2_Hit"
+        ],
+        "on_error": [
+            "VF_易物所购买_End"
+        ]
+    },
+    "VF_易物所购买_02_J2_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "shimoyishi.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_易物所购买_04"
+        ]
+    },
+    "VF_易物所购买_03": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_易物所购买_03_Hit"
+        ],
+        "on_error": [
+            "VF_易物所购买_End"
+        ]
+    },
+    "VF_易物所购买_03_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhaojiyishi.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_易物所购买_05"
+        ]
+    },
+    "VF_易物所购买_04": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_易物所购买_04_Hit"
+        ],
+        "on_error": [
+            "VF_易物所购买_End"
+        ]
+    },
+    "VF_易物所购买_04_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "shimoyishi.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_易物所购买_06"
+        ]
+    },
+    "VF_易物所购买_06": {
+        "recognition": "TemplateMatch",
+        "template": "shimoyishi.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_易物所购买_08"
+        ]
+    },
+    "VF_易物所购买_08": {
         "next": [
             "Common_回主页"
         ]
+    },
+    "VF_易物所购买_05": {
+        "recognition": "TemplateMatch",
+        "template": "zhaojiyishi.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_易物所购买_07"
+        ]
+    },
+    "VF_易物所购买_07": {
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "VF_易物所购买_End": {
+        "action": "DoNothing",
+        "next": []
     }
 }
