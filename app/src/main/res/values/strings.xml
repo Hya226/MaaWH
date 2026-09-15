@@ -16,6 +16,7 @@
     <string name="label_entry">入口</string>
     <string name="switch_tap">点按预览 = 模拟点击</string>
     <string name="log_title">运行日志</string>
+    <string name="log_clear">清空</string>
     <string name="run_ready">就绪 — 添加任务后点「开始任务」</string>
     <string name="run_running">任务运行中…</string>
     <string name="run_ok">✓ 任务执行成功</string>
