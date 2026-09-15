@@ -317,6 +317,65 @@ object MaaBridge {
         }
     }
 
+    // ============ Resource 常驻复用（第 3 步：队列提速） ============
+    //
+    // 原先每次 runTask 都 Create → PostBundle → Wait 整包重载（whmx 全部 JSON+模板图），
+    // 队列 N 个任务就重载 N 遍。现在 Resource 常驻，靠【目录快照】检测任务包变化：
+    // 编辑器直推 vf_*.json / adb 推模板后，下一次 runTask 会自动重载——
+    // "推完即生效"这条 Stdio 契约不能破。
+
+    private var cachedRes: Pointer? = null
+
+    /** 加载时的目录快照指纹（lastModified+size 哈希）；-1 = 无缓存 */
+    private var cachedResStamp: Long = -1L
+
+    private val resLock = Any()
+
+    /** 递归快照：文件相对路径、mtime、大小一起揉进指纹。whmx 约百个文件，毫秒级 */
+    private fun dirStamp(dir: File): Long {
+        var h = 1469598103934665603L   // FNV offset basis，随便一个稳定初值
+        dir.walkTopDown().forEach { f ->
+            h = h xor (f.relativeTo(dir).path + "|" + f.lastModified() + "|" + f.length()).hashCode().toLong()
+            h *= 1099511628211L
+        }
+        return h
+    }
+
+    /**
+     * 取可用的 Resource：无缓存 → 加载；目录指纹变了 → 销毁重建；
+     * 没变 → 直接复用。返回 null = 加载失败（日志已说明）。
+     */
+    private fun ensureResource(lib: MaaLibrary, bundleDir: File, onLog: (String) -> Unit): Pointer? {
+        synchronized(resLock) {
+            val stamp = dirStamp(bundleDir)
+            val cur = cachedRes
+            if (cur != null && stamp == cachedResStamp) {
+                onLog("任务包未变化，复用已加载资源")
+                return cur
+            }
+            if (cur != null) {
+                onLog("检测到任务包内容变化，重新加载资源")
+                runCatching { lib.MaaResourceDestroy(cur) }
+                cachedRes = null
+                cachedResStamp = -1L
+            }
+            val res = lib.MaaResourceCreate() ?: run {
+                onLog("MaaResourceCreate 失败")
+                return null
+            }
+            val resId = lib.MaaResourcePostBundle(res, bundleDir.absolutePath)
+            val resStatus = lib.MaaResourceWait(res, resId)
+            onLog("资源加载: status=$resStatus ${statusText(resStatus)}")
+            if (resStatus != MaaConst.STATUS_SUCCEEDED) {
+                runCatching { lib.MaaResourceDestroy(res) }
+                return null
+            }
+            cachedRes = res
+            cachedResStamp = stamp
+            return res
+        }
+    }
+
     /**
      * 运行任务包中的指定入口任务。
      * 需在后台线程调用（会阻塞）。
@@ -329,7 +388,6 @@ object MaaBridge {
         onLog: (String) -> Unit
     ): Boolean {
         val lib = ensureNative()
-        var res: Pointer? = null
         var ctrl: Pointer? = null
         var tasker: Pointer? = null
         var callbacks: MaaCustomControllerCallbacks? = null
@@ -338,8 +396,9 @@ object MaaBridge {
             synchronized(stopLock) {
                 tasker?.let { runCatching { lib.MaaTaskerDestroy(it) } }
                 ctrl?.let { runCatching { lib.MaaControllerDestroy(it) } }
-                res?.let { runCatching { lib.MaaResourceDestroy(it) } }
-                tasker = null; ctrl = null; res = null
+                tasker = null; ctrl = null
+                // Resource 不在这里销毁：它由 ensureResource 常驻复用（第 3 步），
+                // 队列跑 N 个任务不再重复加载整包资源；变更检测负责重载
             }
         }
 
@@ -360,13 +419,8 @@ object MaaBridge {
             }
             onLog("引擎日志目录: ${logDir.absolutePath}")
 
-            // 1) 资源：加载任务包
-            res = lib.MaaResourceCreate()
-            val resource = checkNotNull(res) { "MaaResourceCreate 失败" }
-            val resId = lib.MaaResourcePostBundle(resource, bundleDir.absolutePath)
-            val resStatus = lib.MaaResourceWait(resource, resId)
-            onLog("资源加载: status=$resStatus ${statusText(resStatus)}")
-            if (resStatus != MaaConst.STATUS_SUCCEEDED) return false
+            // 1) 资源：常驻复用，whmx 目录内容变化时才重新加载（保住"直推 vf 即生效"）
+            val resource = ensureResource(lib, bundleDir, onLog) ?: return false
 
             // 2) 控制器：自定义控制器 -> Shizuku
             callbacks = buildCallbacks(onLog)
