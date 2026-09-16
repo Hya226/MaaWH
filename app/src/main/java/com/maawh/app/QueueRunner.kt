@@ -93,21 +93,22 @@ class QueueRunner(
 
     /** 执行队列（阻塞，后台线程调用） */
     fun run(planTasks: List<TaskItem>, muteEnabled: Boolean, closeAfterEnabled: Boolean) {
+        current = this
         // 队列抬头（对标 maameow 的「开始执行任务，共 N 项」+ 设备内存）
         cb.onLog("开始执行任务，共 ${planTasks.size} 项：${planTasks.joinToString(" → ") { it.label }}", LogLevel.INFO)
         cb.onLog(memoryInfoText(), LogLevel.INFO)
         val queueStart = android.os.SystemClock.elapsedRealtime()
+        val startWall = System.currentTimeMillis()   // 历史记录用墙上时钟
         running = true
         stopRequested = false
         MaaBridge.clearStop()
         notify {
             cb.onQueueStarted()
             cb.onRunState("任务运行中…", R.color.accent)
+            KeepAliveService.start(context, "准备执行 ${planTasks.size} 项任务", 0, planTasks.size)
         }
 
         val prevVolume = if (muteEnabled) getMusicVolume() else -1
-        // 保活：任务期间挂前台服务（通知权限申请在 Activity 侧 launch 前做）
-        KeepAliveService.start(context, context.getString(R.string.keepalive_running))
 
         // 订阅引擎实时事件（finally 里必须摘掉：Tasker 每任务重建，但监听器按队列生命周期走）
         MaaBridge.addEngineEventListener(engineListener)
@@ -120,14 +121,18 @@ class QueueRunner(
             // 跟读引擎日志：把"识别失败 / 超时 / 节点失败 / 包校验失败"按性质打进日志区
             val stopTail = startEngineLogTail()
             try {
-                for (item in planTasks) {
+                for ((idx, item) in planTasks.withIndex()) {
                     if (stopRequested) {
                         cb.onLog("任务已停止：剩余队列不再执行", LogLevel.INFO)
                         break
                     }
                     notify {
                         cb.onRunState("执行中: ${item.label}", R.color.accent)
-                        KeepAliveService.start(context, "任务运行中：${item.label}")
+                        // 通知进度：total>0 时通知带进度条 + 停止按钮（锁屏可停）
+                        KeepAliveService.start(
+                            context, "正在 ${idx + 1}/${planTasks.size}：${item.label}",
+                            idx + 1, planTasks.size
+                        )
                     }
                     currentLabel = item.label
                     lastNode = null
@@ -243,6 +248,19 @@ class QueueRunner(
                 )
             }
 
+            // 队列历史：落盘一条（时间/任务数/失败名单/是否停止/耗时），重启可查（files/history.json）
+            val totalText = costText(queueStart)
+            HistoryStore.append(
+                context,
+                HistoryStore.Entry(
+                    time = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(startWall)),
+                    planCount = planTasks.size,
+                    failed = failed.toList(),
+                    stopped = stopRequested,
+                    costText = totalText
+                )
+            )
+
             notify {
                 running = false
                 cb.onQueueFinished()
@@ -252,24 +270,23 @@ class QueueRunner(
                 } else {
                     KeepAliveService.stop(context)
                 }
-                val total = costText(queueStart)
                 when {
                     stopRequested -> {
                         cb.onRunState("✓ 任务已停止", R.color.ok_green)
                         cb.onToast("任务已停止")
-                        cb.onLog("任务已停止（已跑 ${total}）", LogLevel.WRN)
+                        cb.onLog("任务已停止（已跑 ${totalText}）", LogLevel.WRN)
                     }
                     ok -> {
                         cb.onRunState("✓ 全部任务完成", R.color.ok_green)
                         cb.onToast("全部任务完成")
-                        cb.onLog("全部任务完成，共 ${planTasks.size} 项 · 总耗时 ${total}", LogLevel.SUCCESS)
+                        cb.onLog("全部任务完成，共 ${planTasks.size} 项 · 总耗时 ${totalText}", LogLevel.SUCCESS)
                     }
                     else -> {
                         // 失败任务点名到运行状态行：否则"哪个任务失败了"只能去日志里翻
                         val names = failed.joinToString("、")
                         cb.onRunState("✗ 失败：$names", R.color.err_red)
                         cb.onToast("有任务失败：$names")
-                        cb.onLog("任务结束：${failed.size}/${planTasks.size} 项失败（$names）· 总耗时 $total", LogLevel.ERR)
+                        cb.onLog("任务结束：${failed.size}/${planTasks.size} 项失败（$names）· 总耗时 $totalText", LogLevel.ERR)
                     }
                 }
             }
@@ -277,6 +294,16 @@ class QueueRunner(
             // 兜底：run() 里任何未捕获异常都不能留着打死 App（虚拟屏随之没）
             running = false
             cb.onLog("队列执行异常: $e", LogLevel.ERR)
+            HistoryStore.append(
+                context,
+                HistoryStore.Entry(
+                    time = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(startWall)),
+                    planCount = planTasks.size,
+                    failed = listOf("队列异常"),
+                    stopped = true,
+                    costText = costText(queueStart)
+                )
+            )
             notify {
                 cb.onQueueFinished()
                 if (!cb.isVdOn()) KeepAliveService.stop(context)
@@ -284,6 +311,7 @@ class QueueRunner(
         } finally {
             MaaBridge.removeEngineEventListener(engineListener)
             lastNode = null
+            if (current === this) current = null
         }
     }
 
@@ -423,4 +451,15 @@ class QueueRunner(
 
     private fun costText(startMs: Long): String =
         String.format(Locale.getDefault(), "%.2fs", (android.os.SystemClock.elapsedRealtime() - startMs) / 1000.0)
+
+    companion object {
+        /** 当前队列执行器：通知栏「停止任务」按钮没有 Activity 引用，走静态入口 */
+        @Volatile
+        private var current: QueueRunner? = null
+
+        /** 停止当前队列（无队列在跑时是空操作；完整语义 = stopRequested + 引擎 PostStop） */
+        fun requestStopCurrent() {
+            current?.requestStop()
+        }
+    }
 }

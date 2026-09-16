@@ -28,8 +28,15 @@ class KeepAliveService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // 通知「停止任务」按钮：转发给队列执行器，不重建通知（停止后由队列收尾更新通知）
+        if (intent?.action == ACTION_STOP) {
+            QueueRunner.requestStopCurrent()
+            return START_NOT_STICKY
+        }
         val text = intent?.getStringExtra(EXTRA_TEXT) ?: getString(R.string.keepalive_default)
-        val notification = buildNotification(text)
+        val progress = intent?.getIntExtra(EXTRA_PROGRESS, -1) ?: -1
+        val total = intent?.getIntExtra(EXTRA_TOTAL, 0) ?: 0
+        val notification = buildNotification(text, progress, total)
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(
                 NOTIF_ID,
@@ -43,7 +50,7 @@ class KeepAliveService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun buildNotification(text: String): Notification {
+    private fun buildNotification(text: String, progress: Int, total: Int): Notification {
         val nm = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL_ID) == null) {
             nm.createNotificationChannel(
@@ -61,23 +68,41 @@ class KeepAliveService : Service() {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-        return Notification.Builder(this, CHANNEL_ID)
+        val b = Notification.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setContentIntent(open)
             .setOngoing(true)
-            .build()
+        // 任务运行中的通知带队列进度条 + 停止按钮（total=0 是虚拟屏保活通知，不加）
+        if (total > 0) {
+            b.setProgress(total, progress.coerceIn(0, total), false)
+            val stop = PendingIntent.getService(
+                this, 1,
+                Intent(this, KeepAliveService::class.java).setAction(ACTION_STOP),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            b.addAction(Notification.Action.Builder(null, getString(R.string.quick_stop), stop).build())
+        }
+        return b.build()
     }
 
     companion object {
         private const val CHANNEL_ID = "maawh_keepalive"
         private const val NOTIF_ID = 1001
         private const val EXTRA_TEXT = "text"
+        private const val EXTRA_PROGRESS = "progress"
+        private const val EXTRA_TOTAL = "total"
 
-        /** 拉起/更新保活服务（已在前台服务中时只刷新通知文案） */
-        fun start(ctx: Context, text: String) {
-            val i = Intent(ctx, KeepAliveService::class.java).putExtra(EXTRA_TEXT, text)
+        /** 通知「停止任务」按钮的 action */
+        const val ACTION_STOP = "com.maawh.app.action.STOP_TASK"
+
+        /** 拉起/更新保活服务（已在前台服务中时只刷新通知文案）；total>0 时显示进度条与停止按钮 */
+        fun start(ctx: Context, text: String, progress: Int = -1, total: Int = 0) {
+            val i = Intent(ctx, KeepAliveService::class.java)
+                .putExtra(EXTRA_TEXT, text)
+                .putExtra(EXTRA_PROGRESS, progress)
+                .putExtra(EXTRA_TOTAL, total)
             try {
                 if (Build.VERSION.SDK_INT >= 26) ctx.startForegroundService(i)
                 else ctx.startService(i)

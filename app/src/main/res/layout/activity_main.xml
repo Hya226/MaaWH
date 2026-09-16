@@ -406,6 +406,17 @@
                 android:textSize="13sp" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnHistory"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:layout_marginEnd="6dp"
+                android:text="@string/log_history" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnClearLog"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"
