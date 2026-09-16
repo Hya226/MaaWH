@@ -263,9 +263,6 @@ class QueueRunner(
                 )
             )
 
-            // 悬浮条收起 + 复位手动关闭标志（下一轮队列恢复自动弹出）
-            FloatingPanel.onQueueFinished()
-
             notify {
                 running = false
                 cb.onQueueFinished()
@@ -275,6 +272,14 @@ class QueueRunner(
                 } else {
                     KeepAliveService.stop(context)
                 }
+                // 悬浮窗不收（虚拟屏画面还在看），只更新状态行
+                FloatingPanel.update(
+                    when {
+                        stopRequested -> "◼ 已停止 · ${totalText}"
+                        ok -> "✓ 队列完成 · ${totalText}"
+                        else -> "✗ 失败 ${failed.size}/${planTasks.size} · ${totalText}"
+                    }
+                )
                 when {
                     stopRequested -> {
                         cb.onRunState("✓ 任务已停止", R.color.ok_green)
@@ -309,7 +314,7 @@ class QueueRunner(
                     costText = costText(queueStart)
                 )
             )
-            FloatingPanel.onQueueFinished()
+            FloatingPanel.update("◼ 队列异常")
             notify {
                 cb.onQueueFinished()
                 if (!cb.isVdOn()) KeepAliveService.stop(context)
