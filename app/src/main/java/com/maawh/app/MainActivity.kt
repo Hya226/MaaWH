@@ -113,6 +113,7 @@ class MainActivity : AppCompatActivity() {
             logView?.clear()
             log("日志已清空")
         }
+        binding.btnHistory.setOnClickListener { showHistory() }
 
         // 内置任务包释放（首次安装/覆盖升级时拷 assets/whmx，平时零开销）；
         // 释放完成前禁用开始队列，避免引擎加载到不完整的资源
@@ -1128,6 +1129,15 @@ class MainActivity : AppCompatActivity() {
             parent.addView(label)
             parent.addView(et, LinearLayout.LayoutParams(match(), wrap()))
         }
+    }
+
+    /** 任务历史弹窗：队列级记录（何时跑的/几项/成败/耗时），跨重启保留在 files/history.json */
+    private fun showHistory() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.log_history_title)
+            .setMessage(HistoryStore.summary(this))
+            .setPositiveButton("关闭", null)
+            .show()
     }
 
     // ==================================================================
