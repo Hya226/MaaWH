@@ -50,7 +50,9 @@ object QueueStore {
          * 否则每次开机又会被 group 拉回原处（「调试完转正式任务」就靠它）。
          * 老存档没有这个字段 → 空表 → 全部按 group 默认。
          */
-        val home: Map<String, String> = emptyMap()
+        val home: Map<String, String> = emptyMap(),
+        /** 「后台运行时自动画中画」开关（App 级状态）；老存档缺字段默认开 */
+        val pipOn: Boolean = true
     )
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
@@ -108,7 +110,8 @@ object QueueStore {
             tab = root.optString("tab", "oneclick"),
             mute = root.optBoolean("mute", false),
             closeAfter = root.optBoolean("closeAfter", false),
-            home = toMap(root.optJSONObject("home"))
+            home = toMap(root.optJSONObject("home")),
+            pipOn = root.optBoolean("pipOn", true)
         )
     }
 
@@ -159,6 +162,7 @@ object QueueStore {
         put("tab", state.tab)
         put("mute", state.mute)
         put("closeAfter", state.closeAfter)
+        if (!state.pipOn) put("pipOn", false)
         put("profiles", JSONArray().apply {
             state.profiles.forEach { p ->
                 put(JSONObject().apply {

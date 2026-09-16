@@ -67,6 +67,11 @@ class MainActivity : AppCompatActivity() {
     private var muteEnabled = false
     @Volatile
     private var closeAfterEnabled = false
+
+    /** 「后台运行时自动画中画」开关：切后台是否自动弹虚拟屏悬浮窗 */
+    @Volatile
+    private var pipEnabled = true
+
     private var vdOn = false
 
     /** 当前队列执行器（null = 本此 App 启动还没跑过队列）；运行状态以它为准 */
@@ -117,6 +122,11 @@ class MainActivity : AppCompatActivity() {
             log("日志已清空")
         }
         binding.btnHistory.setOnClickListener { showHistory() }
+        binding.switchPip.isChecked = pipEnabled
+        binding.switchPip.setOnCheckedChangeListener { _, checked ->
+            pipEnabled = checked
+            scheduleSave()
+        }
 
         // 内置任务包释放（首次安装/覆盖升级时拷 assets/whmx，平时零开销）；
         // 释放完成前禁用开始队列，避免引擎加载到不完整的资源
@@ -332,6 +342,8 @@ class MainActivity : AppCompatActivity() {
         restoreToolsQueue(saved.tools)
         muteEnabled = saved.mute
         closeAfterEnabled = saved.closeAfter
+        pipEnabled = saved.pipOn
+        binding.switchPip.isChecked = saved.pipOn
         switchTab(if (saved.tab == "tools") HomeTab.TOOLS else HomeTab.ONECLICK)
         // 旧存档里的 tab="config"（配置曾是与两个 tab 平级的分区）→ 落到一键长草的队列视图。
         // 这里**不能**再重置配置模式：清单加载比窗口可点慢，重置会把用户启动瞬间点的「编辑配置」撤销掉
@@ -446,6 +458,7 @@ class MainActivity : AppCompatActivity() {
                 tab = if (homeTab == HomeTab.TOOLS) "tools" else "oneclick",
                 mute = muteEnabled,
                 closeAfter = closeAfterEnabled,
+                pipOn = pipEnabled,
                 home = HashMap(homeOf)
             ))
         } catch (e: Throwable) {
@@ -802,8 +815,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        // 切后台且虚拟屏活着/任务在跑 → 自动弹虚拟屏悬浮窗（对标 MAA-Meow：可拖动/停止/关闭，回前台收起）
-        if (vdOn || queueRunner?.running == true) {
+        // 切后台且虚拟屏活着/任务在跑 → 自动弹虚拟屏悬浮窗（设置页可关）
+        if (pipEnabled && (vdOn || queueRunner?.running == true)) {
             if (FloatingPanel.isPermissionGranted(this)) {
                 FloatingPanel.showForBackground(this)
             } else if (!overlayPrompted) {
