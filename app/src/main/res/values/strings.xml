@@ -16,6 +16,9 @@
     <string name="label_entry">入口</string>
     <string name="switch_tap">点按预览 = 模拟点击</string>
     <string name="log_title">运行日志</string>
+    <string name="setting_func_title">功能</string>
+    <string name="setting_pip">后台运行时自动画中画</string>
+    <string name="setting_pip_desc">虚拟屏或任务在跑时切到后台，自动弹出可拖动的画面悬浮窗（需「显示在其他应用上层」权限）</string>
     <string name="log_clear">清空</string>
     <string name="log_history">历史</string>
     <string name="log_history_title">任务历史（最近 40 次）</string>
