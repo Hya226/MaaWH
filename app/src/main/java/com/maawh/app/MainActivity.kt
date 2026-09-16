@@ -794,7 +794,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshStatus()
-        // 回前台收起悬浮进度条（弹出的条件见 onStop）
+        // 回前台收起悬浮窗（弹出的条件见 onStop）
         FloatingPanel.hide()
         // 虚拟屏是服务端权威状态(app 重启/切后台会丢内存标志)，回前台自动同步 UI
         syncVdUi()
@@ -802,14 +802,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        // 任务运行中切后台 → 自动弹悬浮进度条（对标 MAA-Meow：可拖动/停止/关闭，回前台收起）
-        if (queueRunner?.running == true) {
+        // 切后台且虚拟屏活着/任务在跑 → 自动弹虚拟屏悬浮窗（对标 MAA-Meow：可拖动/停止/关闭，回前台收起）
+        if (vdOn || queueRunner?.running == true) {
             if (FloatingPanel.isPermissionGranted(this)) {
-                FloatingPanel.showForQueue(this)
+                FloatingPanel.showForBackground(this)
             } else if (!overlayPrompted) {
                 overlayPrompted = true
-                log("悬浮进度条需要「显示在其他应用上层」权限：设置 → 应用管理 → MaaWH → 显示在其他应用上层", LogLevel.WRN)
-                toast("开启悬浮窗权限后，切后台也能看到任务进度")
+                log("悬浮窗需要「显示在其他应用上层」权限：设置 → 应用管理 → MaaWH → 显示在其他应用上层", LogLevel.WRN)
+                toast("开启悬浮窗权限后，切后台也能看到虚拟屏画面")
             }
         }
     }
@@ -1496,6 +1496,8 @@ class MainActivity : AppCompatActivity() {
             vdHandler.removeCallbacks(vdUiTick)
             lifecycleScope.launch(Dispatchers.IO) { ShizukuShell.stopVirtual() }
             hideFullscreen()
+            // 画面没了，后台悬浮窗一并收起
+            FloatingPanel.hide()
             // 虚拟屏没了就不用再占着前台服务（任务在跑的话保留，由 runQueue 收尾时停）
             if (!isTaskRunning) stopKeepAlive()
             setRunState(getString(R.string.run_ready), R.color.text_secondary)
