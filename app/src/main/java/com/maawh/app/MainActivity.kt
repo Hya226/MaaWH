@@ -73,6 +73,9 @@ class MainActivity : AppCompatActivity() {
     private var queueRunner: QueueRunner? = null
     private val isTaskRunning: Boolean get() = queueRunner?.running == true
 
+    /** 悬浮进度条权限缺提示：只提示一次 */
+    private var overlayPrompted = false
+
     private val vdHandler = Handler(Looper.getMainLooper())
     private lateinit var vdOverlay: FrameLayout
     private lateinit var vdFullImg: ImageView
@@ -791,8 +794,24 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        // 回前台收起悬浮进度条（弹出的条件见 onStop）
+        FloatingPanel.hide()
         // 虚拟屏是服务端权威状态(app 重启/切后台会丢内存标志)，回前台自动同步 UI
         syncVdUi()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // 任务运行中切后台 → 自动弹悬浮进度条（对标 MAA-Meow：可拖动/停止/关闭，回前台收起）
+        if (queueRunner?.running == true) {
+            if (FloatingPanel.isPermissionGranted(this)) {
+                FloatingPanel.showForQueue(this)
+            } else if (!overlayPrompted) {
+                overlayPrompted = true
+                log("悬浮进度条需要「显示在其他应用上层」权限：设置 → 应用管理 → MaaWH → 显示在其他应用上层", LogLevel.WRN)
+                toast("开启悬浮窗权限后，切后台也能看到任务进度")
+            }
+        }
     }
 
     override fun onPause() {

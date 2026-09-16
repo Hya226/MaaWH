@@ -133,6 +133,8 @@ class QueueRunner(
                             context, "正在 ${idx + 1}/${planTasks.size}：${item.label}",
                             idx + 1, planTasks.size
                         )
+                        // 悬浮进度条同步（App 在后台时由 MainActivity.onStop 弹出）
+                        FloatingPanel.update("▶ ${idx + 1}/${planTasks.size} ${item.label}")
                     }
                     currentLabel = item.label
                     lastNode = null
@@ -261,6 +263,9 @@ class QueueRunner(
                 )
             )
 
+            // 悬浮条收起 + 复位手动关闭标志（下一轮队列恢复自动弹出）
+            FloatingPanel.onQueueFinished()
+
             notify {
                 running = false
                 cb.onQueueFinished()
@@ -304,6 +309,7 @@ class QueueRunner(
                     costText = costText(queueStart)
                 )
             )
+            FloatingPanel.onQueueFinished()
             notify {
                 cb.onQueueFinished()
                 if (!cb.isVdOn()) KeepAliveService.stop(context)
