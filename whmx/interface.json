@@ -47,14 +47,6 @@
             "description": "虚拟屏投游戏并收口到主页"
         },
         {
-            "name": "刷冬谷币",
-            "label": "刷冬谷币",
-            "entry": "VF_刷冬谷币",
-            "default_check": true,
-            "group": ["battle"],
-            "option": ["刷冬谷币次数"]
-        },
-        {
             "name": "征集",
             "label": "征集",
             "entry": "VF_征集",
@@ -150,23 +142,6 @@
 
     "option": {
         // ===== 次数：select + cases + pipeline_override（对标 MWA「征集几个」）=====
-        "刷冬谷币次数": {
-            "type": "select",
-            "label": "刷冬谷币次数",
-            "default_case": "3",
-            "cases": [
-                { "name": "1", "pipeline_override": { "VF_刷冬谷币_11": { "next": ["VF_刷冬谷币_13"] } } },
-                { "name": "2", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 1 } } },
-                { "name": "3", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 2 } } },
-                { "name": "4", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 3 } } },
-                { "name": "5", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 4 } } },
-                { "name": "6", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 5 } } },
-                { "name": "7", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 6 } } },
-                { "name": "8", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 7 } } },
-                { "name": "9", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 8 } } },
-                { "name": "10", "pipeline_override": { "VF_刷冬谷币_12": { "repeat": 9 } } }
-            ]
-        },
 
         "征集次数": {
             "type": "select",

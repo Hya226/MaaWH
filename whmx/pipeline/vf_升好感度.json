@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-15T22:14:21+08:00",
+        "generatedAt": "2026-09-16T21:51:45+08:00",
         "flowFile": "升好感度.flow.json",
-        "flowHash": "sha256:419d34371b93cee169baebf6836f1ada56886972029ae3b2b4409a074b6f6a8e",
-        "pipelineHash": "sha256:be6dbf8c3b6e89508bbf4572f437a0147732d7f50cc6857ff2f3422251e309e8",
+        "flowHash": "sha256:ffb8474fc4c7000568d6e25c79cd2c1d0707daabf81a9d8fa53ecdbaa49f31a0",
+        "pipelineHash": "sha256:87536e660cb6358b8c0b6ed70c7ac0585949c7e1617264df883224197d349dd6",
         "frameW": 1280,
         "frameH": 720
     },
@@ -39,7 +39,7 @@
         "threshold": 0.72,
         "action": "Click",
         "timeout": 5000,
-        "post_delay": 800,
+        "post_delay": 2000,
         "order_by": "Score",
         "post_wait_freezes": 1200,
         "next": [
@@ -49,11 +49,12 @@
     "VF_升好感度_02": {
         "recognition": "TemplateMatch",
         "template": "蛙锣.png",
-        "threshold": 0.85,
+        "threshold": 0.8,
         "action": "Click",
         "timeout": 4000,
         "post_delay": 800,
         "order_by": "Score",
+        "pre_delay": 1000,
         "post_wait_freezes": 1500,
         "next": [
             "VF_升好感度_03"
@@ -132,8 +133,8 @@
     },
     "VF_升好感度_08_Hit": {
         "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
+        "template": "冷暖自知印.png",
+        "threshold": 0.75,
         "action": "DoNothing",
         "next": [
             "VF_升好感度_02"

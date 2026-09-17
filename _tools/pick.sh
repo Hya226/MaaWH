@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 抓当前虚拟屏帧 → 打开模板框选工具（带负样本校验）
-# 注：框选工具已随流程编辑器独立到 E:\MaaWH Stdio，本脚本仍留在仓库里负责抓帧与负样本累积
+# 注：框选工具已随流程编辑器独立到 E:\MaaWH Studio，本脚本仍留在仓库里负责抓帧与负样本累积
 # 用法: bash _tools/pick.sh            # 抓帧并开工具
 #       bash _tools/pick.sh 帧文件名     # 用已有帧开工具
 set -e
@@ -8,7 +8,7 @@ export MSYS2_ARG_CONV_EXCL="*"
 ADB=/d/android-studio/Sdk/platform-tools/adb.exe
 DEV=2c92e197
 ROOT=/e/MaaWH
-EDITOR="/e/MaaWH Stdio"
+EDITOR="/e/MaaWH Studio"
 
 if [ -n "$1" ]; then
   FRAME="$ROOT/_tools/$1"

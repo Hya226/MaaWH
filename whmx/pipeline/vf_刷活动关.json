@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-15T18:28:17+08:00",
+        "generatedAt": "2026-09-17T08:12:13+08:00",
         "flowFile": "刷活动关.flow.json",
-        "flowHash": "sha256:4512d9e3419870798a26f58b4d93fd5391d48125460e474478b8f27e299e3013",
-        "pipelineHash": "sha256:6eaa5497f9e6e7730b300b75caca53dde880599598ff3d5e9f9dd8ef6c604401",
+        "flowHash": "sha256:11bce6a9fa083e0aa3b0fbea20bf590d63097cb91bd1ccd0371ddc144d92b473",
+        "pipelineHash": "sha256:b0bc9f0ac0bfa681c55745d2f516ce987cc152e87f49fb9284a186381a130496",
         "frameW": 1280,
         "frameH": 720
     },
@@ -119,7 +119,7 @@
     },
     "VF_刷活动关_10": {
         "recognition": "TemplateMatch",
-        "template": "wancheng_wjwy.png",
+        "template": "wancheng.png",
         "threshold": 0.8,
         "action": "Click",
         "timeout": 8000,

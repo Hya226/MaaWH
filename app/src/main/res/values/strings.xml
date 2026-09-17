@@ -71,5 +71,31 @@
     <string name="vd_run">启动虚拟屏</string>
     <string name="vd_stop">停止虚拟屏</string>
     <string name="vd_full">全屏</string>
+    <string name="guide_replay">查看新手引导</string>
+    <string name="guide_counter">第 %1$d / %2$d 步</string>
+    <string name="guide_next">下一步</string>
+    <string name="guide_prev">上一步</string>
+    <string name="guide_skip">跳过</string>
+    <string name="guide_done">完成</string>
+    <string name="guide_welcome_title">欢迎使用 MaaWH</string>
+    <string name="guide_welcome_body">这是基于 MaaFramework 的《物华弥新》自动化助手：把任务勾进队列，由虚拟屏里的引擎自动执行。\n\n接下来用 1 分钟带你认识界面，随时可以点「跳过」。</string>
+    <string name="guide_preview_title">虚拟屏预览</string>
+    <string name="guide_preview_body">这里实时显示虚拟屏里的游戏画面。启动/停止虚拟屏、全屏查看在「快捷选项」里；图上点按会直接注入虚拟屏（顶部开关可关）。</string>
+    <string name="guide_tabs_title">两个队列</string>
+    <string name="guide_tabs_body">「一键长草」是日常主队列，按配置顺序跑完整套任务；「小工具」放调试用的独立任务（刷活动关、博物研学等），两边互不影响。</string>
+    <string name="guide_queue_title">任务列表</string>
+    <string name="guide_queue_body">勾选要运行的任务，长按拖动排序，队列顺序就是执行顺序。点任务行可在右侧编辑参数。</string>
+    <string name="guide_edit_title">参数编辑</string>
+    <string name="guide_edit_body">选中任务后，这里按任务包清单（interface.json）渲染可选参数：次数、开关、目标角色等，改完自动保存。</string>
+    <string name="guide_start_title">开始任务</string>
+    <string name="guide_start_body">按当前所在的 tab 跑对应队列（一键长草或小工具）。运行中按钮变为「停止任务」，通知栏也提供进度和停止按钮。</string>
+    <string name="guide_quick_title">快捷选项</string>
+    <string name="guide_quick_body">关闭游戏声音、跑完自动关游戏、启动/停止虚拟屏、全屏、截图、防后台被杀设置都收在这里。</string>
+    <string name="guide_log_title">日志页</string>
+    <string name="guide_log_body">任务运行时逐条记录识别/点击细节，按级别着色（暗色=引擎细节）。右上「历史」可回看每次队列的结果汇总。</string>
+    <string name="guide_settings_title">设置页</string>
+    <string name="guide_settings_body">Shizuku 状态与权限申请在这里，首次使用先点「申请 Shizuku 权限」；「后台运行时自动画中画」开关也在这页。</string>
+    <string name="guide_done_title">可以开始了</string>
+    <string name="guide_done_body">引导结束。装好并启动 Shizuku、在设置页申请权限后，回到主页点「开始任务」即可。\n\n以后想再看这份引导，去「设置 → 查看新手引导」。</string>
     <string name="about_text">MaaWH — 仿 MAA-Meow 的安卓自动化宿主\n\n任务包目录：\n内部 files/taskpacks/\n外部 Android/data/com.maawh.app/files/taskpacks/\n\n新包结构：\ndefault_pipeline.json\npipeline/（任务 json）\nimage/（模板 png）\n\n在电脑执行：\nadb push 你的包文件夹 \\\n    /sdcard/Android/data/com.maawh.app/files/taskpacks/\n\n引擎说明：识别用图为「短边720」归一化坐标系。</string>
 </resources>
