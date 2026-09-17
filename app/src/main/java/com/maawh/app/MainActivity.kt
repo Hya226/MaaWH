@@ -81,6 +81,9 @@ class MainActivity : AppCompatActivity() {
     /** 悬浮进度条权限缺提示：只提示一次 */
     private var overlayPrompted = false
 
+    /** 新手引导（对标 maameow 聚光灯引导）；onCreate 里初始化，首启自动弹、设置页可重看 */
+    private lateinit var onboarding: Onboarding
+
     private val vdHandler = Handler(Looper.getMainLooper())
     private lateinit var vdOverlay: FrameLayout
     private lateinit var vdFullImg: ImageView
@@ -175,7 +178,22 @@ class MainActivity : AppCompatActivity() {
         log("MaaWH 任务队列版启动")
 
         // Shizuku 服务离线时 sticky listener 不会回调，延迟兜底检测一次
-        vdHandler.postDelayed({ maybePromptShizuku() }, 1500)
+        // （新手引导 1.6s 先弹，这里放 2.2s 错开：引导展示中 maybePromptShizuku 会直接让路）
+        vdHandler.postDelayed({ maybePromptShizuku() }, 2200)
+
+        // 新手引导：首次启动自动弹一次，之后设置页「查看新手引导」可重看
+        onboarding = Onboarding(
+            this,
+            buildGuideSteps(),
+            ::guideShowPage,
+            ::guideEnsureHome,
+        ) { maybePromptShizuku() }
+        binding.btnGuide.setOnClickListener { onboarding.start() }
+        if (!GuideStore.isDone(this)) {
+            vdHandler.postDelayed({
+                if (!isFinishing && !isTaskRunning) onboarding.start()
+            }, 1600)
+        }
 
         handleLaunchIntent(intent)
     }
@@ -1607,6 +1625,8 @@ class MainActivity : AppCompatActivity() {
      * 点击弹窗按钮可直达 Shizuku（官网 / 打开 Shizuku app / 申请授权）。
      */
     private fun maybePromptShizuku() {
+        // 引导展示中不弹 Shizuku 提示（对标 maameow 的 blocksStartupDialogs），引导结束回调里补检
+        if (::onboarding.isInitialized && onboarding.isActive) return
         if (shizukuReady()) return
         val case = when {
             !isShizukuInstalled() -> CASE_NOT_INSTALLED
@@ -1716,6 +1736,51 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+    }
+
+    // ==================================================================
+    // 新手引导（对标 maameow 聚光灯引导，overlay 实现在 Onboarding.kt）
+    // ==================================================================
+
+    /** 引导步骤：page 决定所在页，target 惰性取（切页后才布局），null = 卡片居中 */
+    private fun buildGuideSteps(): List<Onboarding.Step> = listOf(
+        Onboarding.Step(0, null, "✨",
+            getString(R.string.guide_welcome_title), getString(R.string.guide_welcome_body)),
+        Onboarding.Step(0, { binding.imageShot }, "🖥️",
+            getString(R.string.guide_preview_title), getString(R.string.guide_preview_body)),
+        Onboarding.Step(0, { binding.btnTabOneClick.parent as? View }, "🗂️",
+            getString(R.string.guide_tabs_title), getString(R.string.guide_tabs_body)),
+        Onboarding.Step(0, { binding.rvTaskList }, "📋",
+            getString(R.string.guide_queue_title), getString(R.string.guide_queue_body)),
+        Onboarding.Step(0, { binding.panelEdit }, "🛠️",
+            getString(R.string.guide_edit_title), getString(R.string.guide_edit_body)),
+        Onboarding.Step(0, { binding.btnStartQueue }, "▶️",
+            getString(R.string.guide_start_title), getString(R.string.guide_start_body)),
+        Onboarding.Step(0, { binding.btnQuick }, "⚡",
+            getString(R.string.guide_quick_title), getString(R.string.guide_quick_body)),
+        Onboarding.Step(1, { binding.scrollLog }, "📜",
+            getString(R.string.guide_log_title), getString(R.string.guide_log_body)),
+        Onboarding.Step(2, { binding.cardStatus }, "⚙️",
+            getString(R.string.guide_settings_title), getString(R.string.guide_settings_body)),
+        Onboarding.Step(0, null, "🎉",
+            getString(R.string.guide_done_title), getString(R.string.guide_done_body)),
+    )
+
+    /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序） */
+    private fun guideShowPage(page: Int) {
+        when (page) {
+            1 -> switchTo(binding.panelLog)
+            2 -> switchTo(binding.panelSettings)
+            else -> switchTo(binding.panelHome)
+        }
+        binding.bottomNav.menu.getItem(page).isChecked = true
+    }
+
+    /** 引导开始前把主页归位：队列视图 + 一键长草（配置管理模式/小工具 tab 下靶点面板不同） */
+    private fun guideEnsureHome() {
+        setConfigMode(false)
+        switchTab(HomeTab.ONECLICK)
+        guideShowPage(0)
     }
 
     private fun switchTo(panel: View) {

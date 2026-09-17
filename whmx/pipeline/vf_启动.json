@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-16T07:27:10+08:00",
+        "generatedAt": "2026-09-16T22:02:10+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:09f29539a0e976d2b7f7599879cdf782a4399f0aae8f7d9778b9e377a031810c",
-        "pipelineHash": "sha256:e9039757a165f1ddfbfc5820d38908775505367f158600c44b34ad4409f5b762",
+        "flowHash": "sha256:e6e995a8cb2fe347aa83e5b13fcc8376ca1b4c235250edfa7994e10dcfc8bffa",
+        "pipelineHash": "sha256:453b3dd73eff451eb40fb5aab5c9e594bbd916378efad9d9c0e13dea830925a1",
         "frameW": 1280,
         "frameH": 720
     },
@@ -17,17 +17,51 @@
     "VF_启动_01": {
         "action": "StartApp",
         "package": "com.cipaishe.wuhua.bilibili",
-        "post_delay": 1000,
+        "post_delay": 20000,
         "next": [
-            "VF_启动_04"
+            "VF_启动_11"
         ]
     },
-    "VF_启动_04": {
+    "VF_启动_11": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_启动_11_Hit"
+        ],
+        "on_error": [
+            "VF_启动_10"
+        ]
+    },
+    "VF_启动_11_Hit": {
         "recognition": "TemplateMatch",
         "template": "ks_cha.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "DoNothing",
-        "timeout": 10000,
+        "next": [
+            "VF_启动_10"
+        ]
+    },
+    "VF_启动_10": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_启动_10_Hit"
+        ],
+        "on_error": [
+            "VF_启动_11"
+        ]
+    },
+    "VF_启动_10_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "ks_cha.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "roi": [
+            1141,
+            67,
+            68,
+            55
+        ],
         "next": [
             "VF_启动_02"
         ]
@@ -39,6 +73,12 @@
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,
+        "roi": [
+            1135,
+            62,
+            90,
+            62
+        ],
         "next": [
             "VF_启动_03"
         ]

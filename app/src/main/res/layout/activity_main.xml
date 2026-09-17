@@ -473,6 +473,7 @@
             android:orientation="vertical">
 
             <LinearLayout
+                android:id="@+id/cardStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
@@ -565,6 +566,14 @@
                     android:text="@string/setting_pip_desc"
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGuide"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/guide_replay" />
             </LinearLayout>
 
             <TextView

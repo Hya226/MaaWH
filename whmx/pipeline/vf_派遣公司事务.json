@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-15T23:08:12+08:00",
+        "generatedAt": "2026-09-17T08:09:36+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:ffd61068ac8348f3235ee9377282d3a7e68b3e3690043ee4768cc534eeb70f08",
-        "pipelineHash": "sha256:5aba493340daf94875f582161cd8b3c464ec6239465464380bef93760be5c9e6",
+        "flowHash": "sha256:ddb0ffc384e3077b193d8b5bc0d9be03c1a4c19ace40bb10779f1a81c743e54d",
+        "pipelineHash": "sha256:920fdd799ece2c3c9d9fe193652120176fb54c8ac5c46ff4a86724c0426bc6b0",
         "frameW": 1280,
         "frameH": 720
     },
@@ -42,18 +42,25 @@
             1086,
             400
         ],
-        "post_delay": 1000,
+        "post_delay": 2000,
         "next": [
-            "VF_派遣公司事务_04"
+            "VF_派遣公司事务_41"
         ]
     },
-    "VF_派遣公司事务_04": {
-        "recognition": "TemplateMatch",
-        "template": "huoquganying.png",
-        "threshold": 0.6,
+    "VF_派遣公司事务_41": {
+        "recognition": "OCR",
+        "expected": [
+            "获取"
+        ],
         "action": "Click",
         "timeout": 8000,
         "post_delay": 600,
+        "roi": [
+            959,
+            611,
+            114,
+            49
+        ],
         "next": [
             "VF_派遣公司事务_05"
         ]
@@ -64,7 +71,7 @@
             1186,
             400
         ],
-        "post_delay": 600,
+        "post_delay": 1000,
         "next": [
             "VF_派遣公司事务_06"
         ]
@@ -84,6 +91,12 @@
         "template": "bangongshi_biaozhi.png",
         "threshold": 0.55,
         "action": "DoNothing",
+        "roi": [
+            410,
+            67,
+            244,
+            136
+        ],
         "next": [
             "VF_派遣公司事务_07"
         ]
@@ -183,6 +196,39 @@
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,
+        "roi": [
+            961,
+            380,
+            166,
+            174
+        ],
+        "order_by": "Vertical",
+        "pre_delay": 800,
+        "next": [
+            "VF_派遣公司事务_43"
+        ]
+    },
+    "VF_派遣公司事务_43": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_43_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_37"
+        ]
+    },
+    "VF_派遣公司事务_43_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tea_0.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "roi": [
+            597,
+            152,
+            131,
+            125
+        ],
         "next": [
             "VF_派遣公司事务_15"
         ]
@@ -205,6 +251,25 @@
             400
         ],
         "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务_44"
+        ]
+    },
+    "VF_派遣公司事务_44": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_44_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_37"
+        ]
+    },
+    "VF_派遣公司事务_44_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tea_max.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
         "next": [
             "VF_派遣公司事务_17"
         ]
@@ -458,8 +523,8 @@
     "VF_派遣公司事务_35": {
         "action": "Click",
         "target": [
-            642,
-            284
+            290,
+            263
         ],
         "post_delay": 1500,
         "next": [
@@ -474,7 +539,38 @@
         ],
         "post_delay": 500,
         "next": [
+            "VF_派遣公司事务_46"
+        ]
+    },
+    "VF_派遣公司事务_46": {
+        "recognition": "TemplateMatch",
+        "template": "pinming_tuichu.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "pre_delay": 1000,
+        "next": [
+            "VF_派遣公司事务_45"
+        ]
+    },
+    "VF_派遣公司事务_45": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_45_Hit"
+        ],
+        "on_error": [
             "VF_派遣公司事务_37"
+        ]
+    },
+    "VF_派遣公司事务_45_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "pinming_tuichu.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_46"
         ]
     },
     "VF_派遣公司事务_37": {
