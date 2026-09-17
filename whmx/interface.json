@@ -2,282 +2,531 @@
     // 《物华弥新》MaaWH 任务包声明 —— 对标 MWA/MaaEnd 的 ProjectInterface v2
     // 任务清单、参数化(次数/角色/子任务开关)全部在此声明，宿主只负责渲染与传参。
     // 参考: MaaFramework/docs/zh_cn/3.3-ProjectInterfaceV2协议.md
-    "interface_version": 2,
-    "name": "whmx",
-    "label": "物华弥新",
-    "version": "0.2.0",
-    "description": "MaaWH 的《物华弥新》任务包（Shizuku + 虚拟屏）",
 
-    "controller": [
-        {
-            "name": "ShizukuVirtualDisplay",
-            "label": "Shizuku 虚拟屏",
-            "type": "Adb",
-            "display_short_side": 720
-        }
-    ],
-
-    "resource": [
-        {
-            "name": "whmx",
-            "label": "《物华弥新》",
-            "path": [
-                "{PROJECT_DIR}"
-            ]
-        }
-    ],
-
-    "group": [
-        { "name": "startup", "label": "启动" },
-        { "name": "daily", "label": "日常" },
-        { "name": "battle", "label": "战斗" },
-        { "name": "operator", "label": "器者" },
-        { "name": "other", "label": "其他" },
-        { "name": "tools", "label": "小工具" },
-        { "name": "dev", "label": "开发测试" }
-    ],
-
-    "task": [
-        {
-            "name": "启动",
-            "label": "启动",
-            "entry": "VF_启动",
-            "default_check": true,
-            "group": ["startup"],
-            "description": "虚拟屏投游戏并收口到主页"
-        },
-        {
-            "name": "征集",
-            "label": "征集",
-            "entry": "VF_征集",
-            "default_check": true,
-            "group": ["daily"],
-            "option": ["征集次数"]
-        },
-        {
-            "name": "行会签到",
-            "label": "行会签到",
-            "entry": "VF_行会签到",
-            "default_check": true,
-            "group": ["daily"]
-        },
-        {
-            "name": "每日免费礼包购买",
-            "label": "每日免费礼包购买",
-            "entry": "VF_每日免费礼包",
-            "default_check": true,
-            "group": ["daily"]
-        },
-        {
-            "name": "派遣公司事务",
-            "label": "派遣公司事务",
-            "entry": "VF_派遣公司事务",
-            "default_check": true,
-            "group": ["daily"],
-            "description": "收取资源+办公易物+喝茶（内联完整流程，旧集成版 option 开关已并入）"
-        },
-        {
-            "name": "装卸装备",
-            "label": "装卸装备",
-            "entry": "VF_装卸装备",
-            "group": ["operator"],
-            "option": ["目标角色"]
-        },
-        {
-            "name": "升好感度",
-            "label": "升好感度",
-            "entry": "VF_升好感度",
-            "group": ["operator"],
-            "option": ["目标角色", "礼物次数"]
-        },
-        {
-            "name": "查找器者",
-            "label": "查找器者",
-            "entry": "VF_查找器者",
-            "group": ["tools"],
-            "option": ["目标角色"]
-        },
-        {
-            "name": "装备分解",
-            "label": "装备分解",
-            "entry": "VF_装备分解",
-            "group": ["daily"]
-        },
-        {
-            "name": "领取奖励",
-            "label": "领取奖励",
-            "entry": "VF_领取奖励",
-            "group": ["daily"]
-        },
-        {
-            "name": "外勤",
-            "label": "外勤",
-            "entry": "VF_外勤",
-            "group": ["daily"]
-        },
-        {
-            "name": "关闭游戏",
-            "label": "关闭游戏",
-            "entry": "关闭游戏",
-            "group": ["other"]
-        },
-        {
-            // 由流程编辑器生成（pipeline/vf_刷活动关.json）。之前只注册在手机的运行副本上，
-            // 重装 App 会整包重建清单 → 这条任务连同参数一起消失，故落进仓库。
-            "name": "刷活动关",
-            "label": "刷活动关",
-            "entry": "VF_刷活动关",
-            "group": ["tools"],
-            "option": ["刷取次数"]
-        },
-        {
-            // 同上：编辑器生成的 pipeline/vf_博物研学.json
-            "name": "博物研学",
-            "label": "博物研学",
-            "entry": "VF_博物研学",
-            "group": ["tools"],
-            "option": ["器者1", "器者2", "器者3", "器者4"]
-        }
-    ],
-
-    "option": {
-        // ===== 次数：select + cases + pipeline_override（对标 MWA「征集几个」）=====
-
-        "征集次数": {
-            "type": "select",
-            "label": "征集次数",
-            "default_case": "1",
-            "cases": [
-                { "name": "1", "pipeline_override": { "征集段2": { "next": ["VF_征集_11"] } } },
-                { "name": "2", "pipeline_override": { "VF_征集_10": { "repeat": 1 } } },
-                { "name": "3", "pipeline_override": { "VF_征集_10": { "repeat": 2 } } },
-                { "name": "4", "pipeline_override": { "VF_征集_10": { "repeat": 3 } } }
-            ]
-        },
-
-        // ===== 角色选择：input + {角色} 变量替换（替代宿主复制 _target.png 的做法）=====
-        "目标角色": {
-            "type": "input",
-            "label": "目标角色",
-            "description": "选择要操作的角色，需与 image/ 下 <角色名>.png 模板一致",
-            "inputs": [{ "name": "角色", "label": "角色名", "default": "蛙锣", "pipeline_type": "string" }],
-            "pipeline_override": {
-                "VF_装卸装备_11_Hit": { "template": "{角色}.png" },
-                "VF_装卸装备_02": { "template": "{角色}.png" },
-                "VF_升好感度_08_Hit": { "template": "{角色}.png" },
-                "VF_升好感度_02": { "template": "{角色}.png" },
-                "VF_查找器者_03_Hit": { "template": "{角色}.png" },
-                "VF_查找器者_02": { "template": "{角色}.png" }
-            }
-        },
-
-        // ===== 礼物次数：input + 变量替换到 repeat =====
-        "礼物次数": {
-            "type": "input",
-            "label": "礼物次数",
-            "description": "升好感度时点击礼物的次数（1~20）",
-            "inputs": [
-                {
-                    "name": "礼物次数",
-                    "label": "次数",
-                    "default": "1",
-                    "pipeline_type": "int",
-                    "verify": "^([1-9]|1[0-9]|20)$",
-                    "pattern_msg": "请输入 1~20 的整数"
-                }
-            ],
-            "pipeline_override": { "VF_升好感度_04": { "repeat": "{礼物次数}" } }
-        },
-
-        // ===== 小工具（流程编辑器生成）：input + 变量替换到目标节点字段 =====
-        // 「刷取次数」= 加号点击次数（repeat）；节点名与生成物同源，改流程会一起变
-        "刷取次数": {
-            "type": "input",
-            "label": "刷取次数",
-            "inputs": [
-                {
-                    "name": "刷取次数",
-                    "label": "刷取次数",
-                    "default": "1",
-                    "pipeline_type": "int"
-                }
-            ],
-            "pipeline_override": {
-                "VF_刷活动关_07": { "repeat": "{刷取次数}" }
-            }
-        },
-
-        // 器者1/2/3：填的是【模板图名】（器者名），值被拼进 "{器者N}.png" → 必须是 string。
-        // 2026-09-15 修正：器者1/2 原先误写成 int，App 按 int 把输入框设成纯数字键盘，
-        // 中文/字母根本敲不进去（器者3 一直是 string，所以只有它好使）。
-        "器者1": {
-            "type": "input",
-            "label": "器者1",
-            "inputs": [
-                {
-                    "name": "器者1",
-                    "label": "器者1",
-                    "default": "",
-                    "pipeline_type": "string"
-                }
-            ],
-            "pipeline_override": {
-                "VF_博物研学_10_Hit": { "template": "{器者1}.png" },
-                "VF_博物研学_23": { "template": "{器者1}.png" }
-            }
-        },
-
-        "器者2": {
-            "type": "input",
-            "label": "器者2",
-            "inputs": [
-                {
-                    "name": "器者2",
-                    "label": "器者2",
-                    "default": "",
-                    "pipeline_type": "string"
-                }
-            ],
-            "pipeline_override": {
-                "VF_博物研学_15_Hit": { "template": "{器者2}.png" },
-                "VF_博物研学_26": { "template": "{器者2}.png" }
-            }
-        },
-
-        "器者4": {
-            // 2026-09-15 补：这条原本只注册在手机的运行副本上（编辑器同步只写手机），
-            // 重装 App 时被内置清单整包重建冲掉了。运行时痕迹见 maafw.log：
-            // pipeline_override = VF_博物研学_31_Hit / VF_博物研学_34 → {器者4}.png
-            "type": "input",
-            "label": "器者4",
-            "inputs": [
-                {
-                    "name": "器者4",
-                    "label": "器者4",
-                    "default": "金喇叭",
-                    "pipeline_type": "string"
-                }
-            ],
-            "pipeline_override": {
-                "VF_博物研学_31_Hit": { "template": "{器者4}.png" },
-                "VF_博物研学_34": { "template": "{器者4}.png" }
-            }
-        },
-        "器者3": {
-            "type": "input",
-            "label": "器者3",
-            "inputs": [
-                {
-                    "name": "器者3",
-                    "label": "器者3",
-                    "default": "",
-                    "pipeline_type": "string"
-                }
-            ],
-            "pipeline_override": {
-                "VF_博物研学_20_Hit": { "template": "{器者3}.png" },
-                "VF_博物研学_28": { "template": "{器者3}.png" }
-            }
-        }
+  "interface_version": 2,
+  "name": "whmx",
+  "label": "物华弥新",
+  "version": "0.2.0",
+  "description": "MaaWH 的《物华弥新》任务包（Shizuku + 虚拟屏）",
+  "controller": [
+    {
+      "name": "ShizukuVirtualDisplay",
+      "label": "Shizuku 虚拟屏",
+      "type": "Adb",
+      "display_short_side": 720
     }
+  ],
+  "resource": [
+    {
+      "name": "whmx",
+      "label": "《物华弥新》",
+      "path": [
+        "{PROJECT_DIR}"
+      ]
+    }
+  ],
+  "group": [
+    {
+      "name": "startup",
+      "label": "启动"
+    },
+    {
+      "name": "daily",
+      "label": "日常"
+    },
+    {
+      "name": "battle",
+      "label": "战斗"
+    },
+    {
+      "name": "operator",
+      "label": "器者"
+    },
+    {
+      "name": "other",
+      "label": "其他"
+    },
+    {
+      "name": "tools",
+      "label": "小工具"
+    },
+    {
+      "name": "dev",
+      "label": "开发测试"
+    }
+  ],
+  "task": [
+    {
+      "name": "启动",
+      "label": "启动",
+      "entry": "VF_启动",
+      "default_check": true,
+      "group": [
+        "startup"
+      ],
+      "description": "虚拟屏投游戏并收口到主页"
+    },
+    {
+      "name": "征集",
+      "label": "征集",
+      "entry": "VF_征集",
+      "default_check": true,
+      "group": [
+        "daily"
+      ],
+      "option": [
+        "征集次数"
+      ]
+    },
+    {
+      "name": "行会签到",
+      "label": "行会签到",
+      "entry": "VF_行会签到",
+      "default_check": true,
+      "group": [
+        "daily"
+      ]
+    },
+    {
+      "name": "每日免费礼包购买",
+      "label": "每日免费礼包购买",
+      "entry": "VF_每日免费礼包",
+      "default_check": true,
+      "group": [
+        "daily"
+      ]
+    },
+    {
+      "name": "派遣公司事务",
+      "label": "派遣公司事务",
+      "entry": "VF_派遣公司事务",
+      "default_check": true,
+      "group": [
+        "daily"
+      ],
+      "description": "收取资源+办公易物+喝茶（内联完整流程，旧集成版 option 开关已并入）"
+    },
+    {
+      "name": "装卸装备",
+      "label": "装卸装备",
+      "entry": "VF_装卸装备",
+      "group": [
+        "operator"
+      ],
+      "option": [
+        "目标角色"
+      ]
+    },
+    {
+      "name": "升好感度",
+      "label": "升好感度",
+      "entry": "VF_升好感度",
+      "group": [
+        "operator"
+      ],
+      "option": [
+        "目标角色",
+        "礼物次数"
+      ]
+    },
+    {
+      "name": "查找器者",
+      "label": "查找器者",
+      "entry": "VF_查找器者",
+      "group": [
+        "tools"
+      ],
+      "option": [
+        "目标角色"
+      ]
+    },
+    {
+      "name": "装备分解",
+      "label": "装备分解",
+      "entry": "VF_装备分解",
+      "group": [
+        "daily"
+      ]
+    },
+    {
+      "name": "领取奖励",
+      "label": "领取奖励",
+      "entry": "VF_领取奖励",
+      "group": [
+        "daily"
+      ]
+    },
+    {
+      "name": "外勤",
+      "label": "外勤",
+      "entry": "VF_外勤",
+      "group": [
+        "daily"
+      ]
+    },
+    {
+      "name": "关闭游戏",
+      "label": "关闭游戏",
+      "entry": "关闭游戏",
+      "group": [
+        "other"
+      ]
+    },
+    {
+      "name": "刷活动关",
+      "label": "刷活动关",
+      "entry": "VF_刷活动关",
+      "group": [
+        "tools"
+      ],
+      "option": [
+        "刷取次数"
+      ]
+    },
+    {
+      "name": "博物研学",
+      "label": "博物研学",
+      "entry": "VF_博物研学",
+      "group": [
+        "tools"
+      ],
+      "option": [
+        "器者1",
+        "器者2",
+        "器者3",
+        "器者4"
+      ]
+    },
+    {
+      "name": "清体力",
+      "label": "清体力",
+      "entry": "VF_清体力",
+      "group": [
+        "tools"
+      ],
+      "option": [
+        "类型",
+        "次数"
+      ]
+    },
+    {
+      "name": "喝茶",
+      "label": "喝茶",
+      "entry": "VF_喝茶",
+      "group": [
+        "tools"
+      ]
+    },
+    {
+      "name": "易物所购买",
+      "label": "易物所购买",
+      "entry": "VF_易物所购买",
+      "group": [
+        "tools"
+      ]
+    }
+  ],
+  "option": {
+    "征集次数": {
+      "type": "select",
+      "label": "征集次数",
+      "default_case": "1",
+      "cases": [
+        {
+          "name": "1",
+          "pipeline_override": {
+            "征集段2": {
+              "next": [
+                "VF_征集_11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2",
+          "pipeline_override": {
+            "VF_征集_10": {
+              "repeat": 1
+            }
+          }
+        },
+        {
+          "name": "3",
+          "pipeline_override": {
+            "VF_征集_10": {
+              "repeat": 2
+            }
+          }
+        },
+        {
+          "name": "4",
+          "pipeline_override": {
+            "VF_征集_10": {
+              "repeat": 3
+            }
+          }
+        }
+      ]
+    },
+    "目标角色": {
+      "type": "input",
+      "label": "目标角色",
+      "description": "选择要操作的角色，需与 image/ 下 <角色名>.png 模板一致",
+      "inputs": [
+        {
+          "name": "角色",
+          "label": "角色名",
+          "default": "蛙锣",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "VF_装卸装备_11_Hit": {
+          "template": "{角色}.png"
+        },
+        "VF_装卸装备_02": {
+          "template": "{角色}.png"
+        },
+        "VF_升好感度_08_Hit": {
+          "template": "{角色}.png"
+        },
+        "VF_升好感度_02": {
+          "template": "{角色}.png"
+        },
+        "VF_查找器者_03_Hit": {
+          "template": "{角色}.png"
+        },
+        "VF_查找器者_02": {
+          "template": "{角色}.png"
+        }
+      }
+    },
+    "礼物次数": {
+      "type": "input",
+      "label": "礼物次数",
+      "description": "升好感度时点击礼物的次数（1~20）",
+      "inputs": [
+        {
+          "name": "礼物次数",
+          "label": "次数",
+          "default": "1",
+          "pipeline_type": "int",
+          "verify": "^([1-9]|1[0-9]|20)$",
+          "pattern_msg": "请输入 1~20 的整数"
+        }
+      ],
+      "pipeline_override": {
+        "VF_升好感度_04": {
+          "repeat": "{礼物次数}"
+        }
+      }
+    },
+    "刷取次数": {
+      "type": "input",
+      "label": "刷取次数",
+      "inputs": [
+        {
+          "name": "刷取次数",
+          "label": "刷取次数",
+          "default": "1",
+          "pipeline_type": "int"
+        }
+      ],
+      "pipeline_override": {
+        "VF_刷活动关_07": {
+          "repeat": "{刷取次数}"
+        }
+      }
+    },
+    "器者1": {
+      "type": "input",
+      "label": "器者1",
+      "inputs": [
+        {
+          "name": "器者1",
+          "label": "器者1",
+          "default": "",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "VF_博物研学_10_Hit": {
+          "template": "{器者1}.png"
+        },
+        "VF_博物研学_23": {
+          "template": "{器者1}.png"
+        }
+      }
+    },
+    "器者2": {
+      "type": "input",
+      "label": "器者2",
+      "inputs": [
+        {
+          "name": "器者2",
+          "label": "器者2",
+          "default": "",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "VF_博物研学_15_Hit": {
+          "template": "{器者2}.png"
+        },
+        "VF_博物研学_26": {
+          "template": "{器者2}.png"
+        }
+      }
+    },
+    "器者4": {
+      "type": "input",
+      "label": "器者4",
+      "inputs": [
+        {
+          "name": "器者4",
+          "label": "器者4",
+          "default": "金喇叭",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "VF_博物研学_31_Hit": {
+          "template": "{器者4}.png"
+        },
+        "VF_博物研学_34": {
+          "template": "{器者4}.png"
+        }
+      }
+    },
+    "器者3": {
+      "type": "input",
+      "label": "器者3",
+      "inputs": [
+        {
+          "name": "器者3",
+          "label": "器者3",
+          "default": "",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "VF_博物研学_20_Hit": {
+          "template": "{器者3}.png"
+        },
+        "VF_博物研学_28": {
+          "template": "{器者3}.png"
+        }
+      }
+    },
+    "类型": {
+      "type": "select",
+      "label": "类型",
+      "cases": [
+        {
+          "name": "冬谷币",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "冬谷币"
+            }
+          }
+        },
+        {
+          "name": "装备",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "装备"
+            }
+          }
+        },
+        {
+          "name": "教材",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "教材"
+            }
+          }
+        }
+      ],
+      "default_case": "冬谷币"
+    },
+    "次数": {
+      "type": "select",
+      "label": "次数",
+      "cases": [
+        {
+          "name": "2",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 1
+            }
+          }
+        },
+        {
+          "name": "3",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 2
+            }
+          }
+        },
+        {
+          "name": "4",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 3
+            }
+          }
+        },
+        {
+          "name": "5",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 4
+            }
+          }
+        },
+        {
+          "name": "6",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 5
+            }
+          }
+        },
+        {
+          "name": "7",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 6
+            }
+          }
+        },
+        {
+          "name": "8",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 7
+            }
+          }
+        },
+        {
+          "name": "9",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 8
+            }
+          }
+        },
+        {
+          "name": "10",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "repeat": 9
+            }
+          }
+        }
+      ],
+      "default_case": "2"
+    }
+  }
 }
