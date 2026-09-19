@@ -1166,24 +1166,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnTabTools.isChecked = tab == HomeTab.TOOLS
         binding.btnTabToolbox.isChecked = tab == HomeTab.TOOLBOX
         if (tab == HomeTab.TOOLBOX) {
-            refreshToolboxPanel()
             binding.btnStartQueue.text =
                 getString(if (gachaRunning) R.string.quick_stop else R.string.btn_start_queue)
         } else if (!isTaskRunning) {
             binding.btnStartQueue.text = getString(R.string.btn_start_queue)
         }
         scheduleSave()
-    }
-
-    /** 小工具 tab：刷新抽卡识别面板（上次抓取时间与实时库存） */
-    private fun refreshToolboxPanel() {
-        val all = GachaStore.loadRecords(applicationContext)
-        val cfg = GachaStore.loadConfig(applicationContext)
-        binding.tvToolboxLastCrawl.text = if (cfg.lastCrawlMs > 0)
-            "上次抓取：${SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))}"
-        else "尚未抓取"
-        binding.tvToolboxCount.text = "实时库存：${all.size} 条"
-        binding.tvToolboxEmpty.visibility = if (all.isEmpty()) View.VISIBLE else View.GONE
     }
 
     /** 一键长草：队列视图 ⇄ 配置管理 */
@@ -2983,7 +2971,6 @@ class MainActivity : AppCompatActivity() {
                 binding.btnGachaRun.text = getString(R.string.gacha_run)
                 if (homeTab == HomeTab.TOOLBOX) {
                     binding.btnStartQueue.text = getString(R.string.btn_start_queue)
-                    refreshToolboxPanel()
                 }
                 renderGachaPanel()
             }
@@ -2997,10 +2984,13 @@ class MainActivity : AppCompatActivity() {
         val all = GachaStore.loadRecords(applicationContext)
         val cfg = GachaStore.loadConfig(applicationContext)
         if (!gachaRunning) {
-            // 状态行已随按钮搬到小工具 tab；上次抓取/库存信息由该面板的专属行承担
             binding.tvGachaStatus.text =
                 if (cfg.lastCrawlMs > 0) "空闲" else getString(R.string.gacha_status_default)
         }
+        binding.tvGachaLastCrawl.text = if (cfg.lastCrawlMs > 0)
+            "上次抓取：${SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))}"
+        else "尚未抓取"
+        binding.tvGachaCount.text = "库存 ${all.size} 条"
         if (all.isEmpty()) {
             container.addView(simpleText("还没有录入过抽卡记录哦", R.color.text_secondary, 12f))
             return
