@@ -105,6 +105,8 @@
     <string name="guide_preview_body">这里实时显示虚拟屏里的游戏画面。启动/停止虚拟屏、全屏查看在「快捷选项」里；图上点按会直接注入虚拟屏（顶部开关可关）。</string>
     <string name="guide_queue_title">任务列表</string>
     <string name="guide_queue_body">勾选要运行的任务，点任务行在右侧编辑参数（次数、目标角色等，改完自动保存），长按拖动排序。「编辑配置」里可管理多套队列配置，首次进入会另弹引导。</string>
+    <string name="guide_m_toolbox_title">小工具</string>
+    <string name="guide_m_toolbox_body">第三个 tab 收录工具型快捷操作：目前有「抽卡识别」——虚拟屏游戏停在「招集记录」页后，点底部「开始任务」即可自动抓取，抓完去抽卡页看统计。</string>
     <string name="guide_start_title">开始任务</string>
     <string name="guide_start_body">按当前所在的 tab 跑对应队列（一键长草或额外队列），运行中按钮变「停止任务」，通知栏也有进度和停止。游戏静音、跑完关游戏、虚拟屏开关、防杀设置都收在「快捷选项」。</string>
     <string name="guide_done_title">可以开始了</string>

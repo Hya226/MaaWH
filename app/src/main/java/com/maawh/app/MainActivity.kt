@@ -3398,9 +3398,12 @@ class MainActivity : AppCompatActivity() {
             enter = { setConfigMode(true) }),
         Onboarding.Step(0, { binding.btnNewProfile }, "➕",
             getString(R.string.guide_c_new_title), getString(R.string.guide_c_new_body)),
+        Onboarding.Step(0, { binding.panelToolbox }, "🧰",
+            getString(R.string.guide_m_toolbox_title), getString(R.string.guide_m_toolbox_body),
+            enter = { switchTab(HomeTab.TOOLBOX) }),
         Onboarding.Step(0, { binding.btnStartQueue }, "▶️",
             getString(R.string.guide_start_title), getString(R.string.guide_start_body),
-            enter = { setConfigMode(false) }),
+            enter = { switchTab(HomeTab.ONECLICK) }),
         Onboarding.Step(0, null, "🎉",
             getString(R.string.guide_done_title), getString(R.string.guide_done_body)),
     )

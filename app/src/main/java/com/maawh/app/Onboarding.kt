@@ -30,7 +30,7 @@ object GuideStore {
     private const val KEY_PREFIX = "done_"
 
     /** 任一引导内容或顺序改版时 +1，老用户所有场景会各重看一次 */
-    const val GUIDE_VERSION = 2
+    const val GUIDE_VERSION = 3
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
 
