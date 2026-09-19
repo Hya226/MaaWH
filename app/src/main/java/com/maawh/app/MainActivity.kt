@@ -2191,6 +2191,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupGachaAccounts() {
         // 点账号名 = 管理菜单（改名/删除/新建/切换）；点倒三角 = 直接弹账号切换列表
+        binding.accountHeader.setOnClickListener { showGachaAccountMenu() }
         binding.tvGachaAccountName.setOnClickListener { showGachaAccountMenu() }
         binding.btnGachaAccountArrow.setOnClickListener {
             showGachaAccountPicker()
@@ -3006,6 +3007,8 @@ class MainActivity : AppCompatActivity() {
             "上次抓取：${SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))}"
         else "尚未抓取"
         binding.tvGachaCount.text = "库存 ${all.size} 条"
+        val te = all.count { it.rarity == GachaStore.RARITY_TOP }
+        binding.tvGachaAccountSub.text = "累计 ${all.size} 抽 · 特出 $te"
         if (all.isEmpty()) {
             container.addView(simpleText("还没有录入过抽卡记录哦", R.color.text_secondary, 12f))
             return
