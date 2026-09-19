@@ -1183,6 +1183,7 @@ class MainActivity : AppCompatActivity() {
             "上次抓取：${SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))}"
         else "尚未抓取"
         binding.tvToolboxCount.text = "实时库存：${all.size} 条"
+        binding.tvToolboxEmpty.visibility = if (all.isEmpty()) View.VISIBLE else View.GONE
     }
 
     /** 一键长草：队列视图 ⇄ 配置管理 */
@@ -3005,7 +3006,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         if (all.isEmpty()) {
-            container.addView(simpleText("还没有数据。把虚拟屏里的游戏停在「招集记录」页，再点「开始抓取」。", R.color.text_secondary, 12f))
+            container.addView(simpleText("还没有录入过抽卡记录哦", R.color.text_secondary, 12f))
             return
         }
         val pools = try {
