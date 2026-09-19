@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-19T14:32:10+08:00",
+        "generatedAt": "2026-09-19T20:29:57+08:00",
         "flowFile": "装卸装备.flow.json",
-        "flowHash": "sha256:8436e9296c7bbe736cc124a2d84e9f06b947c3512349162dc2060274402e1570",
-        "pipelineHash": "sha256:920384d689120e31563d11926561fa1d4c40325f1a76e7848871d3e0adeec772",
+        "flowHash": "sha256:f87f997ae740ab052146c94eac9f730297000a6d1e4a2b0a14ee9758bedb865d",
+        "pipelineHash": "sha256:b7ae80818f8d0658835ae229a680238780ac293e697b312b7d634a741f0e3ea5",
         "frameW": 1280,
         "frameH": 720
     },
@@ -24,45 +24,45 @@
         "order_by": "Score",
         "post_wait_freezes": 1200,
         "next": [
-            "VF_装卸装备_12"
+            "VF_装卸装备_16"
         ]
     },
-    "VF_装卸装备_12_03": {
+    "VF_装卸装备_16_03": {
         "action": "DoNothing",
         "timeout": 5000,
         "next": [
-            "VF_装卸装备_12_03_Hit"
+            "VF_装卸装备_16_03_Hit"
         ],
         "on_error": [
-            "VF_装卸装备_12_02"
+            "VF_装卸装备_16_02"
         ]
     },
-    "VF_装卸装备_12_03_Hit": {
+    "VF_装卸装备_16_03_Hit": {
         "recognition": "TemplateMatch",
         "template": "蛙锣.png",
         "threshold": 0.75,
         "action": "DoNothing",
         "next": [
-            "VF_装卸装备_12_01"
+            "VF_装卸装备_16_01"
         ]
     },
-    "VF_装卸装备_12_02": {
+    "VF_装卸装备_16_02": {
         "action": "Swipe",
         "begin": [
-            1219,
-            377
+            1214,
+            383
         ],
         "end": [
-            59,
-            364
+            448,
+            372
         ],
         "duration": 900,
         "post_delay": 600,
         "next": [
-            "VF_装卸装备_12_03"
+            "VF_装卸装备_16_03"
         ]
     },
-    "VF_装卸装备_12_01": {
+    "VF_装卸装备_16_01": {
         "recognition": "TemplateMatch",
         "template": "蛙锣.png",
         "threshold": 0.75,
@@ -74,10 +74,10 @@
             "VF_装卸装备_09"
         ]
     },
-    "VF_装卸装备_12": {
+    "VF_装卸装备_16": {
         "action": "DoNothing",
         "next": [
-            "VF_装卸装备_12_03"
+            "VF_装卸装备_16_03"
         ]
     },
     "VF_装卸装备_09": {

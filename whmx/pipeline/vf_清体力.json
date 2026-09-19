@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-17T21:56:24+08:00",
+        "generatedAt": "2026-09-19T20:26:30+08:00",
         "flowFile": "清体力.flow.json",
-        "flowHash": "sha256:17160cf61baf29a5c525eb392a9723d839ba141db47c4eafe2b5d1d7d7980e6d",
-        "pipelineHash": "sha256:feee5dae643e64e55380e05332474cd65834a4347db846e3b2b0645ead1bee76",
+        "flowHash": "sha256:d4ebea8f8a3b80c32294685b970e2013520c69c78e3c3d20c0832c35efb302e9",
+        "pipelineHash": "sha256:a5a745ac8b91673d59d2fedc15b7af504802a9a5bbf1b68d6754c430c47d63b2",
         "frameW": 1280,
         "frameH": 720
     },
@@ -88,6 +88,43 @@
         "action": "Click",
         "timeout": 8000,
         "post_delay": 2000,
+        "next": [
+            "VF_清体力_19"
+        ]
+    },
+    "VF_清体力_19": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_清体力_19_Hit"
+        ],
+        "on_error": [
+            "VF_清体力_15"
+        ]
+    },
+    "VF_清体力_19_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_清体力_20"
+        ]
+    },
+    "VF_清体力_20": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_清体力_20_Hit"
+        ]
+    },
+    "VF_清体力_20_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 600,
         "next": [
             "VF_清体力_15"
         ]

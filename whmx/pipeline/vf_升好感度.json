@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-18T23:02:52+08:00",
+        "generatedAt": "2026-09-19T20:30:26+08:00",
         "flowFile": "升好感度.flow.json",
-        "flowHash": "sha256:c15006582dbf83638673036d044c438e674462403c5f066ff453073feb955f21",
-        "pipelineHash": "sha256:8f1e405f2f7a10c27ec9028ccc52b3a64164391f9098dc16242d9585216d1750",
+        "flowHash": "sha256:4c40b9daedb440f1b037e087c8540a163ef6d28e0d6c9afc9f42c032446f8e8f",
+        "pipelineHash": "sha256:fd7b42b12c392db32c47ab68e40ff472fbaa0fddeb8ac899fc258b910a2e37b1",
         "frameW": 1280,
         "frameH": 720
     },
@@ -49,12 +49,12 @@
     "VF_升好感度_37_02": {
         "action": "Swipe",
         "begin": [
-            1219,
-            377
+            1214,
+            383
         ],
         "end": [
-            59,
-            364
+            448,
+            372
         ],
         "duration": 900,
         "post_delay": 600,
