@@ -22,6 +22,7 @@ import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -2189,7 +2190,11 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    /** 手动添加一条记录（补录 30 天窗口外的旧卡池/旧记录），写入当前账号，不动锚点 */
+    /**
+     * 编辑抽卡记录：顶部两个页签【标注UP器者】【添加抽卡记录】。
+     * 标注页给限时/限定渠道的每个卡池小类设 UP 器者（统计卡据此算歪/UP平均）；
+     * 添加页保留手动补录表单，并新增「最近手动补录」列表，可删除误录的记录。
+     */
     private fun editGachaRecord() {
         if (gachaRunning) { toast("抓取中不能编辑记录"); return }
         val ctx = applicationContext
@@ -2198,7 +2203,115 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Throwable) {
             listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道")
         }
+        val upPools = listOf("限时渠道", "限定渠道")
 
+        // ===== 页签行 =====
+        fun tabBtn(text: String) = TextView(this).apply {
+            this.text = text
+            gravity = Gravity.CENTER
+            textSize = 13f
+            paint.isFakeBoldText = true
+            setPadding(dp(10), dp(9), dp(10), dp(9))
+        }
+        val tabUp = tabBtn("标注UP器者")
+        val tabAdd = tabBtn("添加抽卡记录")
+        fun styleTab(t: TextView, sel: Boolean) {
+            t.setTextColor(getColor(if (sel) R.color.text_primary else R.color.text_secondary))
+            t.background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(8).toFloat()
+                setColor(if (sel) 0x334C9AFF else 0x00000000)
+            }
+        }
+        val tabRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(14), dp(6), dp(14), dp(2))
+            addView(tabUp, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(6) })
+            addView(tabAdd, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+
+        // ===== 面板1：标注UP器者 =====
+        val upEditors = ArrayList<Triple<String, String, EditText>>() // (pool, banner原文, 输入框)
+        val upBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(10))
+                val marks = GachaStore.loadUpMarks(ctx)
+                val allNow = GachaStore.loadRecords(ctx)
+                for (pool in upPools) {
+                    addView(TextView(this@MainActivity).apply {
+                        text = pool
+                        setTextColor(getColor(R.color.text_primary))
+                        textSize = 14f
+                        paint.isFakeBoldText = true
+                        setPadding(0, dp(10), 0, dp(2))
+                    })
+                    val banners = LinkedHashSet<String>()
+                    for (r in allNow) if (r.pool == pool) banners.add(r.banner)
+                    if (banners.isEmpty()) {
+                        addView(TextView(this@MainActivity).apply {
+                            text = "该池暂无记录，抓取或补录后再来标注"
+                            setTextColor(getColor(R.color.text_secondary))
+                            textSize = 12f
+                        })
+                    }
+                    for (b in banners) {
+                        val label = b.substringAfter('/', b).ifBlank { "未识别" }
+                        val cnt = allNow.count { it.pool == pool && it.banner == b }
+                        val et = EditText(this@MainActivity).apply {
+                            hint = "UP 器者名（留空清除）"
+                            setSingleLine()
+                            setText(marks[pool]?.get(b) ?: "")
+                            textSize = 13f
+                            setPadding(dp(10), dp(8), dp(10), dp(8))
+                        }
+                        upEditors.add(Triple(pool, b, et))
+                        addView(LinearLayout(this@MainActivity).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            gravity = Gravity.CENTER_VERTICAL
+                            setPadding(0, dp(4), 0, dp(4))
+                            addView(TextView(this@MainActivity).apply {
+                                text = "『$label』"
+                                setTextColor(getColor(R.color.accent))
+                                textSize = 12f
+                            }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                            addView(TextView(this@MainActivity).apply {
+                                text = "$cnt 抽"
+                                setTextColor(getColor(R.color.text_secondary))
+                                textSize = 11f
+                            }, LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                            ).apply { marginEnd = dp(8) })
+                            addView(et, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.1f))
+                        })
+                    }
+                }
+                addView(TextView(this@MainActivity).apply {
+                    text = "标注后顶部统计卡按「出卡数 / 歪」与「UP平均」显示；歪 = 小类标注 UP 以外的特出。"
+                    setTextColor(getColor(R.color.text_secondary))
+                    textSize = 11f
+                    setPadding(0, dp(10), 0, dp(8))
+                })
+            }
+        val btnUpSave = TextView(this).apply {
+            text = "保存标注"
+            gravity = Gravity.CENTER
+            setTextColor(android.graphics.Color.WHITE)
+            textSize = 14f
+            paint.isFakeBoldText = true
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(8).toFloat()
+                setColor(getColor(R.color.accent))
+            }
+            setPadding(dp(10), dp(11), dp(10), dp(11))
+        }
+        upBox.addView(btnUpSave)
+        val panelUp = ScrollView(this).apply { addView(upBox) }
+        val panelUpWrap = FrameLayout(this).apply {
+            addView(panelUp, FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ))
+        }
+
+        // ===== 面板2：添加抽卡记录 =====
         val nameEdit = EditText(this).apply {
             hint = "如：银香囊"
             setSingleLine()
@@ -2238,11 +2351,140 @@ class MainActivity : AppCompatActivity() {
             addView(view, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
 
-        val form = ScrollView(this).apply {
+        val btnAdd = TextView(this).apply {
+            text = "＋ 添加记录"
+            gravity = Gravity.CENTER
+            setTextColor(android.graphics.Color.WHITE)
+            textSize = 14f
+            paint.isFakeBoldText = true
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(8).toFloat()
+                setColor(getColor(R.color.accent))
+            }
+            setPadding(dp(10), dp(11), dp(10), dp(11))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8) }
+        }
+
+        // 最近手动补录列表（可删除）
+        val manualBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(12) }
+        }
+
+        fun refreshManualList() {
+            manualBox.removeAllViews()
+            val manuals = GachaStore.loadRecords(ctx).filter { it.manual }
+            manualBox.addView(TextView(this@MainActivity).apply {
+                text = "最近手动补录（${manuals.size}）"
+                setTextColor(getColor(R.color.text_primary))
+                textSize = 13f
+                paint.isFakeBoldText = true
+                setPadding(0, dp(4), 0, dp(2))
+            })
+            if (manuals.isEmpty()) {
+                manualBox.addView(TextView(this@MainActivity).apply {
+                    text = "暂无手动补录的记录"
+                    setTextColor(getColor(R.color.text_secondary))
+                    textSize = 12f
+                })
+                return
+            }
+            for (r in manuals.take(20)) {
+                val bannerLabel = r.banner.substringAfter('/', r.banner).ifBlank { "未识别" }
+                val line = LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, dp(5), 0, dp(5))
+                    addView(LinearLayout(this@MainActivity).apply {
+                        orientation = LinearLayout.VERTICAL
+                        addView(TextView(this@MainActivity).apply {
+                            text = r.name + when (r.rarity) {
+                                GachaStore.RARITY_TOP -> "  特出"
+                                GachaStore.RARITY_MID -> "  优异"
+                                else -> "  新生"
+                            }
+                            setTextColor(
+                                getColor(
+                                    when (r.rarity) {
+                                        GachaStore.RARITY_TOP -> R.color.err_red
+                                        GachaStore.RARITY_MID -> R.color.accent
+                                        else -> R.color.text_secondary
+                                    }
+                                )
+                            )
+                            textSize = 12f
+                            paint.isFakeBoldText = true
+                        })
+                        addView(TextView(this@MainActivity).apply {
+                            text = "${r.pool.removeSuffix("渠道")} · $bannerLabel"
+                            setTextColor(getColor(R.color.text_secondary))
+                            textSize = 10f
+                        })
+                    }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                    addView(TextView(this@MainActivity).apply {
+                        text = GachaStore.shortTime(r.ts)
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 10f
+                    })
+                    addView(TextView(this@MainActivity).apply {
+                        text = "  ✕"
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 14f
+                        setPadding(dp(10), dp(4), dp(4), dp(4))
+                        setOnClickListener {
+                            AlertDialog.Builder(this@MainActivity)
+                                .setTitle("删除补录记录")
+                                .setMessage("删除「${r.name}」(${GachaStore.shortTime(r.ts)})？")
+                                .setPositiveButton("删除") { _, _ ->
+                                    if (GachaStore.deleteRecord(ctx, r.uid)) {
+                                        refreshManualList()
+                                        renderGachaPanel()
+                                        log("已删除手动补录记录：[${r.uid}]", LogLevel.WRN)
+                                    }
+                                }
+                                .setNegativeButton("取消", null)
+                                .show()
+                        }
+                    })
+                }
+                manualBox.addView(line)
+            }
+            if (manuals.size > 20) {
+                manualBox.addView(TextView(this@MainActivity).apply {
+                    text = "仅显示最近 20 条"
+                    setTextColor(getColor(R.color.text_secondary))
+                    textSize = 10f
+                    setPadding(0, dp(2), 0, 0)
+                })
+            }
+        }
+
+        btnAdd.setOnClickListener {
+            val name = nameEdit.text.toString().trim()
+            val banner = bannerEdit.text.toString().trim()
+            val ts = GachaDictionary.parseManualTime(timeEdit.text.toString().trim())
+            val rarity = rarSpin.selectedItem?.toString() ?: "新生"
+            val pool = poolSpin.selectedItem?.toString() ?: pools[0]
+            if (name.isEmpty()) { toast("器者名不能为空"); return@setOnClickListener }
+            if (ts == null) { toast("时间格式不对：应如 2026-08-01 10:30"); return@setOnClickListener }
+            val rec = GachaStore.addManualRecord(ctx, pool, banner, name, rarity, ts)
+            nameEdit.setText("")
+            timeEdit.setText("")
+            refreshManualList()
+            renderGachaPanel()
+            log("手动添加记录：[${rec.uid}]", LogLevel.INFO)
+            toast("已添加")
+        }
+
+        val panelAdd = ScrollView(this).apply {
             addView(
                 LinearLayout(this@MainActivity).apply {
                     orientation = LinearLayout.VERTICAL
-                    setPadding(dp(16), dp(8), dp(16), dp(4))
+                    setPadding(dp(16), dp(8), dp(16), dp(12))
                     addView(row("卡池大类", poolSpin))
                     addView(row("卡池小类", bannerEdit))
                     addView(row("器者名", nameEdit))
@@ -2256,32 +2498,64 @@ class MainActivity : AppCompatActivity() {
                             setPadding(0, dp(6), 0, 0)
                         }
                     )
+                    addView(btnAdd)
+                    addView(manualBox)
                 }
             )
         }
+        refreshManualList()
+
+        // ===== 组装：页签 + 两面板切换 =====
+        val frame = FrameLayout(this)
+        frame.addView(panelUpWrap)
+        frame.addView(panelAdd)
+        panelAdd.visibility = View.GONE
+
+        fun switchTab(up: Boolean) {
+            panelUpWrap.visibility = if (up) View.VISIBLE else View.GONE
+            panelAdd.visibility = if (up) View.GONE else View.VISIBLE
+            styleTab(tabUp, up)
+            styleTab(tabAdd, !up)
+        }
+        tabUp.setOnClickListener { switchTab(true) }
+        tabAdd.setOnClickListener { switchTab(false) }
+        switchTab(true)
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(tabRow)
+            addView(frame)
+        }
+
+        var dlgRef: androidx.appcompat.app.AlertDialog? = null
+        btnUpSave.setOnClickListener {
+            saveGachaUpMarks(ctx, upEditors)
+            toast("已保存UP标注")
+            dlgRef?.dismiss()
+        }
 
         val dlg = AlertDialog.Builder(this)
-            .setTitle("手动添加记录")
-            .setView(form)
-            .setPositiveButton("添加", null)
-            .setNegativeButton("取消", null)
+            .setTitle("编辑抽卡记录")
+            .setView(root)
+            .setNegativeButton("关闭", null)
             .create()
-        dlg.setOnShowListener {
-            dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val name = nameEdit.text.toString().trim()
-                val banner = bannerEdit.text.toString().trim()
-                val ts = GachaDictionary.parseManualTime(timeEdit.text.toString().trim())
-                val rarity = rarSpin.selectedItem?.toString() ?: "新生"
-                val pool = poolSpin.selectedItem?.toString() ?: pools[0]
-                if (name.isEmpty()) { toast("器者名不能为空"); return@setOnClickListener }
-                if (ts == null) { toast("时间格式不对：应如 2026-08-01 10:30"); return@setOnClickListener }
-                val rec = GachaStore.addManualRecord(ctx, pool, banner, name, rarity, ts)
-                dlg.dismiss()
-                renderGachaPanel()
-                log("手动添加记录：[${rec.uid}]", LogLevel.INFO)
-            }
-        }
+        dlgRef = dlg
         dlg.show()
+    }
+
+    /** 「标注UP器者」保存：收集各小类输入框写回 up_marks.json 并刷新面板 */
+    private fun saveGachaUpMarks(
+        ctx: android.content.Context,
+        editors: List<Triple<String, String, EditText>>
+    ) {
+        val marks = GachaStore.loadUpMarks(ctx)
+        for ((pool, banner, et) in editors) {
+            val v = et.text.toString().trim()
+            val m = marks.getOrPut(pool) { LinkedHashMap() }
+            if (v.isEmpty()) m.remove(banner) else m[banner] = v
+        }
+        GachaStore.saveUpMarks(ctx, marks)
+        renderGachaPanel()
     }
 
     /** 抓取入口：运行中再点一次 = 停止。与任务队列互斥（两边都注入同一个虚拟屏） */
@@ -2349,13 +2623,143 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Throwable) {
             listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道")
         }
+        val upMarks = GachaStore.loadUpMarks(applicationContext)
+        container.addView(buildStatRow(pools, all, upMarks))
         for (pool in pools) {
             val rs = all.filter { it.pool == pool }
-            if (rs.isNotEmpty()) container.addView(buildPoolCard(pool, rs))
+            if (rs.isNotEmpty()) container.addView(buildPoolCard(pool, rs, upMarks[pool] ?: emptyMap()))
         }
     }
 
-    private fun buildPoolCard(pool: String, rs: List<GachaStore.Record>): View {
+    /** 顶部统计卡行：每池一张（总抽数大数字 + 出卡/歪 + UP平均/六星平均），池多时横滑 */
+    private fun buildStatRow(
+        pools: List<String>,
+        all: List<GachaStore.Record>,
+        upMarks: Map<String, MutableMap<String, String>>
+    ): View {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        var first = true
+        for (pool in pools) {
+            val rs = all.filter { it.pool == pool }
+            if (rs.isEmpty()) continue
+            if (!first) {
+                row.addView(View(this).apply {
+                    setBackgroundColor(0xFF2E3947.toInt())
+                    layoutParams = LinearLayout.LayoutParams(dp(1), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                        setMargins(dp(2), dp(10), dp(2), dp(10))
+                    }
+                })
+            }
+            row.addView(buildStatCard(pool, rs, upMarks[pool] ?: emptyMap()))
+            first = false
+        }
+        return HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(
+                row,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+    }
+
+    /** 单池统计卡：标题 / 大数字+抽 / 分隔 / 出卡(歪) + UP平均（或 出卡 + 六星平均） */
+    private fun buildStatCard(pool: String, rs: List<GachaStore.Record>, poolUpMarks: Map<String, String>): View {
+        val st = GachaStore.upStats(rs, poolUpMarks)
+        fun column(big: View, small: String, weight: Float): View = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            addView(big)
+            addView(TextView(this@MainActivity).apply {
+                text = small
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 9f
+            })
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight)
+        }
+        fun bigNum(txt: String, color: Int): TextView = TextView(this).apply {
+            text = txt
+            setTextColor(getColor(color))
+            textSize = 15f
+            paint.isFakeBoldText = true
+        }
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(getColor(R.color.bg_card))
+                cornerRadius = dp(8).toFloat()
+            }
+            setPadding(dp(8), dp(8), dp(8), dp(7))
+            layoutParams = LinearLayout.LayoutParams(dp(106), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                marginEnd = dp(4)
+            }
+        }
+        card.addView(TextView(this).apply {
+            text = pool.removeSuffix("渠道")
+            setTextColor(getColor(R.color.text_primary))
+            textSize = 12f
+            paint.isFakeBoldText = true
+        })
+        // 大数字 + 「抽」
+        card.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            addView(TextView(this@MainActivity).apply {
+                text = st.total.toString()
+                setTextColor(getColor(R.color.text_primary))
+                textSize = 24f
+                paint.isFakeBoldText = true
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = " 抽"
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 11f
+                setPadding(0, 0, 0, dp(3))
+            })
+        })
+        card.addView(View(this).apply {
+            setBackgroundColor(0xFF2E3947.toInt())
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)).apply {
+                topMargin = dp(6); bottomMargin = dp(6)
+            }
+        })
+        // 底部两列：标注过 UP → 出卡/歪(红) + UP平均；否则 → 出卡 + 六星平均
+        card.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            if (st.marked) {
+                addView(column(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    addView(bigNum("${st.teCount}", R.color.text_primary))
+                    addView(TextView(this@MainActivity).apply {
+                        text = " / "
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 13f
+                    })
+                    addView(bigNum("${st.waiCount}", R.color.err_red))
+                }, "出卡数 / 歪", 1.1f))
+                addView(column(bigNum(st.upAvgText, R.color.text_primary), "UP平均", 0.9f))
+            } else {
+                addView(column(bigNum("${st.teCount}", R.color.text_primary), "出卡数", 1f))
+                addView(column(
+                    bigNum(
+                        if (st.teCount == 0) "0" else String.format(Locale.US, "%.1f", st.total.toDouble() / st.teCount),
+                        R.color.text_primary
+                    ), "六星平均", 1f
+                ))
+            }
+        })
+        return card
+    }
+
+    private fun buildPoolCard(pool: String, rs: List<GachaStore.Record>, poolUpMarks: Map<String, String>): View {
         val st = GachaStore.poolStats(rs)
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -2398,7 +2802,11 @@ class MainActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = dp(6) }
             }
-            sub.addView(cell("『$label』 · ${list.size} 抽", R.color.accent, 13f, bold = true).apply {
+            val upName = poolUpMarks[banner]?.takeIf { it.isNotBlank() }
+            sub.addView(cell(
+                "『$label』 · ${list.size} 抽" + if (upName != null) " · UP $upName" else "",
+                R.color.accent, 13f, bold = true
+            ).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
                 )
