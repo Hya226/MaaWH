@@ -3023,23 +3023,6 @@ class MainActivity : AppCompatActivity() {
     /** 单池统计卡：标题 / 大数字+抽 / 分隔 / 出卡(歪) + UP平均（或 出卡 + 六星平均） */
     private fun buildStatCard(pool: String, rs: List<GachaStore.Record>, poolUpMarks: Map<String, String>): View {
         val st = GachaStore.upStats(rs, poolUpMarks)
-        fun column(big: View, small: String, weight: Float): View = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            addView(big)
-            addView(TextView(this@MainActivity).apply {
-                text = small
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 9f
-            })
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight)
-        }
-        fun bigNum(txt: String, color: Int): TextView = TextView(this).apply {
-            text = txt
-            setTextColor(getColor(color))
-            textSize = 15f
-            paint.isFakeBoldText = true
-        }
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
@@ -3081,30 +3064,99 @@ class MainActivity : AppCompatActivity() {
                 topMargin = dp(6); bottomMargin = dp(6)
             }
         })
-        // 底部两列：标注过 UP → 出卡/歪(红) + UP平均；否则 → 出卡 + 六星平均
+        // 底部：标注过 UP → 出卡/歪(红) + UP平均（数字行与标签行两个整体居中对齐）；
+        // 否则 → 出卡 + 六星平均
         card.addView(LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             if (st.marked) {
-                addView(column(LinearLayout(this@MainActivity).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    addView(bigNum("${st.teCount}", R.color.text_primary))
+                addView(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    addView(LinearLayout(this@MainActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        addView(TextView(this@MainActivity).apply {
+                            text = "${st.teCount}"
+                            setTextColor(getColor(R.color.text_primary))
+                            textSize = 15f
+                            paint.isFakeBoldText = true
+                        })
+                        addView(TextView(this@MainActivity).apply {
+                            text = " / "
+                            setTextColor(getColor(R.color.text_secondary))
+                            textSize = 13f
+                        })
+                        addView(TextView(this@MainActivity).apply {
+                            text = "${st.waiCount}"
+                            setTextColor(getColor(R.color.err_red))
+                            textSize = 15f
+                            paint.isFakeBoldText = true
+                        })
+                    }, LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ))
                     addView(TextView(this@MainActivity).apply {
-                        text = " / "
+                        text = "出卡数 / 歪"
                         setTextColor(getColor(R.color.text_secondary))
-                        textSize = 13f
+                        textSize = 9f
+                    }, LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = dp(1).toInt() })
+                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.1f))
+                addView(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    addView(TextView(this@MainActivity).apply {
+                        text = st.upAvgText
+                        setTextColor(getColor(R.color.text_primary))
+                        textSize = 15f
+                        paint.isFakeBoldText = true
                     })
-                    addView(bigNum("${st.waiCount}", R.color.err_red))
-                }, "出卡数 / 歪", 1.1f))
-                addView(column(bigNum(st.upAvgText, R.color.text_primary), "UP平均", 0.9f))
+                    addView(TextView(this@MainActivity).apply {
+                        text = "UP平均"
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 9f
+                    }, LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = dp(1).toInt() })
+                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 0.9f))
             } else {
-                addView(column(bigNum("${st.teCount}", R.color.text_primary), "出卡数", 1f))
-                addView(column(
-                    bigNum(
-                        if (st.teCount == 0) "0" else String.format(Locale.US, "%.1f", st.total.toDouble() / st.teCount),
-                        R.color.text_primary
-                    ), "六星平均", 1f
-                ))
+                addView(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    addView(TextView(this@MainActivity).apply {
+                        text = "${st.teCount}"
+                        setTextColor(getColor(R.color.text_primary))
+                        textSize = 15f
+                        paint.isFakeBoldText = true
+                    })
+                    addView(TextView(this@MainActivity).apply {
+                        text = "出卡数"
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 9f
+                    }, LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = dp(1).toInt() })
+                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                addView(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    addView(TextView(this@MainActivity).apply {
+                        text = if (st.teCount == 0) "0"
+                        else String.format(Locale.US, "%.1f", st.total.toDouble() / st.teCount)
+                        setTextColor(getColor(R.color.text_primary))
+                        textSize = 15f
+                        paint.isFakeBoldText = true
+                    })
+                    addView(TextView(this@MainActivity).apply {
+                        text = "六星平均"
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 9f
+                    }, LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = dp(1).toInt() })
+                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             }
         })
         return card
