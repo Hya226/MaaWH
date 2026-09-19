@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.InputType
+import android.text.SpannableStringBuilder
 import android.view.Gravity
 import android.view.MenuItem
 import android.view.MotionEvent
@@ -3064,23 +3065,17 @@ class MainActivity : AppCompatActivity() {
                 topMargin = dp(6); bottomMargin = dp(6)
             }
         })
-        // 底部：数字行 + 标签行按列对齐（GridLayout 同列取最宽 cell，数字正好居中于标签正上方）。
-        // 标注过 UP：出卡 / 歪 / UP平均 三列（中间斜杠列）；否则：出卡 / 六星平均 两列
+        // 底部：数字组合「N / M」与标签组合「出卡数 / 歪」各占一个跨列单元格、内容居中——
+        // 组合对组合居中（中心重合）；UP平均独立一列。未标注模式为 出卡数 / 六星平均 两列。
         fun buildStatGrid(): android.widget.GridLayout {
             val gl = android.widget.GridLayout(this).apply {
                 columnCount = 5
                 rowCount = 2
             }
-            fun cell(row: Int, col: Int, text: String, color: Int, size: Float, bold: Boolean = false, leftMarginDp: Int = 0) {
-                val tv = TextView(this@MainActivity).apply {
-                    this.text = text
-                    setTextColor(getColor(color))
-                    textSize = size
-                    if (bold) paint.isFakeBoldText = true
-                }
+            fun addCell(row: Int, colStart: Int, colSpan: Int, tv: TextView, leftMarginDp: Int = 0) {
                 val lp = android.widget.GridLayout.LayoutParams(
                     android.widget.GridLayout.spec(row, android.widget.GridLayout.CENTER),
-                    android.widget.GridLayout.spec(col, android.widget.GridLayout.CENTER)
+                    android.widget.GridLayout.spec(colStart, colSpan, android.widget.GridLayout.CENTER)
                 ).apply {
                     width = ViewGroup.LayoutParams.WRAP_CONTENT
                     height = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -3088,22 +3083,47 @@ class MainActivity : AppCompatActivity() {
                 }
                 gl.addView(tv, lp)
             }
+            fun numTv(txt: CharSequence, color: Int, size: Float, bold: Boolean) = TextView(this@MainActivity).apply {
+                text = txt
+                setTextColor(getColor(color))
+                textSize = size
+                if (bold) paint.isFakeBoldText = true
+            }
+            fun labelTv(txt: String) = TextView(this@MainActivity).apply {
+                text = txt
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 9f
+            }
             if (st.marked) {
-                cell(0, 0, "${st.teCount}", R.color.text_primary, 15f, true)
-                cell(0, 1, "/", R.color.text_secondary, 15f)
-                cell(0, 2, "${st.waiCount}", R.color.err_red, 15f, true)
-                cell(0, 4, st.upAvgText, R.color.text_primary, 15f, true, leftMarginDp = 10)
-                cell(1, 0, "出卡数", R.color.text_secondary, 9f)
-                cell(1, 1, "/", R.color.text_secondary, 9f)
-                cell(1, 2, "歪", R.color.text_secondary, 9f)
-                cell(1, 4, "UP平均", R.color.text_secondary, 9f, leftMarginDp = 10)
+                // 数字组合：白 N / 灰斜杠 / 红 M（Spannable 分色），组合整体居中于跨列单元格
+                val num = SpannableStringBuilder("${st.teCount} / ${st.waiCount}")
+                val a = "${st.teCount}".length
+                val b = " / ".length
+                num.setSpan(
+                    android.text.style.ForegroundColorSpan(getColor(R.color.text_primary)),
+                    0, a, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                num.setSpan(
+                    android.text.style.ForegroundColorSpan(getColor(R.color.text_secondary)),
+                    a, a + b, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                num.setSpan(
+                    android.text.style.ForegroundColorSpan(getColor(R.color.err_red)),
+                    a + b, num.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+                addCell(0, 0, 3, numTv(num, R.color.text_primary, 15f, true))
+                addCell(1, 0, 3, labelTv("出卡数 / 歪"))
+                addCell(0, 4, 1, numTv(st.upAvgText, R.color.text_primary, 15f, true), leftMarginDp = 10)
+                addCell(1, 4, 1, labelTv("UP平均"), leftMarginDp = 10)
             } else {
-                cell(0, 0, "${st.teCount}", R.color.text_primary, 15f, true)
-                cell(0, 2, if (st.teCount == 0) "0"
-                else String.format(Locale.US, "%.1f", st.total.toDouble() / st.teCount),
-                    R.color.text_primary, 15f, true, leftMarginDp = 10)
-                cell(1, 0, "出卡数", R.color.text_secondary, 9f)
-                cell(1, 2, "六星平均", R.color.text_secondary, 9f, leftMarginDp = 10)
+                addCell(0, 0, 1, numTv("${st.teCount}", R.color.text_primary, 15f, true))
+                addCell(1, 0, 1, labelTv("出卡数"))
+                addCell(0, 2, 1, numTv(
+                    if (st.teCount == 0) "0"
+                    else String.format(Locale.US, "%.1f", st.total.toDouble() / st.teCount),
+                    R.color.text_primary, 15f, true
+                ), leftMarginDp = 10)
+                addCell(1, 2, 1, labelTv("六星平均"), leftMarginDp = 10)
             }
             return gl
         }
