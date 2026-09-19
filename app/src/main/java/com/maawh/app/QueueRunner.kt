@@ -124,6 +124,9 @@ class QueueRunner(
         if (wantMute) {
             GameAudioMarker.mark(context, MaaConst.GAME_PKG)
             val ok = ShizukuShell.setGameAudioMuted(true)
+            // 预埋延时恢复孤儿：任务中 App 被强杀（force-stop 无任何回调）时，
+            // 死亡前最后一个孤儿在 90 秒内醒来（虚拟屏已死且 deny 挂着 → 清除）
+            runCatching { ShizukuShell.scheduleGameAudioRestoreGuard() }
             if (ok) {
                 cb.onLog(
                     if (autoMuteEnabled && !muteEnabled) "已按「游戏启动后关闭游戏声音」静音游戏" else "已单独静音游戏（系统音量不受影响）",

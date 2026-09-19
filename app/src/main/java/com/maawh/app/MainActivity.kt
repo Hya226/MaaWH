@@ -1912,6 +1912,7 @@ class MainActivity : AppCompatActivity() {
                 if (muteEnabled || autoMuteEnabled) {
                     runCatching { GameAudioMarker.mark(this@MainActivity, MaaConst.GAME_PKG) }
                     runCatching { ShizukuShell.setGameAudioMuted(true) }
+                    runCatching { ShizukuShell.scheduleGameAudioRestoreGuard() }
                     if (autoMuteEnabled && !muteEnabled) {
                         runOnUiThread { log("已按「游戏启动后关闭游戏声音」静音游戏") }
                     }
