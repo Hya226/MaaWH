@@ -68,6 +68,16 @@
                 android:layout_weight="1"
                 android:minWidth="0dp"
                 android:text="@string/tab_tools" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTabToolbox"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:minWidth="0dp"
+                android:text="@string/tab_toolbox" />
         </LinearLayout>
 
         <!-- 内容区容器 -->
@@ -342,6 +352,40 @@
                         </LinearLayout>
                     </ScrollView>
                 </LinearLayout>
+            </LinearLayout>
+
+            <!-- 小工具：快捷工具入口（抓取抽卡记录等，与抽卡页共用同一功能） -->
+            <LinearLayout
+                android:id="@+id/panelToolbox"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="10dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/toolbox_desc"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToolboxGacha"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/toolbox_gacha" />
+
+                <TextView
+                    android:id="@+id/tvToolboxGachaState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/toolbox_state_idle"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
             </LinearLayout>
         </FrameLayout>
 
