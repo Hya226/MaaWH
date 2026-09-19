@@ -28,7 +28,7 @@ class KeepAliveService : Service() {
     /** 挂机守护轮询（autoMute 开启时）：检测游戏被切到物理屏玩 → 挂机静音让位 */
     private val watchHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
-    private val watchRunnable = object : Runnable {
+    private val watchRunnable: Runnable = object : Runnable {
         override fun run() {
             try {
                 // 守护条件：autoMute 开、游戏处于管控静音中（标记在）、队列没在跑
