@@ -49,6 +49,11 @@
     <string name="hint_queue">勾选参与运行，长按拖动排序</string>
     <string name="tab_oneclick">一键长草</string>
     <string name="tab_tools">额外队列</string>
+    <string name="tab_toolbox">小工具</string>
+    <string name="toolbox_gacha">抓取抽卡记录</string>
+    <string name="toolbox_gacha_stop">停止抓取</string>
+    <string name="toolbox_state_idle">未在抓取。与抽卡页的「开始抓取」是同一入口，状态两边同步显示。</string>
+    <string name="toolbox_desc">把虚拟屏里的游戏停在「招集记录」页后点下方按钮即可抓取（与抽卡页共用同一功能，运行状态在抽卡页也可查看）。</string>
     <string name="tools_maintip">额外队列：任务包清单声明的工具任务（如刷活动关、博物研学）+ adb 直达入口。单击左侧任务行在右侧改参数，勾选后点「开始任务」；不影响一键长草主队列</string>
     <string name="tools_edit_hint">单击左侧任务行查看/编辑参数</string>
     <string name="tools_target_label">目标角色名（穿戴装备搜索用）</string>

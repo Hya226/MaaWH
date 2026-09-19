@@ -221,6 +221,11 @@ class MainActivity : AppCompatActivity() {
         // tab 切换：一键长草 / 额外队列
         binding.btnTabOneClick.setOnClickListener { switchTab(HomeTab.ONECLICK) }
         binding.btnTabTools.setOnClickListener { switchTab(HomeTab.TOOLS) }
+        binding.btnTabToolbox.setOnClickListener { switchTab(HomeTab.TOOLBOX) }
+        binding.btnToolboxGacha.setOnClickListener {
+            // 与抽卡页「开始抓取」同一入口：运行中再点即停止，按钮文字由 startGachaCrawl 同步
+            startGachaCrawl()
+        }
         // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
         binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
         binding.btnNewProfile.setOnClickListener { createProfile() }
@@ -441,7 +446,13 @@ class MainActivity : AppCompatActivity() {
         closeAfterEnabled = saved.closeAfter
         pipEnabled = saved.pipOn
         binding.switchPip.isChecked = saved.pipOn
-        switchTab(if (saved.tab == "tools") HomeTab.TOOLS else HomeTab.ONECLICK)
+        switchTab(
+            when (saved.tab) {
+                "tools" -> HomeTab.TOOLS
+                "toolbox" -> HomeTab.TOOLBOX
+                else -> HomeTab.ONECLICK
+            }
+        )
         // 旧存档里的 tab="config"（配置曾是与两个 tab 平级的分区）→ 落到一键长草的队列视图。
         // 这里**不能**再重置配置模式：清单加载比窗口可点慢，重置会把用户启动瞬间点的「编辑配置」撤销掉
         log("已载入配置「$activeProfile」（队列 ${tasks.size} 项 · 额外队列 ${toolsTasks.size} 项）")
@@ -552,7 +563,11 @@ class MainActivity : AppCompatActivity() {
                 active = activeProfile,
                 profiles = profileData.map { (name, main) -> QueueStore.Profile(name, main) },
                 tools = toolsTasks.mapIndexed { i, it -> savedTaskOf(it, toolsEnabled.getOrElse(i) { true }) },
-                tab = if (homeTab == HomeTab.TOOLS) "tools" else "oneclick",
+                tab = when (homeTab) {
+                    HomeTab.TOOLS -> "tools"
+                    HomeTab.TOOLBOX -> "toolbox"
+                    else -> "oneclick"
+                },
                 mute = muteEnabled,
                 autoMute = autoMuteEnabled,
                 closeAfter = closeAfterEnabled,
@@ -1135,20 +1150,22 @@ class MainActivity : AppCompatActivity() {
     private var savePending: Runnable? = null
 
     /** 主页里的两个分区 */
-    private enum class HomeTab { ONECLICK, TOOLS }
+    private enum class HomeTab { ONECLICK, TOOLS, TOOLBOX }
 
     private var homeTab = HomeTab.ONECLICK
 
     /** 一键长草里的「配置管理」子视图是否展开（对标 maameow 的编辑配置/完成） */
     private var configMode = false
 
-    /** 一键长草 / 额外队列 分区切换 */
+    /** 一键长草 / 额外队列 / 小工具 分区切换 */
     private fun switchTab(tab: HomeTab) {
         homeTab = tab
         binding.panelOneClick.visibility = if (tab == HomeTab.ONECLICK) View.VISIBLE else View.GONE
         binding.panelTools.visibility = if (tab == HomeTab.TOOLS) View.VISIBLE else View.GONE
+        binding.panelToolbox.visibility = if (tab == HomeTab.TOOLBOX) View.VISIBLE else View.GONE
         binding.btnTabOneClick.isChecked = tab == HomeTab.ONECLICK
         binding.btnTabTools.isChecked = tab == HomeTab.TOOLS
+        binding.btnTabToolbox.isChecked = tab == HomeTab.TOOLBOX
         scheduleSave()
     }
 
@@ -2915,6 +2932,7 @@ class MainActivity : AppCompatActivity() {
         if (gachaRunning) {
             gachaJob?.cancel()
             binding.tvGachaStatus.text = "停止中…"
+            binding.tvToolboxGachaState.text = "停止中…"
             return
         }
         if (isTaskRunning) { toast("任务队列运行中，不能同时抓取"); return }
@@ -2922,6 +2940,8 @@ class MainActivity : AppCompatActivity() {
         gachaRunning = true
         binding.btnGachaRun.text = getString(R.string.gacha_stop)
         binding.tvGachaStatus.text = "准备…"
+        binding.btnToolboxGacha.text = getString(R.string.toolbox_gacha_stop)
+        binding.tvToolboxGachaState.text = "抓取中…（详细进度见抽卡页）"
         gachaJob = lifecycleScope.launch {
             var runSummary = ""
             try {
@@ -2933,19 +2953,23 @@ class MainActivity : AppCompatActivity() {
                 }
                 runSummary = "新增 ${report.added} 条"
                 binding.tvGachaStatus.text = "✓ 新增 ${report.added} 条"
+                binding.tvToolboxGachaState.text = "✓ 抓取完成：新增 ${report.added} 条"
             } catch (e: kotlinx.coroutines.CancellationException) {
                 runSummary = "已停止"
                 binding.tvGachaStatus.text = "◼ 已停止"
+                binding.tvToolboxGachaState.text = "◼ 已停止"
                 throw e
             } catch (e: Exception) {
                 runSummary = "失败：${e.message}"
                 log("抽卡抓取失败：${e.message}", LogLevel.ERR)
                 binding.tvGachaStatus.text = "✗ ${e.message}"
+                binding.tvToolboxGachaState.text = "✗ 失败：${e.message}"
             } finally {
                 RunLogStore.end(runSummary)
                 gachaRunning = false
                 gachaJob = null
                 binding.btnGachaRun.text = getString(R.string.gacha_run)
+                binding.btnToolboxGacha.text = getString(R.string.toolbox_gacha)
                 renderGachaPanel()
             }
         }
