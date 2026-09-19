@@ -26,6 +26,7 @@ object GachaStore {
     private const val CONFIG = "config.json"
     private const val ACCOUNTS_FILE = "accounts.json"
     private const val ACCOUNTS_DIR = "accounts"
+    private const val UP_MARKS = "up_marks.json"
     private const val ANCHORS_PER_POOL = 5
 
     const val RARITY_TOP = "特出"
@@ -39,7 +40,8 @@ object GachaStore {
         val pool: String,
         val banner: String, // 小类（招集列原文，如「限时/至乐如真」），不影响 uid
         val name: String,
-        val rarity: String  // 特出/优异/新生
+        val rarity: String, // 特出/优异/新生
+        val manual: Boolean = false // 手动补录的记录（编辑面板里可删除）
     )
 
     /** 爬虫产出的一行（uid 未定），交 buildRecords 编号 */
@@ -122,7 +124,8 @@ object GachaStore {
                 pool = o.optString("pool"),
                 banner = o.optString("banner"),
                 name = o.optString("name"),
-                rarity = o.optString("rarity")
+                rarity = o.optString("rarity"),
+                manual = o.optBoolean("manual", false)
             )
         }
     } catch (e: Throwable) {
@@ -253,7 +256,7 @@ object GachaStore {
             seq++
             uid = uidOf(ts, pool, name, seq)
         }
-        val rec = Record(uid, ts, GachaDictionary.chineseTime(ts), pool, banner, name, rarity)
+        val rec = Record(uid, ts, GachaDictionary.chineseTime(ts), pool, banner, name, rarity, manual = true)
         all.add(rec)
         all.sortByDescending { it.ts }
         atomicWrite(recordsFile(ctx), serializeRecords(all))
@@ -271,9 +274,79 @@ object GachaStore {
                 put("banner", r.banner)
                 put("name", r.name)
                 put("rarity", r.rarity)
+                if (r.manual) put("manual", true)
             })
         }
         return arr.toString()
+    }
+
+    /** 删除一条记录（编辑面板只对手动补录的记录开放删除）。返回是否删除成功。不动锚点 */
+    fun deleteRecord(ctx: Context, uid: String): Boolean = synchronized(this) {
+        val all = ArrayList(loadRecords(ctx))
+        if (all.removeIf { it.uid == uid }) {
+            atomicWrite(recordsFile(ctx), serializeRecords(all))
+            true
+        } else false
+    }
+
+    // ---------- UP 标注（pool → banner → UP 器者名） ----------
+
+    /**
+     * 「标注UP器者」的存储，单独文件（config.json 会被 commitCrawl 整体重写，
+     * 混进去容易被覆盖）。key 与记录的 banner 原文一致；值为空串视同未标注。
+     */
+    fun loadUpMarks(ctx: Context): MutableMap<String, MutableMap<String, String>> = try {
+        val o = JSONObject(File(dir(ctx), UP_MARKS).takeIf { it.isFile }?.readText() ?: "{}")
+        val out = LinkedHashMap<String, MutableMap<String, String>>()
+        for (pk in o.keys()) {
+            val po = o.optJSONObject(pk) ?: continue
+            val m = LinkedHashMap<String, String>()
+            for (bk in po.keys()) m[bk] = po.optString(bk)
+            out[pk] = m
+        }
+        out
+    } catch (e: Throwable) {
+        LinkedHashMap()
+    }
+
+    fun saveUpMarks(ctx: Context, marks: Map<String, Map<String, String>>) = synchronized(this) {
+        val o = JSONObject()
+        for ((pk, m) in marks) {
+            val po = JSONObject()
+            for ((bk, v) in m) if (v.isNotBlank()) po.put(bk, v.trim())
+            if (po.length() > 0) o.put(pk, po)
+        }
+        atomicWrite(File(dir(ctx), UP_MARKS), o.toString())
+    }
+
+    // ---------- UP 统计（面板顶部统计卡片用；rs 必须新→旧） ----------
+
+    data class UpStats(
+        val total: Int,        // 总抽数
+        val teCount: Int,      // 特出（出卡）数
+        val waiCount: Int,     // 歪：特出中与所属小类标注 UP 不符的数量
+        val upAvgText: String, // 总抽数 / UP出卡数（无 UP 出卡时 "—"）
+        val marked: Boolean    // 该池标注过 UP 才显示「出卡数/歪 + UP平均」，否则「出卡数 + 六星平均」
+    )
+
+    /**
+     * 歪的判定按特出所属小类（banner）精确对号：该小类标注了 UP 且 ≠ 特出名才算歪，
+     * 未标注的小类不判歪——历史小类未逐一标注时不至于全红。
+     */
+    fun upStats(rs: List<Record>, poolUpMarks: Map<String, String>): UpStats {
+        val total = rs.size
+        val te = rs.count { it.rarity == RARITY_TOP }
+        var wai = 0
+        for (r in rs) {
+            if (r.rarity != RARITY_TOP) continue
+            val up = poolUpMarks[r.banner] ?: continue
+            if (up.isNotBlank() && up != r.name) wai++
+        }
+        val marked = poolUpMarks.values.any { it.isNotBlank() }
+        val upCount = te - wai
+        val upAvg = if (!marked || upCount <= 0) "—" else
+            String.format(Locale.US, "%.1f", total.toDouble() / upCount)
+        return UpStats(total, te, wai, upAvg, marked)
     }
 
     // ---------- 多账号 ----------
