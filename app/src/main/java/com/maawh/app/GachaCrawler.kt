@@ -493,30 +493,61 @@ class GachaCrawler(
         tap(target)
     }
 
-    /** 区域内亮色像素的包围盒中心；几乎没有亮像素（按钮不在/全灰）返回 null */
+    /**
+     * 区域内亮色像素按列投影分块（块间暗隙 ≥6 列即切开），取**最右**亮块的包围盒
+     * 中心——「下一页」按钮固定在 pagerStrip 最右端，页码/上一页等更靠左的亮色
+     * 内容（用户扩宽区域后会被框进来）不参与定位。最右块亮像素过少视为噪声返回
+     * null（调用方回退区域中心，恰好也是按钮位置）。绝不取次右块，防止点到页码。
+     */
     private fun brightContentCenter(bmp: Bitmap, band: Points.R): Points.Pt? {
         val x1 = band.x.coerceAtLeast(0)
         val x2 = min(band.x + band.w, bmp.width)
         val y1 = band.y.coerceAtLeast(0)
         val y2 = min(band.y + band.h, bmp.height)
         if (x2 <= x1 || y2 <= y1) return null
-        var minx = Int.MAX_VALUE; var maxx = -1
-        var miny = Int.MAX_VALUE; var maxy = -1
-        var n = 0
+        val cols = x2 - x1
+        val colHas = BooleanArray(cols)
+        val colCount = IntArray(cols)
+        val colMinY = IntArray(cols) { Int.MAX_VALUE }
+        val colMaxY = IntArray(cols) { -1 }
         for (y in y1 until y2) {
             for (x in x1 until x2) {
                 val p = bmp.getPixel(x, y)
                 if ((p shr 16 and 0xff) + (p shr 8 and 0xff) + (p and 0xff) > 270) {  // 亮度均值>90
-                    if (x < minx) minx = x
-                    if (x > maxx) maxx = x
-                    if (y < miny) miny = y
-                    if (y > maxy) maxy = y
-                    n++
+                    val ci = x - x1
+                    colHas[ci] = true
+                    colCount[ci]++
+                    if (y < colMinY[ci]) colMinY[ci] = y
+                    if (y > colMaxY[ci]) colMaxY[ci] = y
                 }
             }
         }
-        if (n < 20 || maxx < minx || maxy < miny) return null
-        return Points.Pt((minx + maxx) / 2, (miny + maxy) / 2)
+        // 从右往左扫：最近一个亮块，允许块内 <6 列的暗隙（笔画间隙），≥6 列即块边界
+        var right = -1
+        var left = -1
+        var gapRun = 0
+        for (i in cols - 1 downTo 0) {
+            if (colHas[i]) {
+                if (right == -1) right = i
+                left = i
+                gapRun = 0
+            } else if (right != -1) {
+                gapRun++
+                if (gapRun >= 6) break
+            }
+        }
+        if (right == -1) return null
+        var miny = Int.MAX_VALUE
+        var maxy = -1
+        var n = 0
+        for (ci in left..right) {
+            if (!colHas[ci]) continue
+            n += colCount[ci]
+            if (colMinY[ci] < miny) miny = colMinY[ci]
+            if (colMaxY[ci] > maxy) maxy = colMaxY[ci]
+        }
+        if (n < 20 || maxy < miny) return null
+        return Points.Pt(x1 + (left + right) / 2, (miny + maxy) / 2)
     }
 
     /**
