@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-18T23:59:27+08:00",
+        "generatedAt": "2026-09-19T14:10:23+08:00",
         "flowFile": "每日免费礼包.flow.json",
-        "flowHash": "sha256:68a5c2504cd6a80cee2224f076453420e2bd9324ded4054b8146fdd280c3859d",
-        "pipelineHash": "sha256:d2de13d0a7c0c50dbca6210e22067974432bd936973166174f5af8b5c5915124",
+        "flowHash": "sha256:78123700083ac6d09768b612035049dc9244d592879aad1113fcfcc46a6d0a2f",
+        "pipelineHash": "sha256:a56c7ace35bbcaaeab07a75f2598df7ee8cd54785ba9cf32a0bce2a3337cee19",
         "frameW": 1280,
         "frameH": 720
     },
@@ -132,6 +132,24 @@
             49
         ],
         "rate_limit": 200,
+        "post_delay": 600,
+        "next": [
+            "VF_每日免费礼包_12"
+        ]
+    },
+    "VF_每日免费礼包_12": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_每日免费礼包_12_Hit"
+        ]
+    },
+    "VF_每日免费礼包_12_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "rate_limit": 600,
         "post_delay": 600
     }
 }

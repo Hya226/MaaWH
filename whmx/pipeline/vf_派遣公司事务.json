@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-18T18:59:11+08:00",
+        "generatedAt": "2026-09-19T14:15:19+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:14fb4189c77a7f4f18714042c68693528058a571147c1b33bd618aa2ad2ac9df",
-        "pipelineHash": "sha256:71784f3f68e3e86bd999666f25b791af8921c641ccb1e019f121697fd6fdfccd",
+        "flowHash": "sha256:26c416ff1563058fa0d2cf56c9ed87397f70e637c8c02582369e7780579c75ea",
+        "pipelineHash": "sha256:e3df7f50b5872afb7d1bc9683aaa912a4bf34677898f4e73320b6de60e1ea2a4",
         "frameW": 1280,
         "frameH": 720
     },
@@ -162,7 +162,7 @@
     "VF_派遣公司事务_12": {
         "recognition": "TemplateMatch",
         "template": "tuichubangongshi.png",
-        "threshold": 0.5,
+        "threshold": 0.7,
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,
@@ -183,7 +183,7 @@
     "VF_派遣公司事务_13_Hit": {
         "recognition": "TemplateMatch",
         "template": "tuichubangongshi.png",
-        "threshold": 0.5,
+        "threshold": 0.7,
         "action": "DoNothing",
         "next": [
             "VF_派遣公司事务_12"
@@ -196,14 +196,8 @@
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,
-        "roi": [
-            961,
-            380,
-            166,
-            174
-        ],
         "order_by": "Vertical",
-        "pre_delay": 1000,
+        "pre_delay": 1500,
         "next": [
             "VF_派遣公司事务_43"
         ]
@@ -564,7 +558,7 @@
     "VF_派遣公司事务_46": {
         "recognition": "TemplateMatch",
         "template": "pinming_tuichu.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,

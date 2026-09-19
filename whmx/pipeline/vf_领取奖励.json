@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-18T23:06:22+08:00",
+        "generatedAt": "2026-09-19T15:01:01+08:00",
         "flowFile": "领取奖励.flow.json",
-        "flowHash": "sha256:0774ce178132422771e0e4ca86c7916120bb35c59871057fd93a990c8e3948e7",
-        "pipelineHash": "sha256:5a5ead9909daf0f8b04b61127f60a2b4607eb5446741e15fb4aa2b15c30a43d7",
+        "flowHash": "sha256:4c925bbce29158a6e87e68c1bbe8ab91fffe3a82e71dc6310153fb8d918f2b09",
+        "pipelineHash": "sha256:8d03a73cbd0672e162df9a9d70c6e29e8828c5372b1db9e2ceb246d45f9fc959",
         "frameW": 1280,
         "frameH": 720
     },
@@ -52,7 +52,7 @@
         "threshold": 0.55,
         "action": "Click",
         "timeout": 4000,
-        "post_delay": 2000,
+        "post_delay": 600,
         "order_by": "Score",
         "next": [
             "VF_领取奖励_03"
@@ -61,11 +61,30 @@
     "VF_领取奖励_03": {
         "action": "Click",
         "target": [
-            36,
-            600
+            133,
+            364
         ],
-        "post_delay": 1000,
+        "post_delay": 100,
         "timeout": 3000,
+        "next": [
+            "VF_领取奖励_13"
+        ]
+    },
+    "VF_领取奖励_13": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_领取奖励_13_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_03"
+        ]
+    },
+    "VF_领取奖励_13_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhouchangrenwu.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
         "next": [
             "VF_领取奖励_12"
         ]
@@ -80,7 +99,7 @@
     "VF_领取奖励_12_Hit": {
         "recognition": "TemplateMatch",
         "template": "zhouchangrenwu.png",
-        "threshold": 0.8,
+        "threshold": 0.6,
         "action": "Click",
         "rate_limit": 600,
         "post_delay": 600,
@@ -110,6 +129,25 @@
         "pre_delay": 600,
         "timeout": 3000,
         "next": [
+            "VF_领取奖励_14"
+        ]
+    },
+    "VF_领取奖励_14": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_领取奖励_14_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_06"
+        ]
+    },
+    "VF_领取奖励_14_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
             "VF_领取奖励_07"
         ]
     },
@@ -125,7 +163,7 @@
             "VF_领取奖励_08_Hit"
         ],
         "on_error": [
-            "VF_领取奖励_07"
+            "VF_领取奖励_14"
         ]
     },
     "VF_领取奖励_08_Hit": {
@@ -144,7 +182,7 @@
             "VF_领取奖励_10_Hit"
         ],
         "on_error": [
-            "VF_领取奖励_12"
+            "VF_领取奖励_13"
         ]
     },
     "VF_领取奖励_10_Hit": {
