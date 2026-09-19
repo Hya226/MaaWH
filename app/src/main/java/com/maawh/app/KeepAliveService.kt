@@ -25,6 +25,36 @@ import android.os.IBinder
  */
 class KeepAliveService : Service() {
 
+    /** 挂机守护轮询（autoMute 开启时）：检测游戏被切到物理屏玩 → 挂机静音让位 */
+    private val watchHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+    private val watchRunnable = object : Runnable {
+        override fun run() {
+            try {
+                // 守护条件：autoMute 开、游戏处于管控静音中（标记在）、队列没在跑
+                if (autoMuteWatch &&
+                    GameAudioMarker.marked(applicationContext) != null &&
+                    !QueueRunner.isAnyRunning()
+                ) {
+                    val top = ShizukuShell.topForegroundPkg()
+                    if (top == MaaConst.GAME_PKG) {
+                        // 游戏被用户切到物理屏前台玩：挂机静音让位（清标记 + 恢复 appops）
+                        if (GameAudioMarker.restoreIfNeeded(applicationContext)) {
+                            android.util.Log.i("MaaWH", "挂机守护：游戏切到物理屏，已恢复游戏声音")
+                        }
+                    }
+                }
+            } catch (_: Throwable) {
+            }
+            watchHandler.postDelayed(this, WATCH_INTERVAL_MS)
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        watchHandler.postDelayed(watchRunnable, WATCH_INTERVAL_MS)
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -41,6 +71,7 @@ class KeepAliveService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        watchHandler.removeCallbacks(watchRunnable)
         // 服务停止 = 管控态彻底结束（虚拟屏已死/队列收尾停保活），顺手派发一次静音恢复，
         // 兜住"虚拟屏悄悄死了但 deny 还挂着"的场合；幂等（无 deny 时不动作）。
         ShizukuShell.requestGameAudioRestore()
@@ -112,9 +143,14 @@ class KeepAliveService : Service() {
         private const val EXTRA_TEXT = "text"
         private const val EXTRA_PROGRESS = "progress"
         private const val EXTRA_TOTAL = "total"
+        private const val WATCH_INTERVAL_MS = 10_000L
 
         /** 通知「停止任务」按钮的 action */
         const val ACTION_STOP = "com.maawh.app.action.STOP_TASK"
+
+        /** 挂机守护开关（autoMute 开启时由 MainActivity 置 true）：轮询检测游戏切到物理屏 */
+        @Volatile
+        var autoMuteWatch = false
 
         /** 拉起/更新保活服务（已在前台服务中时只刷新通知文案）；total>0 时显示进度条与停止按钮 */
         fun start(ctx: Context, text: String, progress: Int = -1, total: Int = 0) {
