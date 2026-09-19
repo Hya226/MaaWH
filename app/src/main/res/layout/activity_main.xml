@@ -52,6 +52,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTabOneClick"
+app:cornerRadius="8dp"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -61,6 +62,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTabTools"
+app:cornerRadius="8dp"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -71,6 +73,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTabToolbox"
+app:cornerRadius="8dp"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -111,6 +114,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnEditConfig"
+app:cornerRadius="8dp"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -476,6 +480,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnStartQueue"
+app:cornerRadius="8dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -483,6 +488,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnQuick"
+app:cornerRadius="8dp"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
