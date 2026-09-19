@@ -104,10 +104,11 @@ android {
         aidl = true
     }
 
-    // APK 产物名固定为 maawh-<变体>.apk（maawh-release / maawh-beta / maawh-debug）
+    // APK 产物名：MaaWH-<变体>-v<版本>.apk（MaaWH-release-v0.1.0 / MaaWH-beta-v0.1.0 / MaaWH-debug-v0.1.0）
     applicationVariants.all {
+        val vName = versionName
         outputs.all {
-            (this as BaseVariantOutputImpl).outputFileName = "maawh-$name.apk"
+            (this as BaseVariantOutputImpl).outputFileName = "MaaWH-$name-v$vName.apk"
         }
     }
 }
