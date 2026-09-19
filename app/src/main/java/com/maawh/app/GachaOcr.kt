@@ -156,8 +156,8 @@ object GachaOcrFactory {
 /** OCR 名字纠错：编辑距离对字典，距离过大的保留原值（调用方决定要不要 WARN） */
 object GachaDictionary {
 
-    /** 器者名字典；后续从 files/gacha/names.json 读，先内置空表不影响流程 */
-    val names: List<String> = emptyList()
+    /** 器者名字典（files/gacha/names.json，抽卡页「器者名单」维护）；启动时与名单保存后注入 */
+    var names: List<String> = emptyList()
 
     fun correct(raw: String, maxDistance: Int = 2): Pair<String, Boolean> {
         if (raw.isEmpty() || names.isEmpty()) return raw to true
