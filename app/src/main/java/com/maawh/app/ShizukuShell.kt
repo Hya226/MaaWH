@@ -242,8 +242,42 @@ object ShizukuShell {
         }
     }
 
-    fun requestGameAudioRestore(): Boolean {
+    /**
+     * 预埋延时恢复孤儿：静音生效期间调用，每次派发一个「90 秒后自检」的独立 sh 进程
+     * （挂在 init 下，force-stop 杀不到——它不属于 MaaWH 包）。自检条件：虚拟屏已消失
+     * （= MaaWH 会话已结束，无论 App 是被划卡片/一键清理/LMKD 杀掉还是正常退出）且
+     * deny 还挂着 → 清除恢复。MaaWH 若还活着正常挂机，虚拟屏在 → 不动作。
+     * 由挂机守护轮询（10s）持续续埋，App 任意方式死亡后 90 秒内必有孤儿醒来收尾。
+     * ColorOS 划卡片被处理成 force-stop、任何回调都不触发的场景（2026-09-19 实测）
+     * 靠这个兜底。
+     */
+    fun scheduleGameAudioRestoreGuard(delaySec: Long = 90): Boolean {
         val srv = service?.takeIf { it.asBinder().isBinderAlive } ?: return false
+        val pipe = ParcelFileDescriptor.createPipe()
+        return try {
+            runCatching { pipe[0].close() }
+            srv.exec(
+                arrayOf(
+                    "/system/bin/sh", "-c",
+                    "( sleep $delaySec; dumpsys display | grep -q MaaWH-VD || " +
+                        "{ appops get ${MaaConst.GAME_PKG} PLAY_AUDIO | grep -q deny && " +
+                        "{ appops reset ${MaaConst.GAME_PKG}; " +
+                        "appops set --uid ${MaaConst.GAME_PKG} PLAY_AUDIO allow; " +
+                        "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO allow; " +
+                        "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO_PARTIAL allow; }; } ) >/dev/null 2>&1 &"
+                ),
+                pipe[1]
+            )
+            true
+        } catch (e: Throwable) {
+            report(LogLevel.WRN, "预埋延时恢复失败: ${e.message}")
+            false
+        } finally {
+            runCatching { pipe[1].close() }
+        }
+    }
+
+    fun requestGameAudioRestore(): Boolean {        val srv = service?.takeIf { it.asBinder().isBinderAlive } ?: return false
         val pipe = ParcelFileDescriptor.createPipe()
         return try {
             runCatching { pipe[0].close() }   // 读端 App 侧不用（后台进程输出已重定向 /dev/null）

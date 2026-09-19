@@ -36,6 +36,9 @@ class KeepAliveService : Service() {
                     GameAudioMarker.marked(applicationContext) != null &&
                     !QueueRunner.isAnyRunning()
                 ) {
+                    // 持续续埋延时恢复孤儿：App 被强杀（force-stop 无任何回调）后，
+                    // 死亡时刻之前最后一个孤儿会在 90 秒内醒来收尾清 deny
+                    ShizukuShell.scheduleGameAudioRestoreGuard()
                     val top = ShizukuShell.topForegroundPkg()
                     if (top == MaaConst.GAME_PKG) {
                         // 游戏被用户切到物理屏前台玩：挂机静音让位（清标记 + 恢复 appops）
