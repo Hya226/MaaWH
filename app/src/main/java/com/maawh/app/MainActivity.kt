@@ -2104,20 +2104,83 @@ class MainActivity : AppCompatActivity() {
         refreshGachaAccounts()
     }
 
-    /** 账号名弹窗：改名 / 删除 / 新建 / 切换账号 */
+    /** 账号管理弹窗（自定义卡片，风格与编辑记录对话框一致）：改名/新建/切换/删除 */
     private fun showGachaAccountMenu() {
-        val items = listOf("改名", "删除", "新建", "切换账号")
-        AlertDialog.Builder(this)
-            .setTitle("账号「${GachaStore.activeAccountName(applicationContext)}」")
-            .setItems(items.toTypedArray()) { _, which ->
-                when (which) {
-                    0 -> renameGachaAccount()
-                    1 -> deleteGachaAccount()
-                    2 -> createGachaAccount()
-                    3 -> showGachaAccountPicker(binding.tvGachaAccountName)
-                }
+        val accName = GachaStore.activeAccountName(applicationContext)
+        var dlgRef: androidx.appcompat.app.AlertDialog? = null
+
+        fun menuRow(icon: String, label: String, colorRes: Int, onClick: () -> Unit): View =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(18), dp(13), dp(18), dp(13))
+                val tv = android.util.TypedValue()
+                theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+                setBackgroundResource(tv.resourceId)
+                setOnClickListener { dlgRef?.dismiss(); onClick() }
+                addView(TextView(this@MainActivity).apply {
+                    text = icon
+                    setTextColor(getColor(colorRes))
+                    textSize = 14f
+                    paint.isFakeBoldText = true
+                }, LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = dp(12) })
+                addView(TextView(this@MainActivity).apply {
+                    text = label
+                    setTextColor(getColor(colorRes))
+                    textSize = 14f
+                })
             }
-            .show()
+
+        fun divider() = View(this).apply {
+            setBackgroundColor(0xFF2E3947.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
+            )
+        }
+
+        val head = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(16), dp(20), dp(14))
+            addView(TextView(this@MainActivity).apply {
+                text = accName
+                setTextColor(getColor(R.color.text_primary))
+                textSize = 16f
+                paint.isFakeBoldText = true
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "记录与锚点随账号独立保存"
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 11f
+                setPadding(0, dp(2), 0, 0)
+            })
+        }
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(16).toFloat()
+                setColor(getColor(R.color.bg_card))
+            }
+            addView(head)
+            addView(divider())
+            addView(menuRow("＋", "新建", R.color.text_primary) { createGachaAccount() })
+            addView(menuRow("✎", "改名", R.color.text_primary) { renameGachaAccount() })
+            addView(menuRow("⇄", "切换账号", R.color.text_primary) {
+                showGachaAccountPicker(head)
+            })
+            addView(divider())
+            addView(menuRow("✕", "删除", R.color.err_red) { deleteGachaAccount() })
+        }
+
+        val dlg = AlertDialog.Builder(this).create()
+        dlg.setView(root)
+        dlgRef = dlg
+        dlg.show()
+        dlg.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(dp(300), ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
     }
 
     /** 账号切换列表（PopupMenu，● 标当前账号），点选即切换并刷新面板 */
