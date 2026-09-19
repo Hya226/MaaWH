@@ -263,7 +263,11 @@ class MainActivity : AppCompatActivity() {
         if (!GuideStore.isDone(this, GuideStore.KEY_MAIN)) {
             vdHandler.postDelayed({
                 if (!isFinishing && !isTaskRunning) {
-                    onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
+                    // 主引导已含配置管理内容，看完同时标记 config，场景引导不再重复弹
+                    onboarding.start(
+                        buildGuideSteps(),
+                        listOf(GuideStore.KEY_MAIN, GuideStore.KEY_CONFIG),
+                    )
                 }
             }, 1600)
         }
@@ -1139,7 +1143,7 @@ class MainActivity : AppCompatActivity() {
             // 配置管理首访引导
             vdHandler.postDelayed({
                 if (canShowScenarioGuide(GuideStore.KEY_CONFIG)) {
-                    onboarding.start(buildConfigGuideSteps(), GuideStore.KEY_CONFIG, homeFirst = false)
+                    onboarding.start(buildConfigGuideSteps(), listOf(GuideStore.KEY_CONFIG), homeFirst = false)
                 }
             }, 450)
         }
@@ -2098,7 +2102,7 @@ class MainActivity : AppCompatActivity() {
                     // 抽卡页首访引导：等切页布局完成再弹，避免与任务/抓取运行冲突
                     vdHandler.postDelayed({
                         if (canShowScenarioGuide(GuideStore.KEY_GACHA)) {
-                            onboarding.start(buildGachaGuideSteps(), GuideStore.KEY_GACHA, homeFirst = false)
+                            onboarding.start(buildGachaGuideSteps(), listOf(GuideStore.KEY_GACHA), homeFirst = false)
                         }
                     }, 450)
                 }
@@ -3255,7 +3259,8 @@ class MainActivity : AppCompatActivity() {
         dlg.show()
     }
 
-    /** 主引导：5 步核心流（欢迎 → 预览 → 任务队列 → 开始 → 完成），细节交给场景引导 */
+    /** 主引导：7 步连播（欢迎 → 预览 → 任务队列 → 配置管理 → 新建复制 → 开始 → 完成），
+     *  配置管理两步进入时自动切配置管理模式（靶点面板可见），开始步切回队列视图 */
     private fun buildGuideSteps(): List<Onboarding.Step> = listOf(
         Onboarding.Step(0, null, "✨",
             getString(R.string.guide_welcome_title), getString(R.string.guide_welcome_body)),
@@ -3263,8 +3268,14 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.guide_preview_title), getString(R.string.guide_preview_body)),
         Onboarding.Step(0, { binding.rvTaskList }, "📋",
             getString(R.string.guide_queue_title), getString(R.string.guide_queue_body)),
+        Onboarding.Step(0, { binding.panelConfig }, "⚙️",
+            getString(R.string.guide_c_list_title), getString(R.string.guide_c_list_body),
+            enter = { setConfigMode(true) }),
+        Onboarding.Step(0, { binding.btnNewProfile }, "➕",
+            getString(R.string.guide_c_new_title), getString(R.string.guide_c_new_body)),
         Onboarding.Step(0, { binding.btnStartQueue }, "▶️",
-            getString(R.string.guide_start_title), getString(R.string.guide_start_body)),
+            getString(R.string.guide_start_title), getString(R.string.guide_start_body),
+            enter = { setConfigMode(false) }),
         Onboarding.Step(0, null, "🎉",
             getString(R.string.guide_done_title), getString(R.string.guide_done_body)),
     )
@@ -3365,16 +3376,19 @@ class MainActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
                 )
             })
-            addView(menuRow("⌂", "主界面", "5 步 · 预览 / 任务队列 / 开始任务") {
-                onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
+            addView(menuRow("⌂", "主界面", "7 步 · 预览 / 队列 / 配置管理 / 开始") {
+                onboarding.start(
+                    buildGuideSteps(),
+                    listOf(GuideStore.KEY_MAIN, GuideStore.KEY_CONFIG),
+                )
             })
             addView(menuRow("✦", "抽卡页", "4 步 · 账号 / 抓取 / 编辑 / 数据面板") {
-                onboarding.start(buildGachaGuideSteps(), GuideStore.KEY_GACHA, homeFirst = false)
+                onboarding.start(buildGachaGuideSteps(), listOf(GuideStore.KEY_GACHA), homeFirst = false)
             })
             addView(menuRow("⚙", "配置管理", "2 步 · 多套配置 / 新建与复制") {
                 setConfigMode(true)
                 guideShowPage(0)
-                onboarding.start(buildConfigGuideSteps(), GuideStore.KEY_CONFIG, homeFirst = false)
+                onboarding.start(buildConfigGuideSteps(), listOf(GuideStore.KEY_CONFIG), homeFirst = false)
             })
         }
 

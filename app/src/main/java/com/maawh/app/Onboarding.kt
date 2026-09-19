@@ -66,17 +66,19 @@ class Onboarding(
     private val onFinished: () -> Unit,
 ) {
 
-    /** 一步引导；target 惰性求值（切页后才布局），null 或视图不可见时不挖洞、卡片居中 */
+    /** 一步引导；target 惰性求值（切页后才布局），null 或视图不可见时不挖洞、卡片居中。
+     *  enter = 进入该步时的动作（如切配置管理模式，让靶点面板可见） */
     data class Step(
         val page: Int,
         val target: (() -> View?)?,
         val emoji: String,
         val title: String,
         val body: String,
+        val enter: (() -> Unit)? = null,
     )
 
     private var steps: List<Step> = emptyList()
-    private var guideKey = GuideStore.KEY_MAIN
+    private var guideKeys: List<String> = listOf(GuideStore.KEY_MAIN)
 
     /** 洞与遮罩透明度上限，比普通弹窗深才衬得出聚光灯 */
     private val scrimMax = 0.72f
@@ -94,11 +96,16 @@ class Onboarding(
 
     val isActive: Boolean get() = active
 
-    /** 启动一个引导集；homeFirst=true 时先归位主页（主引导用，场景引导已在其页面） */
-    fun start(steps: List<Step>, key: String = GuideStore.KEY_MAIN, homeFirst: Boolean = true) {
+    /** 启动一个引导集；keys = 完成时要标记的引导集（主引导内含配置管理内容时传两个）；
+     *  homeFirst=true 时先归位主页（主引导用，场景引导已在其页面） */
+    fun start(
+        steps: List<Step>,
+        keys: List<String> = listOf(GuideStore.KEY_MAIN),
+        homeFirst: Boolean = true,
+    ) {
         if (active) return
         this.steps = steps
-        guideKey = key
+        guideKeys = keys
         if (homeFirst) ensureHome()
         stepIndex = 0
         active = true
@@ -115,7 +122,7 @@ class Onboarding(
     fun finish() {
         if (!active) return
         active = false
-        GuideStore.markDone(activity, guideKey)
+        guideKeys.forEach { GuideStore.markDone(activity, it) }
         (root.parent as? ViewGroup)?.removeView(root)
         root.viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
         backCallback?.isEnabled = false
@@ -137,6 +144,7 @@ class Onboarding(
         stepIndex = i
         val step = steps[i]
         showPage(step.page)
+        step.enter?.invoke()
         card?.let { root.removeView(it) }
         card = null
         spotlight.cancelAnim()
