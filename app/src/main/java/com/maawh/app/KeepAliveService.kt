@@ -25,8 +25,11 @@ import android.os.IBinder
  */
 class KeepAliveService : Service() {
 
-    /** 挂机守护轮询（autoMute 开启时）：检测游戏被切到物理屏玩 → 挂机静音让位 */
-    private val watchHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    /** 挂机守护轮询（autoMute 开启时）：检测游戏被切到物理屏玩 → 挂机静音让位。
+     *  轮询里有 dumpsys/appops 等 shell 调用（各几百 ms），必须跑在独立线程——
+     *  挂主线程的话每 10 秒卡住界面一次（启动/滑动掉帧的来源）。 */
+    private val watchThread = android.os.HandlerThread("maawh-audio-watch").apply { start() }
+    private val watchHandler = android.os.Handler(watchThread.looper)
 
     private val watchRunnable: Runnable = object : Runnable {
         override fun run() {
@@ -78,6 +81,7 @@ class KeepAliveService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         watchHandler.removeCallbacks(watchRunnable)
+        watchThread.quitSafely()
         // 服务停止 = 管控态彻底结束（虚拟屏已死/队列收尾停保活），顺手派发一次静音恢复，
         // 兜住"虚拟屏悄悄死了但 deny 还挂着"的场合；幂等（无 deny 时不动作）。
         ShizukuShell.requestGameAudioRestore()
