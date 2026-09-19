@@ -156,6 +156,15 @@ object MaaBridge {
     /** 截图 PNG 内存保持引用，防止 SetEncoded 后 Memory 被回收 */
     private val memPool = java.util.Collections.synchronizedList(mutableListOf<Memory>())
 
+    /**
+     * 控制器回调表强引用：引擎异步线程（ActionRunner）在控制器销毁后仍可能调用
+     * inactive/screencap 等回调，若回调表是 run() 的局部变量，GC 会在引擎仍持有
+     * 函数指针时回收 JNA trampoline → SIGBUS（pc=0x25f）/scudo abort（release 实测，
+     * debuggable 的 GC 时序会掩盖）。保留到下一次 run() 覆盖，窗口内对象永远可达。
+     */
+    @Volatile
+    private var liveControllerCallbacks: MaaCustomControllerCallbacks? = null
+
     @Volatile
     private var stopFlag = false
 
@@ -424,6 +433,7 @@ object MaaBridge {
 
             // 2) 控制器：自定义控制器 -> Shizuku
             callbacks = buildCallbacks(onLog)
+            liveControllerCallbacks = callbacks
             ctrl = lib.MaaCustomControllerCreate(callbacks, null)
             val controller = checkNotNull(ctrl) { "MaaCustomControllerCreate 失败（可能缺少 libMaaCustomControlUnit.so）" }
 
