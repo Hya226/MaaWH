@@ -236,6 +236,7 @@ app:cornerRadius="8dp"
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnNewProfile"
+app:cornerRadius="8dp"
                                 style="@style/Widget.Material3.Button.TonalButton"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -524,6 +525,7 @@ app:cornerRadius="8dp"
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnHistory"
+app:cornerRadius="8dp"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -535,6 +537,7 @@ app:cornerRadius="8dp"
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnClearLog"
+app:cornerRadius="8dp"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -623,6 +626,7 @@ app:cornerRadius="8dp"
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRequest"
+app:cornerRadius="8dp"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -634,6 +638,7 @@ app:cornerRadius="8dp"
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRefresh"
+app:cornerRadius="8dp"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
