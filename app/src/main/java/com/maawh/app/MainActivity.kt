@@ -2472,8 +2472,9 @@ class MainActivity : AppCompatActivity() {
             if (name.isEmpty()) { toast("器者名不能为空"); return@setOnClickListener }
             if (ts == null) { toast("时间格式不对：应如 2026-08-01 10:30"); return@setOnClickListener }
             val rec = GachaStore.addManualRecord(ctx, pool, banner, name, rarity, ts)
+            // 批量补录：只清名字、保留时间（同一次十连的时间相同），光标回名字栏
             nameEdit.setText("")
-            timeEdit.setText("")
+            nameEdit.requestFocus()
             refreshManualList()
             renderGachaPanel()
             log("手动添加记录：[${rec.uid}]", LogLevel.INFO)
