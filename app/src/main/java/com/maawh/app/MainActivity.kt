@@ -2829,7 +2829,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (isTaskRunning) { toast("任务队列运行中，不能同时抓取"); return }
-        if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并把游戏打开到「招募记录」页"); return }
+        if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并把游戏打开到「招集记录」页"); return }
         gachaRunning = true
         binding.btnGachaRun.text = getString(R.string.gacha_stop)
         binding.tvGachaStatus.text = "准备…"
@@ -2878,7 +2878,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         if (all.isEmpty()) {
-            container.addView(simpleText("还没有数据。把虚拟屏里的游戏停在「招募记录」页，再点「开始抓取」。", R.color.text_secondary, 12f))
+            container.addView(simpleText("还没有数据。把虚拟屏里的游戏停在「招集记录」页，再点「开始抓取」。", R.color.text_secondary, 12f))
             return
         }
         val pools = try {
