@@ -2635,6 +2635,7 @@ class MainActivity : AppCompatActivity() {
             val counts = HashMap<String, Int>()
             for (r in GachaStore.loadRecords(ctx)) counts[r.name] = (counts[r.name] ?: 0) + 1
             val dict = GachaStore.loadNames(ctx)
+            GachaDictionary.names = dict // 打开面板即同步 OCR 纠错字典，adb 直推名单免重启
             // 名单 = 后台预置 + 手动编辑（字典），与抽卡记录解耦；次数 = 当前账号记录计数
             val sorted = dict.sortedWith(compareByDescending<String> { counts[it] ?: 0 }.thenBy { it })
             tvNameCount.text = "器者总数：${sorted.size}"
