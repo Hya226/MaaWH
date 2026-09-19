@@ -9,10 +9,8 @@
     <string name="gacha_run">开始抓取</string>
     <string name="gacha_stop">停止抓取</string>
     <string name="gacha_account_label">账号</string>
-    <string name="gacha_btn_rename">改名</string>
-    <string name="gacha_btn_delete">删除</string>
+    <string name="gacha_account_arrow">▾</string>
     <string name="gacha_btn_edit">编辑</string>
-    <string name="gacha_btn_new">新建</string>
     <string name="about_title">关于</string>
     <string name="about_version">版本</string>
     <string name="about_developer">开发者</string>
