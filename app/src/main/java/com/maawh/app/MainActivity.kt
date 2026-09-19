@@ -1691,7 +1691,7 @@ class MainActivity : AppCompatActivity() {
         if (queueRunner?.running == true) return
         if (GameAudioMarker.restoreIfNeeded(applicationContext)) {
             log("检测到上次会话的游戏静音残留，已恢复游戏声音", LogLevel.INFO)
-            val autoMute = runCatching { QueueStore.load(applicationContext)?.autoMute }.getOrDefault(false)
+            val autoMute = runCatching { QueueStore.load(applicationContext)?.autoMute ?: false }.getOrDefault(false)
             if (autoMute && ShizukuShell.isVdAlive()) {
                 GameAudioMarker.mark(applicationContext, MaaConst.GAME_PKG)
                 if (ShizukuShell.setGameAudioMuted(true)) {
