@@ -48,13 +48,13 @@
     <string name="btn_add_zhengji">＋征集</string>
     <string name="hint_queue">勾选参与运行，长按拖动排序</string>
     <string name="tab_oneclick">一键长草</string>
-    <string name="tab_tools">小工具</string>
-    <string name="tools_maintip">小工具队列：任务包清单声明的工具任务（如刷活动关、博物研学）+ adb 直达入口。单击左侧任务行在右侧改参数，勾选后点「开始任务」；不影响一键长草主队列</string>
+    <string name="tab_tools">额外队列</string>
+    <string name="tools_maintip">额外队列：任务包清单声明的工具任务（如刷活动关、博物研学）+ adb 直达入口。单击左侧任务行在右侧改参数，勾选后点「开始任务」；不影响一键长草主队列</string>
     <string name="tools_edit_hint">单击左侧任务行查看/编辑参数</string>
     <string name="tools_target_label">目标角色名（穿戴装备搜索用）</string>
     <string name="tools_target_hint">如：商周十供</string>
     <string name="edit_hint">单击左侧任务行按任务包清单 interface.json 编辑参数</string>
-    <string name="move_to_tools">⇄ 移到小工具</string>
+    <string name="move_to_tools">⇄ 移到额外队列</string>
     <string name="move_to_main">⇄ 移到一键长草</string>
     <string name="edit_title">任务编辑</string>
     <string name="edit_count_label">次数 (1~10)</string>
@@ -100,7 +100,7 @@
     <string name="guide_queue_title">任务列表</string>
     <string name="guide_queue_body">勾选要运行的任务，点任务行在右侧编辑参数（次数、目标角色等，改完自动保存），长按拖动排序。「编辑配置」里可管理多套队列配置，首次进入会另弹引导。</string>
     <string name="guide_start_title">开始任务</string>
-    <string name="guide_start_body">按当前所在的 tab 跑对应队列（一键长草或小工具），运行中按钮变「停止任务」，通知栏也有进度和停止。游戏静音、跑完关游戏、虚拟屏开关、防杀设置都收在「快捷选项」。</string>
+    <string name="guide_start_body">按当前所在的 tab 跑对应队列（一键长草或额外队列），运行中按钮变「停止任务」，通知栏也有进度和停止。游戏静音、跑完关游戏、虚拟屏开关、防杀设置都收在「快捷选项」。</string>
     <string name="guide_done_title">可以开始了</string>
     <string name="guide_done_body">主界面就这些。底部的「抽卡」页首次进入会弹它自己的引导；「日志」看运行细节，「设置」管 Shizuku 与画中画。\n\n以后想重看本引导：设置 → 查看新手引导。</string>
 

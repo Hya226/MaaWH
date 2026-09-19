@@ -43,7 +43,7 @@
             android:textColor="@color/text_primary"
             android:textSize="12sp" />
 
-        <!-- ========== 功能区 tab：一键长草 / 小工具 ========== -->
+        <!-- ========== 功能区 tab：一键长草 / 额外队列 ========== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -249,7 +249,7 @@
                 </FrameLayout>
             </LinearLayout>
 
-            <!-- 小工具：adb/快捷入口触发的测试任务队列（独立于一键长草，运行时不影响主队列） -->
+            <!-- 额外队列：adb/快捷入口触发的测试任务队列（独立于一键长草，运行时不影响主队列） -->
             <LinearLayout
                 android:id="@+id/panelTools"
                 android:layout_width="match_parent"
@@ -281,7 +281,7 @@
                         android:background="@drawable/bg_card"
                         android:padding="4dp" />
 
-                    <!-- 小工具任务编辑面板：内容超出屏高时可上下滚动 -->
+                    <!-- 额外队列任务编辑面板：内容超出屏高时可上下滚动 -->
                     <ScrollView
                         android:id="@+id/panelToolsEdit"
                         android:layout_width="0dp"

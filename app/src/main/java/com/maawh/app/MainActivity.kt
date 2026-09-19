@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
     private val enabled = mutableListOf<Boolean>()
     private lateinit var adapter: TaskQueueAdapter
 
-    // 小工具队列：adb 入口触发的测试任务，独立于一键长草主队列（不互相清空）
+    // 额外队列：adb 入口触发的测试任务，独立于一键长草主队列（不互相清空）
     private val toolsTasks = mutableListOf<TaskItem>()
     private val toolsEnabled = mutableListOf<Boolean>()
     private lateinit var toolsAdapter: TaskQueueAdapter
@@ -218,7 +218,7 @@ class MainActivity : AppCompatActivity() {
         binding.imageShot.setOnTouchListener { _, ev -> handleImageTouch(ev) }
         binding.btnStartQueue.setOnClickListener { startQueue() }
         binding.btnQuick.setOnClickListener { showQuickMenu() }
-        // tab 切换：一键长草 / 小工具
+        // tab 切换：一键长草 / 额外队列
         binding.btnTabOneClick.setOnClickListener { switchTab(HomeTab.ONECLICK) }
         binding.btnTabTools.setOnClickListener { switchTab(HomeTab.TOOLS) }
         // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
@@ -286,7 +286,7 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * 按任务包清单（interface.json）构建队列。
-     * group 含 "tools" 的任务进「小工具」tab（如查找器者），其余进「一键长草」主队列。
+     * group 含 "tools" 的任务进「额外队列」tab（如查找器者），其余进「一键长草」主队列。
      * 清单缺失时回退到最小可用清单（仅「启动」），避免界面空白无法操作。
      */
     private fun loadManifestIntoQueue() {
@@ -313,7 +313,7 @@ class MainActivity : AppCompatActivity() {
                 if (taskHome(t.name, t.group) == HOME_TOOLS) addToolTask(item) else addTask(item)
             }
             val toolCount = toolsTasks.size
-            if (toolCount > 0) log("小工具任务 $toolCount 个（在「小工具」tab）")
+            if (toolCount > 0) log("额外队列任务 $toolCount 个（在「额外队列」tab）")
         }
         // 配置列表 + 各配置内容（下面 restore 要用），并决定当前生效的配置
         profileData.clear()
@@ -333,7 +333,7 @@ class MainActivity : AppCompatActivity() {
     // 配置（多套任务队列）的恢复与保存
     // ==================================================================
 
-    /** 按清单声明构建队列项：option 用清单默认值初始化（主队列与小工具队列共用） */
+    /** 按清单声明构建队列项：option 用清单默认值初始化（主队列与额外队列共用） */
     private fun taskItemOf(t: TaskPack.TaskDef): TaskItem {
         val m = manifest
         val sel = TaskPack.Selection()
@@ -363,7 +363,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==================================================================
-    // 任务归属：一键长草（main）⇄ 小工具（tools）
+    // 任务归属：一键长草（main）⇄ 额外队列（tools）
     // ==================================================================
 
     /** 用户手动挪过位置的任务：任务名 → HOME_MAIN / HOME_TOOLS。清单 group 只给默认值。 */
@@ -379,13 +379,13 @@ class MainActivity : AppCompatActivity() {
         else if (toolsTasks.any { it === item }) HOME_TOOLS else null
 
     /**
-     * 把一个任务在【一键长草】与【小工具】之间挪位置（调试完转正式任务就是靠它）。
+     * 把一个任务在【一键长草】与【额外队列】之间挪位置（调试完转正式任务就是靠它）。
      * 勾选状态与已设的参数跟着走，并在两个 tab 之间自动切过去、选中它，让结果看得见。
      */
     private fun moveTaskTo(item: TaskItem, target: String) {
         val from = homeOfItem(item) ?: return
         if (from == target) {
-            toast("它已经在" + (if (target == HOME_TOOLS) "小工具" else "一键长草") + "里了")
+            toast("它已经在" + (if (target == HOME_TOOLS) "额外队列" else "一键长草") + "里了")
             return
         }
         val wasEnabled = if (from == HOME_MAIN) enabled.getOrElse(tasks.indexOf(item)) { true }
@@ -424,7 +424,7 @@ class MainActivity : AppCompatActivity() {
         }
         saveNow()
         log("已把「${item.label}」移到" +
-            (if (target == HOME_TOOLS) "【小工具】" else "【一键长草】（主队列）"))
+            (if (target == HOME_TOOLS) "【额外队列】" else "【一键长草】（主队列）"))
     }
 
     /**
@@ -444,7 +444,7 @@ class MainActivity : AppCompatActivity() {
         switchTab(if (saved.tab == "tools") HomeTab.TOOLS else HomeTab.ONECLICK)
         // 旧存档里的 tab="config"（配置曾是与两个 tab 平级的分区）→ 落到一键长草的队列视图。
         // 这里**不能**再重置配置模式：清单加载比窗口可点慢，重置会把用户启动瞬间点的「编辑配置」撤销掉
-        log("已载入配置「$activeProfile」（队列 ${tasks.size} 项 · 小工具 ${toolsTasks.size} 项）")
+        log("已载入配置「$activeProfile」（队列 ${tasks.size} 项 · 额外队列 ${toolsTasks.size} 项）")
     }
 
     /** 主队列：存档顺序即配置里的顺序，清单删掉的任务丢弃，清单新增的按默认追加到末尾 */
@@ -472,7 +472,7 @@ class MainActivity : AppCompatActivity() {
         enabled.addAll(newEnabled)
     }
 
-    /** 小工具队列：清单声明的工具任务取原对象（带 option），
+    /** 额外队列：清单声明的工具任务取原对象（带 option），
      *  存档里按 entry 记的 adb 直达条目也按清单声明重建（否则参数面板是空的） */
     private fun restoreToolsQueue(saved: List<QueueStore.SavedTask>) {
         val newTasks = ArrayList<TaskItem>()
@@ -867,13 +867,13 @@ class MainActivity : AppCompatActivity() {
             ?: toolsTasks.firstOrNull { it.name == entry || it.entry == entry }
         val toolItem = queued ?: manifestItemOf(entry, entry) ?: TaskItem(pack, entry, entry)
         if (queued != null && tasks.any { it === queued }) {
-            // 已经归在【一键长草】的任务：只运行，不往小工具里塞重复条目
-            log("工具入口: [$entry] 是【一键长草】任务，直接运行（不加入小工具队列）")
+            // 已经归在【一键长草】的任务：只运行，不往额外队列里塞重复条目
+            log("工具入口: [$entry] 是【一键长草】任务，直接运行（不加入额外队列）")
         } else {
-            // 小工具队列里的任务 / adb 直达的临时入口：照旧入队并切到小工具 tab
+            // 额外队列里的任务 / adb 直达的临时入口：照旧入队并切到额外队列 tab
             addToolTask(toolItem)
             switchTab(HomeTab.TOOLS)
-            log("工具入口: [$entry] 已加入小工具队列")
+            log("工具入口: [$entry] 已加入额外队列")
         }
         if (vdFirst) {
             log("vd=1：先建虚拟屏并投游戏，再跑 [$entry]")
@@ -896,7 +896,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        // 只跑本次入口这一个任务，不重跑小工具队列里的历史条目
+        // 只跑本次入口这一个任务，不重跑额外队列里的历史条目
         queuedStart?.let { binding.btnStartQueue.removeCallbacks(it) }
         queuedStart = Runnable {
             when {
@@ -1033,7 +1033,7 @@ class MainActivity : AppCompatActivity() {
         })
         helper.attachToRecyclerView(binding.rvTaskList)
 
-        // 小工具队列：同一适配器，仅绑到小工具 tab 的列表
+        // 额外队列：同一适配器，仅绑到额外队列 tab 的列表
         toolsAdapter = TaskQueueAdapter(
             toolsTasks,
             toolsEnabled,
@@ -1066,11 +1066,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ==================================================================
-    // 小工具队列（清单声明的工具任务 + adb 入口触发的测试任务）
+    // 额外队列（清单声明的工具任务 + adb 入口触发的测试任务）
     // ==================================================================
 
     /**
-     * 加入小工具队列（同入口去重后移到最新位，保留最近 12 条，超出丢弃最旧）。
+     * 加入额外队列（同入口去重后移到最新位，保留最近 12 条，超出丢弃最旧）。
      * adb 直达入口（`--es entry VF_xxx`）带的 TaskItem 只有 entry、没有清单声明，
      * 直接入队会让参数面板显示成「无额外参数」、运行时 override 也拿不到清单里的 option
      * （刷活动关的「刷取次数」就是这么丢的）→ 这里优先换成清单里同 entry 的那一条。
@@ -1142,7 +1142,7 @@ class MainActivity : AppCompatActivity() {
     /** 一键长草里的「配置管理」子视图是否展开（对标 maameow 的编辑配置/完成） */
     private var configMode = false
 
-    /** 一键长草 / 小工具 分区切换 */
+    /** 一键长草 / 额外队列 分区切换 */
     private fun switchTab(tab: HomeTab) {
         homeTab = tab
         binding.panelOneClick.visibility = if (tab == HomeTab.ONECLICK) View.VISIBLE else View.GONE
@@ -1170,7 +1170,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 刷新某任务的列表摘要显示（主队列与小工具队列各刷一次） */
+    /** 刷新某任务的列表摘要显示（主队列与额外队列各刷一次） */
     private fun refreshRow(item: TaskItem) {
         val idx = tasks.indexOf(item)
         if (idx >= 0) adapter.notifyItemChanged(idx)
@@ -1181,7 +1181,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 按清单 option 动态渲染参数面板（主队列与小工具共用）。
+     * 按清单 option 动态渲染参数面板（主队列与额外队列共用）。
      * 返回 false = 清单里没给这个任务声明 option（如 adb 直达的临时探针），调用方显示提示。
      */
     private fun renderOptionsFor(container: LinearLayout, item: TaskItem): Boolean {
@@ -1210,7 +1210,7 @@ class MainActivity : AppCompatActivity() {
         // 若屏幕行文字与这里的 name 对不上，即为列表渲染与数据不同步的竞态现场
         android.util.Log.i("MaaWH", "SELECT main[$i]=${item.name} tasks=${tasks.map { it.name }}")
         binding.tvEditTitle.text = "编辑: ${item.label}"
-        // 归属切换按钮：清单声明的任务才给（挪到小工具当临时调试项）
+        // 归属切换按钮：清单声明的任务才给（挪到额外队列当临时调试项）
         val declared = manifest?.tasks?.any { it.name == item.name || it.entry == item.entry } == true
         binding.btnEditMove.visibility = if (declared) View.VISIBLE else View.GONE
         binding.btnEditMove.setOnClickListener { moveTaskTo(item, HOME_TOOLS) }
@@ -1330,7 +1330,7 @@ class MainActivity : AppCompatActivity() {
             stopNow()
             return
         }
-        // 按当前 tab 决定跑哪个队列：小工具 tab 跑工具队列，其余（含配置 tab）跑生效配置的主队列
+        // 按当前 tab 决定跑哪个队列：额外队列 tab 跑工具队列，其余（含配置 tab）跑生效配置的主队列
         val onTools = homeTab == HomeTab.TOOLS
         val plan = if (onTools) {
             toolsTasks.indices.filter { toolsEnabled.getOrElse(it) { false } }.map { toolsTasks[it] }
@@ -3485,7 +3485,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.menu.getItem(page).isChecked = true
     }
 
-    /** 引导开始前把主页归位：队列视图 + 一键长草（配置管理模式/小工具 tab 下靶点面板不同） */
+    /** 引导开始前把主页归位：队列视图 + 一键长草（配置管理模式/额外队列 tab 下靶点面板不同） */
     private fun guideEnsureHome() {
         setConfigMode(false)
         switchTab(HomeTab.ONECLICK)
@@ -3675,7 +3675,7 @@ class MainActivity : AppCompatActivity() {
         private const val CASE_NOT_GRANTED = 3
         /** 全新安装时的第一个配置名（对标 maameow 的「日常」） */
         private const val DEFAULT_PROFILE = "日常"
-        /** 任务归属两处：一键长草主队列 / 小工具队列（见 homeOf） */
+        /** 任务归属两处：一键长草主队列 / 额外队列（见 homeOf） */
         private const val HOME_MAIN = "main"
         private const val HOME_TOOLS = "tools"
         private const val MATCH_PARENT = -1
