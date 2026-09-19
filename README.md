@@ -71,6 +71,10 @@ git clone https://github.com/Hya226/MaaWH.git
 - OpenCV、ONNX Runtime、FastDeploy OCR（Apache-2.0）—— 引擎内置的视觉/OCR 组件
 - [MAA-Meow](https://github.com/Aliothmoon/MAA-Meow) —— 悬浮窗/日志/引导等交互设计参考（本项目为独立实现，未使用其代码）
 
+## 交流
+
+官方 QQ 群：**1105246744**（问题反馈 / 使用交流）
+
 ## License
 
 [MIT](LICENSE)
