@@ -428,9 +428,10 @@ object MaaBridge {
             val controller = checkNotNull(ctrl) { "MaaCustomControllerCreate 失败（可能缺少 libMaaCustomControlUnit.so）" }
 
             // 关闭引擎的截图缩放/旋转归一化，按原始分辨率识别（模板按原分辨率制作）
-            val rawValue = Memory(4)
-            rawValue.setInt(0, 1)
-            lib.MaaControllerSetOption(controller, MaaConst.OPT_CTRL_SCREENSHOT_USE_RAW_SIZE /* ScreenshotUseRawSize */, rawValue, 4)
+            // 引擎校验 val_size == sizeof(bool) == 1，传 4 字节会被拒（invalid value size）
+            val rawValue = Memory(1)
+            rawValue.setByte(0, 1)
+            lib.MaaControllerSetOption(controller, MaaConst.OPT_CTRL_SCREENSHOT_USE_RAW_SIZE /* ScreenshotUseRawSize */, rawValue, 1)
 
             val connId = lib.MaaControllerPostConnection(controller)
             val connStatus = lib.MaaControllerWait(controller, connId)
@@ -455,11 +456,11 @@ object MaaBridge {
             val taskStatus = lib.MaaTaskerWait(taskerHandle, taskId)
             activeTasker = null
             onLog("任务结束: [$entry] status=$taskStatus ${statusText(taskStatus)}")
-            if (stopFlag) {
-                // 停止路径：PostStop 会让 Wait 提前返回但 worker 还在跑，必须等引擎
-                // 真正空闲再销毁（固定 sleep 缓冲不够，9-10 实测仍 FORTIFY abort）
-                waitEngineIdle(lib, taskerHandle, onLog)
-            }
+            // 无论成败都先等引擎真正空闲再销毁：Wait 返回时控制器动作线程可能还在
+            // 收尾（失败/超时路径同样如此），不等就 destroy 是 use-after-free
+            //（9-17 I11 两次 SIGSEGV/SIGBUS 均崩在 get_info_from_controller）。
+            // 停止路径同理：PostStop 让 Wait 提前返回但 worker 还在跑
+            waitEngineIdle(lib, taskerHandle, onLog)
             return taskStatus == MaaConst.STATUS_SUCCEEDED
         } catch (e: Throwable) {
             onLog("引擎异常: $e")
@@ -548,17 +549,19 @@ object MaaBridge {
                 // M4-④a：虚拟屏模式下直接取 ImageReader 帧(JPEG)。
                 // 注意：VD 帧为空时【不要】回退主屏 screencap —— 主屏(竖屏/异分辨率)帧会改变引擎
                 // 对截图分辨率/旋转的判定，导致后续固定坐标映射错乱(Actuator failed to get target rect)。
-                // 空帧重试数次后仍空则本次截图失败，由引擎按 rate_limit 下一轮重截。
+                // 点击后游戏切换界面的瞬间画面会短暂取不到（实测约 2 秒）：空帧重试窗口
+                // 加宽到 2.5 秒，在 App 内部吸收这类瞬态；真正的故障（虚拟屏没了）仍会报错。
                 val img: ByteArray =
                     if (ShizukuShell.vdMode) {
                         var f = ByteArray(0)
-                        for (i in 0 until 6) {
+                        val deadline = System.currentTimeMillis() + 2500
+                        while (System.currentTimeMillis() < deadline) {
                             f = ShizukuShell.grabVirtualFrame()
                             if (f.isNotEmpty()) break
-                            Thread.sleep(80)
+                            Thread.sleep(120)
                         }
                         if (f.isEmpty()) {
-                            onLog("截图回调: VD 帧为空(重试6次)，本轮截图失败")
+                            onLog("截图回调: VD 帧为空（已重试约 2.5 秒），本轮截图失败")
                             return@ScreencapCb 0
                         }
                         f

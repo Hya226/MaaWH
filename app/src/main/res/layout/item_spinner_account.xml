@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 账号下拉框的条目：暗色主题下用白字（默认 item 在暗背景下不可见） -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:ellipsize="end"
+    android:maxLines="1"
+    android:paddingLeft="6dp"
+    android:paddingTop="10dp"
+    android:paddingRight="6dp"
+    android:paddingBottom="10dp"
+    android:textColor="@color/text_primary"
+    android:textSize="14sp" />

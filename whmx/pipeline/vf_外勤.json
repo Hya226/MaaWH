@@ -2,33 +2,14 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-15T22:14:52+08:00",
+        "generatedAt": "2026-09-18T19:59:56+08:00",
         "flowFile": "外勤.flow.json",
-        "flowHash": "sha256:b6cb62ef9855aa0400b01dda3b1d847b27ee4f25b3aa15f22d6660444fddcab6",
-        "pipelineHash": "sha256:664dae7dc834af882c9268b3a8e93e6c6d943f4b43ce1238309ebe9252dba0b3",
+        "flowHash": "sha256:b7714dcbc6f092b45a1ac3264d46394c50a9e3ac1f0c2bcc55f6d14a711044af",
+        "pipelineHash": "sha256:501ed35055c81257b1c8db995bd78a5bed86671f3dff5ca11b3b188a548bd3de",
         "frameW": 1280,
         "frameH": 720
     },
     "VF_外勤": {
-        "next": [
-            "VF_外勤_14"
-        ]
-    },
-    "VF_外勤_14": {
-        "action": "DoNothing",
-        "timeout": 8000,
-        "next": [
-            "VF_外勤_14_Hit"
-        ],
-        "on_error": [
-            "VF_外勤_End"
-        ]
-    },
-    "VF_外勤_14_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "yanxun.png",
-        "threshold": 0.55,
-        "action": "DoNothing",
         "next": [
             "VF_外勤_01"
         ]
@@ -43,20 +24,155 @@
         "order_by": "Score",
         "post_wait_freezes": 1500,
         "next": [
-            "VF_外勤_13"
+            "VF_外勤_14"
         ]
     },
-    "VF_外勤_02": {
+    "VF_外勤_14": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_外勤_14_Hit"
+        ]
+    },
+    "VF_外勤_14_Hit": {
         "recognition": "TemplateMatch",
         "template": "tongshikechengwaiqin.png",
-        "threshold": 0.55,
+        "threshold": 0.8,
         "action": "Click",
-        "timeout": 5000,
-        "post_delay": 800,
-        "order_by": "Score",
-        "post_wait_freezes": 1500,
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_外勤_16_J1"
+        ]
+    },
+    "VF_外勤_16_J1": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_外勤_16_J1_Hit"
+        ],
+        "on_error": [
+            "VF_外勤_16_J2"
+        ]
+    },
+    "VF_外勤_16_J1_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "一键领取"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            86,
+            608,
+            180,
+            68
+        ],
         "next": [
             "VF_外勤_12"
+        ]
+    },
+    "VF_外勤_16_J2": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_外勤_16_J2_Hit"
+        ],
+        "on_error": [
+            "VF_外勤_16_J3"
+        ]
+    },
+    "VF_外勤_16_J2_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "统一外勤"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            84,
+            603,
+            179,
+            70
+        ],
+        "next": [
+            "VF_外勤_17"
+        ]
+    },
+    "VF_外勤_16_J3": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_外勤_16_J3_Hit"
+        ],
+        "on_error": [
+            "VF_外勤_End"
+        ]
+    },
+    "VF_外勤_16_J3_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "统一召回"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            84,
+            592,
+            198,
+            89
+        ],
+        "next": [
+            "VF_外勤_18"
+        ]
+    },
+    "VF_外勤_18": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_外勤_18_Hit"
+        ],
+        "on_error": [
+            "VF_外勤_16_J1"
+        ]
+    },
+    "VF_外勤_18_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "统一召回"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            84,
+            592,
+            198,
+            89
+        ],
+        "next": [
+            "VF_外勤_19"
+        ]
+    },
+    "VF_外勤_17": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_外勤_17_Hit"
+        ],
+        "on_error": [
+            "VF_外勤_16_J1"
+        ]
+    },
+    "VF_外勤_17_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "统一外勤"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            84,
+            603,
+            179,
+            70
+        ],
+        "next": [
+            "VF_外勤_06"
         ]
     },
     "VF_外勤_03": {
@@ -69,7 +185,7 @@
         "order_by": "Score",
         "post_wait_freezes": 1200,
         "next": [
-            "VF_外勤_11"
+            "VF_外勤_04"
         ]
     },
     "VF_外勤_04": {
@@ -91,10 +207,15 @@
             36,
             565
         ],
-        "post_delay": 600,
+        "post_delay": 2000,
         "timeout": 3000,
         "next": [
-            "VF_外勤_10"
+            "VF_外勤_15"
+        ]
+    },
+    "VF_外勤_15": {
+        "next": [
+            "VF_外勤_17"
         ]
     },
     "VF_外勤_06": {
@@ -107,7 +228,7 @@
         "order_by": "Score",
         "post_wait_freezes": 1200,
         "next": [
-            "VF_外勤_09"
+            "VF_外勤_07"
         ]
     },
     "VF_外勤_07": {
@@ -120,69 +241,12 @@
         "order_by": "Score",
         "post_wait_freezes": 1200,
         "next": [
-            "VF_外勤_08"
+            "VF_外勤_19"
         ]
     },
-    "VF_外勤_08": {
+    "VF_外勤_19": {
         "next": [
             "Common_回主页"
-        ]
-    },
-    "VF_外勤_09": {
-        "action": "DoNothing",
-        "timeout": 8000,
-        "next": [
-            "VF_外勤_09_Hit"
-        ],
-        "on_error": [
-            "VF_外勤_08"
-        ]
-    },
-    "VF_外勤_09_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "querenwaiqin.png",
-        "threshold": 0.5,
-        "action": "DoNothing",
-        "next": [
-            "VF_外勤_07"
-        ]
-    },
-    "VF_外勤_10": {
-        "action": "DoNothing",
-        "timeout": 8000,
-        "next": [
-            "VF_外勤_10_Hit"
-        ],
-        "on_error": [
-            "VF_外勤_08"
-        ]
-    },
-    "VF_外勤_10_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "tongyiwaiqin.png",
-        "threshold": 0.5,
-        "action": "DoNothing",
-        "next": [
-            "VF_外勤_06"
-        ]
-    },
-    "VF_外勤_11": {
-        "action": "DoNothing",
-        "timeout": 8000,
-        "next": [
-            "VF_外勤_11_Hit"
-        ],
-        "on_error": [
-            "VF_外勤_End"
-        ]
-    },
-    "VF_外勤_11_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "lingqu_waiqin2.png",
-        "threshold": 0.5,
-        "action": "DoNothing",
-        "next": [
-            "VF_外勤_04"
         ]
     },
     "VF_外勤_12": {
@@ -192,35 +256,23 @@
             "VF_外勤_12_Hit"
         ],
         "on_error": [
-            "VF_外勤_11"
+            "VF_外勤_16_J1"
         ]
     },
     "VF_外勤_12_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "lingqu_waiqin.png",
-        "threshold": 0.5,
+        "recognition": "OCR",
+        "expected": [
+            "一键领取"
+        ],
         "action": "DoNothing",
+        "roi": [
+            86,
+            608,
+            180,
+            68
+        ],
         "next": [
             "VF_外勤_03"
-        ]
-    },
-    "VF_外勤_13": {
-        "action": "DoNothing",
-        "timeout": 8000,
-        "next": [
-            "VF_外勤_13_Hit"
-        ],
-        "on_error": [
-            "VF_外勤_End"
-        ]
-    },
-    "VF_外勤_13_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "tongshikechengwaiqin.png",
-        "threshold": 0.55,
-        "action": "DoNothing",
-        "next": [
-            "VF_外勤_02"
         ]
     },
     "VF_外勤_End": {

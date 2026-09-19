@@ -27,6 +27,25 @@ class KeepAliveService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        // 用户从最近任务划掉 MaaWH：只要队列没在跑就清掉 appops 静音残留（PLAY_AUDIO deny
+        // 是持久系统设置，没人恢复的话用户转头打开物华弥新也没声）。队列还在跑则不动——
+        // 静音是任务期间的预期行为，收尾自会恢复。
+        // 必须用孤儿 shell 派发（requestGameAudioRestore）：划掉瞬间进程随时被杀，普通
+        // 异步恢复跑不完（2026-09-19 实测 deny 残留就是这么来的）；命令毫秒级，同步调用即可。
+        if (!QueueRunner.isAnyRunning()) {
+            ShizukuShell.requestGameAudioRestore()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // 服务停止 = 管控态彻底结束（虚拟屏已死/队列收尾停保活），顺手派发一次静音恢复，
+        // 兜住"虚拟屏悄悄死了但 deny 还挂着"的场合；幂等（无 deny 时不动作）。
+        ShizukuShell.requestGameAudioRestore()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // 通知「停止任务」按钮：转发给队列执行器，不重建通知（停止后由队列收尾更新通知）
         if (intent?.action == ACTION_STOP) {

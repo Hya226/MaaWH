@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.PointF
 import android.net.Uri
+import android.provider.Settings
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -23,6 +24,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -36,6 +38,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.maawh.app.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 import java.io.File
 import java.text.SimpleDateFormat
@@ -62,9 +65,13 @@ class MainActivity : AppCompatActivity() {
 
     /** 当前任务包清单（interface.json）；加载失败为 null，此时队列为空并提示 */
     private var manifest: TaskPack.Manifest? = null
+    /** 清单未就绪时到达的 adb 直达入口：任务包释放完成、清单加载后自动补跑（否则会拿 intent 字面量当 entry，跑错老节点） */
+    private var pendingLaunchIntent: Intent? = null
 
     @Volatile
     private var muteEnabled = false
+    @Volatile
+    private var autoMuteEnabled = false
     @Volatile
     private var closeAfterEnabled = false
 
@@ -108,6 +115,15 @@ class MainActivity : AppCompatActivity() {
         ShizukuShell.errorHook = { level, msg -> log(msg, level) }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        // 静音残留自愈（maameow 的 startAutoRestore 语义：上个会话结束 = 静音标记必是残留）：
+        // 上次会话静音了游戏却没恢复成（进程被系统直接杀没有任何回调）→ 凭持久化标记恢复。
+        // 冷启动试一次 + UserService 每次新绑定完成再试一次（首次绑定可能晚于 onCreate）。
+        // 只认队列没跑——队列运行中的静音是本会话的合法状态，不能撤销。
+        lifecycleScope.launch(Dispatchers.IO) { runCatching { selfHealGameAudio() } }
+        ShizukuShell.onServiceReady = {
+            lifecycleScope.launch(Dispatchers.IO) { runCatching { selfHealGameAudio() } }
+        }
+
         // 任务日志：时间 + 级别徽标 + 颜色（TRACE 灰 / INFO 蓝 / SUCCESS 绿 / WRN 橙 / ERR 红）
         logView = TaskLogView(binding.tvLog, binding.scrollLog) { level ->
             getColorCompat(
@@ -129,6 +145,44 @@ class MainActivity : AppCompatActivity() {
         binding.switchPip.setOnCheckedChangeListener { _, checked ->
             pipEnabled = checked
             scheduleSave()
+            // 画中画依赖悬浮窗权限。优先用 Shizuku 直接授权（shell 可改 appops，
+            // 对 adb 侧载应用尤其重要——系统设置页会以「受限设置」拒绝授予）；
+            // Shizuku 不在线才跳系统授权页。
+            if (checked && !Settings.canDrawOverlays(this)) {
+                lifecycleScope.launch {
+                    val granted = withContext(Dispatchers.IO) {
+                        runCatching {
+                            ShizukuShell.execShellCommand(
+                                "appops", "set", packageName, "SYSTEM_ALERT_WINDOW", "allow"
+                            )
+                            Settings.canDrawOverlays(this@MainActivity)
+                        }.getOrDefault(false)
+                    }
+                    if (granted) {
+                        toast("悬浮窗权限已自动开启")
+                        log("悬浮窗权限已通过 Shizuku 自动授予", LogLevel.INFO)
+                    } else {
+                        toast("需要悬浮窗权限：请启动 Shizuku 后重开此开关，或到设置页手动允许")
+                        runCatching {
+                            startActivity(
+                                Intent(
+                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:$packageName")
+                                )
+                            )
+                        }.onFailure {
+                            runCatching {
+                                startActivity(
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.parse("package:$packageName")
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // 内置任务包释放（首次安装/覆盖升级时拷 assets/whmx，平时零开销）；
@@ -146,6 +200,12 @@ class MainActivity : AppCompatActivity() {
                 if (did) log("✓ 内置任务包已初始化（首次安装或 APK 版本更新）")
                 // 首装/升级时 interface.json 此刻才落盘，清单必须在释放完成后加载
                 loadManifestIntoQueue()
+                // 冷启动期间收到直达入口的：清单就绪了，现在按最新清单补跑
+                pendingLaunchIntent?.let {
+                    pendingLaunchIntent = null
+                    log("任务包就绪，补跑挂起的直达入口: ${it.getStringExtra("entry")}")
+                    handleLaunchIntent(it)
+                }
             }
         }
 
@@ -162,6 +222,9 @@ class MainActivity : AppCompatActivity() {
         // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
         binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
         binding.btnNewProfile.setOnClickListener { createProfile() }
+        binding.btnGachaRun.setOnClickListener { startGachaCrawl() }
+        setupGachaAccounts()
+        renderGachaPanel()
         buildVdOverlay()
 
         // 视图归位（默认队列视图）；之后不再重置，免得把用户刚点的「编辑配置」撤掉
@@ -189,6 +252,12 @@ class MainActivity : AppCompatActivity() {
             ::guideEnsureHome,
         ) { maybePromptShizuku() }
         binding.btnGuide.setOnClickListener { onboarding.start() }
+        binding.btnAnnouncement.setOnClickListener { showAnnouncement() }
+        // 公告自动弹出：首次启动时让位给新手引导，之后每次打开若公告有更新（内容变化）则弹出
+        vdHandler.postDelayed({
+            if (!isFinishing && !onboarding.isActive) showAnnouncement(auto = true)
+        }, 2500)
+        binding.btnAnnouncement.setOnClickListener { showAnnouncement() }
         if (!GuideStore.isDone(this)) {
             vdHandler.postDelayed({
                 if (!isFinishing && !isTaskRunning) onboarding.start()
@@ -359,6 +428,7 @@ class MainActivity : AppCompatActivity() {
         restoreMainQueue(profileData[activeProfile] ?: emptyList())
         restoreToolsQueue(saved.tools)
         muteEnabled = saved.mute
+        autoMuteEnabled = saved.autoMute
         closeAfterEnabled = saved.closeAfter
         pipEnabled = saved.pipOn
         binding.switchPip.isChecked = saved.pipOn
@@ -475,6 +545,7 @@ class MainActivity : AppCompatActivity() {
                 tools = toolsTasks.mapIndexed { i, it -> savedTaskOf(it, toolsEnabled.getOrElse(i) { true }) },
                 tab = if (homeTab == HomeTab.TOOLS) "tools" else "oneclick",
                 mute = muteEnabled,
+                autoMute = autoMuteEnabled,
                 closeAfter = closeAfterEnabled,
                 pipOn = pipEnabled,
                 home = HashMap(homeOf)
@@ -773,6 +844,14 @@ class MainActivity : AppCompatActivity() {
         }
         val vdFirst = intent.getBooleanExtra("vd", false) && !vdOn
         val pack = intent.getStringExtra("pack") ?: "whmx"
+        // 清单还没加载完（装包后冷启动、释放还在后台跑）：挂起等清单就绪补跑。
+        // 否则队列/清单都是空的，会 fallback 成 TaskItem(entry=字面量)——
+        // 撞上 bundle 里的同名老节点（如 login.json 的「启动」），跑错流程
+        if (manifest == null) {
+            pendingLaunchIntent = intent
+            log("清单未就绪，[$entry] 将在任务包初始化完成后自动执行")
+            return
+        }
         // 清单里声明过的入口：复用它在本机队列里的那一条（带着你设好的参数），
         // 别新建一个只有 entry 的空条目 —— 否则编辑器点「▶ 同步并运行」跑的是清单默认值
         val queued = tasks.firstOrNull { it.name == entry || it.entry == entry }
@@ -849,6 +928,18 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         // 切后台可能被 LMKD 直接回收，编辑状态在这里立即落盘，不等 400ms 防抖
         saveNow()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        ShizukuShell.onServiceReady = null
+        // 退出兜底：appops 静音是持久系统设置，MaaWH 不再管控游戏（队列没跑、虚拟屏已关）
+        // 时必须清掉 deny 残留，否则用户退出后自己打开物华弥新也没声。
+        // 必须用孤儿 shell 派发（requestGameAudioRestore）——退出瞬间进程随时被杀，
+        // 异步线程/同步 appops 都可能跑一半就没了，孤儿进程挂在 init 下必然执行完。
+        if (queueRunner?.running != true && !vdOn) {
+            ShizukuShell.requestGameAudioRestore()
+        }
     }
 
     /** 按服务端虚拟屏状态同步 UI：避免 vdOn 标志丢失导致预览黑屏/点击不注入 */
@@ -990,6 +1081,7 @@ class MainActivity : AppCompatActivity() {
     private fun selectToolTask(i: Int) {
         if (i < 0 || i >= toolsTasks.size) return
         val item = toolsTasks[i]
+        android.util.Log.i("MaaWH", "SELECT tools[$i]=${item.name} tools=${toolsTasks.map { it.name }}")
         binding.tvToolsEditTitle.text = "编辑: ${item.label}"
         // 归属切换按钮：清单声明的任务才给（adb 直达的临时条目挪过去没意义）
         val declared = manifest?.tasks?.any { it.name == item.name || it.entry == item.entry } == true
@@ -1077,6 +1169,9 @@ class MainActivity : AppCompatActivity() {
         if (i < 0 || i >= tasks.size) return
         editingIndex = i
         val item = tasks[i]
+        // 错位排障（2026-09-17：点 A 行跳出 B 的编辑面板）：记录点击位置与全表，
+        // 若屏幕行文字与这里的 name 对不上，即为列表渲染与数据不同步的竞态现场
+        android.util.Log.i("MaaWH", "SELECT main[$i]=${item.name} tasks=${tasks.map { it.name }}")
         binding.tvEditTitle.text = "编辑: ${item.label}"
         // 归属切换按钮：清单声明的任务才给（挪到小工具当临时调试项）
         val declared = manifest?.tasks?.any { it.name == item.name || it.entry == item.entry } == true
@@ -1183,11 +1278,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 任务历史弹窗：队列级记录（何时跑的/几项/成败/耗时），跨重启保留在 files/history.json */
     private fun showHistory() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.log_history_title)
-            .setMessage(HistoryStore.summary(this))
-            .setPositiveButton("关闭", null)
-            .show()
+        startActivity(Intent(this, HistoryActivity::class.java))
     }
 
     // ==================================================================
@@ -1254,85 +1345,326 @@ class MainActivity : AppCompatActivity() {
                     setRunState("游戏已进虚拟屏，收口中…", R.color.accent)
                 }
                 override fun isVdOn() = vdOn
+                /** 队列收尾是否保持游戏静音：手动静音开着，或「游戏启动后静音」开着且虚拟屏还活着 */
+                override fun holdGameMute(vdAlive: Boolean) = muteEnabled || (autoMuteEnabled && vdAlive)
                 override fun onToast(msg: String) = toast(msg)
             }
         )
         lifecycleScope.launch(Dispatchers.IO) {
-            queueRunner?.run(planTasks, muteEnabled, closeAfterEnabled)
+            queueRunner?.run(planTasks, muteEnabled, autoMuteEnabled, closeAfterEnabled)
         }
     }
 
+    /**
+     * 「关闭游戏声音」确认框（仿 MAA-Meow 的静音警告弹窗）：appops 依赖系统接口，
+     * 部分机型可能无效或无法自动恢复，先警告再执行。恢复方向不弹框（无风险）。
+     */
+    private fun showMuteConfirmDialog(onConfirm: () -> Unit) {
+        var dlg: android.app.Dialog? = null
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(20), dp(20), dp(10))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(20).toFloat()
+                setColor(getColor(R.color.bg_card))
+            }
+        }
+        // 标题行：圆形色盘里的静音图标 + 大标题
+        card.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(FrameLayout(this@MainActivity).apply {
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(0x264A90E2)
+                }
+                addView(ImageView(this@MainActivity).apply {
+                    setImageResource(R.drawable.ic_q_mute)
+                    setColorFilter(getColor(R.color.accent))
+                    layoutParams = FrameLayout.LayoutParams(dp(20), dp(20)).apply { gravity = Gravity.CENTER }
+                })
+                layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(12) }
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "确认关闭游戏声音？"
+                setTextColor(getColor(R.color.text_primary))
+                textSize = 17f
+                paint.isFakeBoldText = true
+            })
+        })
+        card.addView(
+            TextView(this).apply {
+                text = "该功能依赖系统接口，部分机型可能无效或者无法自动恢复声音。\n更稳妥的做法是直接用音量键把媒体音量调整到 0。"
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 14f
+                setLineSpacing(dp(2).toFloat(), 1f)
+            },
+            LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) }
+        )
+        val ok = TextView(this).apply {
+            text = "仍要静音"
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 15f
+            paint.isFakeBoldText = true
+            gravity = Gravity.CENTER
+            setPadding(0, dp(12), 0, dp(12))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(22).toFloat()
+                setColor(getColor(R.color.accent))
+            }
+            isClickable = true
+            setOnClickListener { dlg?.dismiss(); onConfirm() }
+        }
+        card.addView(
+            ok,
+            LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16) }
+        )
+        card.addView(
+            TextView(this).apply {
+                text = "取消"
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 15f
+                gravity = Gravity.CENTER
+                setPadding(0, dp(10), 0, dp(10))
+                setOnClickListener { dlg?.dismiss() }
+            },
+            LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        )
+        dlg = android.app.Dialog(this).apply {
+            requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+            setContentView(card)
+            window?.apply {
+                setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+                setGravity(Gravity.CENTER)
+                setLayout((resources.displayMetrics.widthPixels * 0.84f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+            }
+        }
+        dlg.show()
+    }
+
+    /** 快捷选项：Meow 式底部卡片面板——快捷操作按钮区 + 自动设置勾选区 */
     private fun showQuickMenu() {
-        val popup = androidx.appcompat.widget.PopupMenu(this, binding.btnQuick)
-        popup.menu.add(0, 1, 0, getString(R.string.quick_mute))
-        popup.menu.add(0, 4, 0, getString(R.string.quick_autofmute)).apply {
-            isCheckable = true
-            isChecked = muteEnabled
+        fun sectionLabel(text: String): TextView = TextView(this).apply {
+            this.text = text
+            setTextColor(getColor(R.color.accent))
+            textSize = 12f
+            paint.isFakeBoldText = true
+            setPadding(0, dp(6), 0, dp(2))
         }
-        popup.menu.add(0, 2, 0, getString(R.string.quick_close)).apply {
-            isCheckable = true
-            isChecked = closeAfterEnabled
-        }
-        popup.menu.add(0, 3, 0, getString(R.string.quick_closegame))
-        // 虚拟屏相关：原顶部三个按钮收进这里（预览占满上方，操作按需展开）
-        popup.menu.add(0, 6, 0, getString(if (vdOn) R.string.vd_stop else R.string.vd_run)).apply {
-            isCheckable = true
-            isChecked = vdOn
-        }
-        popup.menu.add(0, 7, 0, getString(R.string.vd_full))
-        popup.menu.add(0, 8, 0, getString(R.string.quick_shot))
-        popup.menu.add(0, 9, 0, getString(R.string.keepalive_title))
-        popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                1 -> toggleMute()
-                2 -> {
-                    closeAfterEnabled = !closeAfterEnabled
-                    scheduleSave()
+
+        fun actionButton(text: String, iconRes: Int, danger: Boolean = false, onClick: () -> Unit): View {
+            val tint = getColor(if (danger) R.color.err_red else R.color.text_primary)
+            val content = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                addView(
+                    android.widget.ImageView(this@MainActivity).apply {
+                        setImageResource(iconRes)
+                        setColorFilter(tint)
+                        layoutParams = LinearLayout.LayoutParams(dp(15), dp(15)).apply { marginEnd = dp(7) }
+                    }
+                )
+                addView(
+                    TextView(this@MainActivity).apply {
+                        this.text = text
+                        setTextColor(tint)
+                        textSize = 13f
+                    }
+                )
+            }
+            return LinearLayout(this).apply {
+                gravity = Gravity.CENTER
+                setPadding(dp(2), dp(8), dp(2), dp(8))
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    cornerRadius = dp(9).toFloat()
+                    setColor(0xFF1E2634.toInt())
+                    setStroke(dp(1), if (danger) 0x80FF6B6B.toInt() else 0xFF2E3947.toInt())
                 }
-                3 -> {
-                    toast("正在关闭游戏…")
-                    log("快捷操作：关闭游戏")
-                        lifecycleScope.launch(Dispatchers.IO) {
-                            try {
-                                ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG)
-                            } catch (e: Throwable) {
-                                log("关闭游戏失败: ${e.message}")
-                            }
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { onClick() }
+                addView(content)
+            }
+        }
+
+        fun actionRow(vararg buttons: View): LinearLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(3), 0, dp(3))
+            buttons.forEach { b ->
+                addView(b, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dp(6)
+                })
+            }
+        }
+
+        fun toggleRow(label: String, iconRes: Int, checked: Boolean, onChange: (Boolean) -> Unit): View {
+            val box = CheckBox(this).apply {
+                isChecked = checked
+                scaleX = 0.85f
+                scaleY = 0.85f
+            }
+            val labelView = TextView(this).apply {
+                this.text = label
+                setTextColor(getColor(R.color.text_primary))
+                textSize = 14f
+                compoundDrawablePadding = dp(7)
+                compoundDrawableTintList = android.content.res.ColorStateList.valueOf(
+                    getColor(R.color.text_secondary)
+                )
+                getDrawable(iconRes)?.let {
+                    it.setBounds(0, 0, dp(14), dp(14))
+                    setCompoundDrawablesRelativeWithIntrinsicBounds(it, null, null, null)
+                }
+            }
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(4), dp(2), dp(4), dp(2))
+                addView(
+                    labelView,
+                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                )
+                addView(box)
+            }
+            box.setOnCheckedChangeListener { _, v -> onChange(v) }
+            return row
+        }
+
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(10))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadii = floatArrayOf(dp(20).toFloat(), dp(20).toFloat(), dp(20).toFloat(), dp(20).toFloat(), 0f, 0f, 0f, 0f)
+                setColor(getColor(R.color.bg_card))
+            }
+        }
+
+        panel.addView(sectionLabel("快捷操作"))
+        panel.addView(actionRow(
+            actionButton("全屏画面", R.drawable.ic_q_full) {
+                if (!vdOn) toast("请先启动虚拟屏")
+                else startActivity(android.content.Intent(this, VdFullscreenActivity::class.java))
+            },
+            actionButton("防杀设置", R.drawable.ic_q_shield) { showKeepAliveDialog() }
+        ))
+        // 「关闭游戏声音」框式按钮（在【关闭游戏】上面；状态自描述：静音中显示「恢复游戏声音」）。
+        // 开启走确认框（appops 依赖系统接口，部分机型可能无法恢复，先警告再执行）；
+        // 关闭是恢复方向，立即执行不弹框。
+        var muteLabel: TextView? = null
+        fun applyMuteChange(toMute: Boolean) {
+            muteEnabled = toMute
+            scheduleSave()
+            muteLabel?.text = getString(if (toMute) R.string.quick_unmute else R.string.quick_mute)
+            lifecycleScope.launch(Dispatchers.IO) {
+                // 先落持久化标记再静音（对齐 maameow）：进程被杀后下次启动凭标记自愈
+                val ok = if (toMute) {
+                    GameAudioMarker.mark(this@MainActivity, MaaConst.GAME_PKG)
+                    ShizukuShell.setGameAudioMuted(true)
+                } else {
+                    GameAudioMarker.restoreIfNeeded(this@MainActivity) || !ShizukuShell.isGameAudioMuted()
+                }
+                runOnUiThread {
+                    toast(
+                        when {
+                            !ok -> "操作失败（Shizuku 是否在线？）"
+                            toMute -> "已单独静音游戏"
+                            else -> "已恢复游戏声音"
                         }
+                    )
                 }
-                4 -> {
-                    muteEnabled = !muteEnabled
-                    scheduleSave()
-                }
-                6 -> toggleVd()
-                7 -> {
-                    if (!vdOn) toast("请先在快捷选项里启动虚拟屏")
-                    else startActivity(android.content.Intent(this, VdFullscreenActivity::class.java))
-                }
-                8 -> takeScreenshot()
-                9 -> showKeepAliveDialog()
-            }
-            true
-        }
-        popup.show()
-    }
-
-    private var savedMuteVolume = -1
-
-    /** 立即静音/恢复游戏声音（点击切换，立即生效；音量操作放 IO 线程防 UI 卡顿） */
-    private fun toggleMute() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            muteEnabled = !muteEnabled
-            if (muteEnabled) {
-                savedMuteVolume = getMusicVolume()
-                setMusicVolume(0)
-                runOnUiThread { log("已静音游戏声音"); toast("游戏声音已关闭") }
-            } else {
-                if (savedMuteVolume >= 0) setMusicVolume(savedMuteVolume)
-                runOnUiThread { log("已恢复游戏声音"); toast("游戏声音已恢复") }
             }
         }
+        val muteBtn = LinearLayout(this).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(2), dp(8), dp(2), dp(8))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(9).toFloat()
+                setColor(0xFF1E2634.toInt())
+                setStroke(dp(1), 0xFF2E3947.toInt())
+            }
+            isClickable = true
+            isFocusable = true
+            addView(LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                addView(ImageView(this@MainActivity).apply {
+                    setImageResource(R.drawable.ic_q_mute)
+                    setColorFilter(getColor(R.color.text_primary))
+                    layoutParams = LinearLayout.LayoutParams(dp(15), dp(15)).apply { marginEnd = dp(7) }
+                })
+                addView(TextView(this@MainActivity).apply {
+                    muteLabel = this
+                    setTextColor(getColor(R.color.text_primary))
+                    textSize = 13f
+                })
+            })
+            setOnClickListener {
+                if (muteEnabled) applyMuteChange(false)
+                else showMuteConfirmDialog { applyMuteChange(true) }
+            }
+        }
+        muteLabel?.text = getString(if (muteEnabled) R.string.quick_unmute else R.string.quick_mute)
+        panel.addView(actionRow(
+            muteBtn,
+            actionButton("关闭游戏", R.drawable.ic_q_stop, danger = true) {
+                toast("正在关闭游戏…")
+                log("快捷操作：关闭游戏")
+                lifecycleScope.launch(Dispatchers.IO) {
+                    runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
+                        .onFailure { log("关闭游戏失败: ${it.message}") }
+                }
+            }
+        ))
+
+        panel.addView(sectionLabel("自动设置"))
+        panel.addView(toggleRow(getString(R.string.quick_close), R.drawable.ic_q_stop, closeAfterEnabled) { checked ->
+            closeAfterEnabled = checked
+            scheduleSave()
+        })
+        panel.addView(toggleRow(getString(R.string.quick_autofmute), R.drawable.ic_q_mute, autoMuteEnabled) { checked ->
+            autoMuteEnabled = checked
+            scheduleSave()
+            // 无立即动作：下次「启动」任务/进虚拟屏把游戏跑起来时自动静音，
+            // 游戏还挂在虚拟屏里就保持（退出 MaaWH/关虚拟屏时照常恢复）
+        })
+        panel.addView(toggleRow(getString(R.string.setting_pip), R.drawable.ic_q_pip, pipEnabled) { checked ->
+            binding.switchPip.isChecked = checked   // 复用设置页开关的同一套逻辑（含悬浮窗授权引导）
+        })
+
+        val dlg = android.app.Dialog(this)
+        dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        dlg.setContentView(panel)
+
+        // 定位在【快捷选项】按钮正上方（虚拟屏预览之下），而不是盖住底部
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        val dm = resources.displayMetrics
+        val margin = dp(12)
+        val w = dm.widthPixels - margin * 2
+        val loc = IntArray(2)
+        binding.btnQuick.getLocationOnScreen(loc)
+        val y = (loc[1] - panel.measuredHeight - dp(10)).coerceAtLeast(dp(48))
+
+        dlg.window?.apply {
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+            setGravity(android.view.Gravity.TOP or android.view.Gravity.START)
+            setLayout(w, ViewGroup.LayoutParams.WRAP_CONTENT)
+            attributes = attributes.apply {
+                x = margin
+                this.y = y
+            }
+        }
+        dlg.show()
     }
+
+    /** 静音残留自愈：凭持久化标记恢复上次会话没恢复成的静音（队列运行中不动作） */
+    private fun selfHealGameAudio() {
+        if (queueRunner?.running == true) return
+        if (GameAudioMarker.restoreIfNeeded(applicationContext)) {
+            log("检测到上次会话的游戏静音残留，已恢复游戏声音", LogLevel.INFO)
+        }
+    }
+
+    /** 立即静音/恢复游戏声音走快捷面板的 toggleRow（GameAudioMarker 打标记 + ShizukuShell 执行） */
 
     // ==================================================================
     // 保活（前台服务）：任务运行中 / 虚拟屏存活期间常驻，避免被系统当缓存进程回收
@@ -1391,19 +1723,19 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(20), dp(4), dp(20), dp(4))
         }
         box.addView(TextView(this).apply {
-            text = "MaaWH 不会关闭 Shizuku（所有命令只针对游戏包名）；Shizuku 掉线是系统回收后台进程所致" +
-                "（本机 ColorOS 实测有 o-stop / nirvana 清理记录）。\n\n" +
-                "当前：MaaWH 电池优化 = ${if (self) "已关闭 ✓" else "未关闭"}；" +
-                "Shizuku 电池优化 = ${if (sh) "已关闭 ✓" else "未关闭"}"
+            text = "MaaWH 不会主动关闭 Shizuku。Shizuku 掉线通常是因为系统省电策略回收了后台进程，" +
+                "把两个应用都设为「忽略电池优化」可显著降低掉线概率。\n\n" +
+                "MaaWH：${if (self) "✓ 已忽略电池优化" else "✗ 仍受电池优化限制（建议开启）"}\n" +
+                "Shizuku：${if (sh) "✓ 已忽略电池优化" else "✗ 仍受电池优化限制（建议开启）"}"
             textSize = 13f
             setTextColor(getColorCompat(R.color.text_primary))
             setPadding(0, dp(8), 0, dp(10))
         })
         var dlg: AlertDialog? = null
         val actions = listOf<Pair<String, () -> Unit>>(
-            "① 让 MaaWH 不受电池优化限制" to { requestIgnoreBattery(packageName) },
-            "② 让 Shizuku 不受电池优化限制" to { requestIgnoreBattery(MaaConst.SHIZUKU_PKG) },
-            "③ ColorOS 手动设置清单（自启动 / 应用速冻 / 锁定后台 / Watchdog）" to { showColorOsChecklist() },
+            "① 设置 MaaWH 忽略电池优化" to { requestIgnoreBattery(packageName) },
+            "② 设置 Shizuku 忽略电池优化" to { requestIgnoreBattery(MaaConst.SHIZUKU_PKG) },
+            "③ ${vendorName()}手动设置清单（自启动 / 应用速冻 / 锁定后台 / Watchdog）" to { showColorOsChecklist() },
             "④ 打开 Shizuku 应用详情" to { openAppDetails(MaaConst.SHIZUKU_PKG) }
         )
         for ((label, act) in actions) {
@@ -1452,19 +1784,25 @@ class MainActivity : AppCompatActivity() {
     }.onFailure { toast("未找到应用：$pkg") }.let { }
 
     /** ColorOS/realme 专有保活项：App 无法代改，只能引导 */
+    /** 设备品牌名（首字母大写），用于按厂商动态生成提示文案 */
+    private fun vendorName(): String =
+        (android.os.Build.MANUFACTURER ?: "").replaceFirstChar { it.uppercase() }
+
+    /** 按当前设备品牌显示省电设置自查清单（不同厂商入口名称略有差异，按需对照） */
     private fun showColorOsChecklist() {
+        val vendor = (android.os.Build.MANUFACTURER ?: "").replaceFirstChar { it.uppercase() }
         val text = buildString {
-            append("ColorOS / realme 需手动开的项（缺一项都可能被杀）\n\n")
+            append("「$vendor」设备建议手动检查以下项目（缺一项都可能被杀）：\n\n")
             append("1. 设置 → 应用管理 → 自启动管理：MaaWH 与 Shizuku 都打开「自启动」「关联启动」\n")
-            append("2. 设置 → 电池 → 应用速冻：确认两者未被勾选\n")
+            append("2. 设置 → 电池 → 应用速冻 / 省电策略：确认两者未被限制\n")
             append("3. 设置 → 电池 → 耗电保护：两者的「允许后台行为」打开\n")
             append("4. 多任务界面长按卡片 → 点锁图标锁定后台\n")
             append("5. 打开 Shizuku → 设置 → 开启 Watchdog（服务被杀后自动重启）\n")
             append("6. 给 MaaWH 通知权限（前台服务保活通知需要它）\n\n")
-            append("做完这些，跑完任务后就不容易连 Shizuku 一起掉。")
+            append("不同系统版本的入口名称可能略有差异，对照关键词查找即可。做完这些，跑完任务后就不容易连 Shizuku 一起掉。")
         }
         AlertDialog.Builder(this)
-            .setTitle("ColorOS 保活清单")
+            .setTitle("$vendor 保活清单")
             .setMessage(text)
             .setPositiveButton("打开 Shizuku 应用详情") { _, _ -> openAppDetails(MaaConst.SHIZUKU_PKG) }
             .setNegativeButton("关闭", null)
@@ -1514,6 +1852,9 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 val r = ShizukuShell.startVirtualGame()
                 runCatching { File(filesDir, "m4result.txt").writeText(r) }
+                // AudioHardening 反制：闩锁跨会话存活，进虚拟屏就主动放行游戏音频
+                // （任一静音开关是开的话跳过——游戏本来就该被静音）
+                if (!muteEnabled && !autoMuteEnabled) runCatching { ShizukuShell.assertGameAudioAllowed() }
                 runOnUiThread {
                     log(r)
                     setRunState("虚拟屏运行中（点预览=游戏内点击）", R.color.ok_green)
@@ -1525,7 +1866,12 @@ class MainActivity : AppCompatActivity() {
         } else {
             VdStreamer.stop()
             vdHandler.removeCallbacks(vdUiTick)
-            lifecycleScope.launch(Dispatchers.IO) { ShizukuShell.stopVirtual() }
+            lifecycleScope.launch(Dispatchers.IO) {
+                ShizukuShell.stopVirtual()
+                // 虚拟屏停了就不再管控游戏：清掉 appops 静音残留，用户回物理屏打开游戏有声
+                // （快捷开关不受影响，下次跑队列仍会按它决定要不要静音）
+                runCatching { GameAudioMarker.restoreIfNeeded(this@MainActivity) }
+            }
             hideFullscreen()
             // 画面没了，后台悬浮窗一并收起
             FloatingPanel.hide()
@@ -1733,16 +2079,473 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_home -> switchTo(binding.panelHome)
                 R.id.nav_log -> switchTo(binding.panelLog)
                 R.id.nav_settings -> switchTo(binding.panelSettings)
+                R.id.nav_gacha -> switchTo(binding.panelGacha)
             }
             true
         }
     }
 
     // ==================================================================
-    // 新手引导（对标 maameow 聚光灯引导，overlay 实现在 Onboarding.kt）
+    // 抽卡记录（抓取 + 数据面板）
     // ==================================================================
 
-    /** 引导步骤：page 决定所在页，target 惰性取（切页后才布局），null = 卡片居中 */
+    @Volatile
+    private var gachaRunning = false
+    private var gachaJob: kotlinx.coroutines.Job? = null
+
+    /** 刷新 Spinner 时压住 onItemSelected 回调，避免程序性选择被当成用户切号 */
+    private var suppressGachaSpinner = false
+
+    private fun setupGachaAccounts() {
+        binding.spinnerGachaAccounts.onItemSelectedListener =
+            object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                    if (suppressGachaSpinner) return
+                    val acc = GachaStore.listAccounts(applicationContext).getOrNull(pos) ?: return
+                    if (acc.id != GachaStore.activeAccountId(applicationContext)) {
+                        GachaStore.setActiveAccount(applicationContext, acc.id)
+                        log("抽卡账号切换：${acc.name}（记录/锚点随账号独立）", LogLevel.INFO)
+                        renderGachaPanel()
+                    }
+                }
+
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            }
+        binding.btnGachaRename.setOnClickListener { renameGachaAccount() }
+        binding.btnGachaDelete.setOnClickListener { deleteGachaAccount() }
+        binding.btnGachaNew.setOnClickListener { createGachaAccount() }
+        binding.btnGachaEdit.setOnClickListener { editGachaRecord() }
+        refreshGachaAccounts()
+    }
+
+    private fun refreshGachaAccounts() {
+        val accounts = GachaStore.listAccounts(applicationContext)
+        val active = GachaStore.activeAccountId(applicationContext)
+        suppressGachaSpinner = true
+        val adapter = ArrayAdapter(this, R.layout.item_spinner_account, accounts.map { it.name })
+        adapter.setDropDownViewResource(R.layout.item_spinner_account)
+        binding.spinnerGachaAccounts.adapter = adapter
+        binding.spinnerGachaAccounts.setSelection(accounts.indexOfFirst { it.id == active }.coerceAtLeast(0))
+        suppressGachaSpinner = false
+    }
+
+    private fun promptGachaAccountName(title: String, initial: String, onOk: (String) -> Unit) {
+        val input = EditText(this).apply {
+            setText(initial)
+            setSingleLine()
+            setSelection(initial.length)
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setView(input)
+            .setPositiveButton("确定") { _, _ -> onOk(input.text.toString().trim()) }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun createGachaAccount() {
+        if (gachaRunning) { toast("抓取中不能操作账号"); return }
+        promptGachaAccountName("新建账号", "账号${GachaStore.listAccounts(applicationContext).size + 1}") { name ->
+            val acc = GachaStore.createAccount(applicationContext, name)
+            refreshGachaAccounts()
+            renderGachaPanel()
+            log("新建抽卡账号「${acc.name}」并切换", LogLevel.INFO)
+        }
+    }
+
+    private fun renameGachaAccount() {
+        if (gachaRunning) { toast("抓取中不能操作账号"); return }
+        val ctx = applicationContext
+        val id = GachaStore.activeAccountId(ctx)
+        val cur = GachaStore.listAccounts(ctx).find { it.id == id } ?: return
+        promptGachaAccountName("重命名账号", cur.name) { name ->
+            if (name.isNotEmpty()) {
+                GachaStore.renameAccount(ctx, id, name)
+                refreshGachaAccounts()
+                renderGachaPanel()
+            }
+        }
+    }
+
+    private fun deleteGachaAccount() {
+        if (gachaRunning) { toast("抓取中不能操作账号"); return }
+        val ctx = applicationContext
+        val id = GachaStore.activeAccountId(ctx)
+        val acc = GachaStore.listAccounts(ctx).find { it.id == id } ?: return
+        AlertDialog.Builder(this)
+            .setTitle("删除账号")
+            .setMessage("删除「${acc.name}」及其全部抽卡记录与锚点？此操作不可恢复。")
+            .setPositiveButton("删除") { _, _ ->
+                if (GachaStore.deleteAccount(ctx, id)) {
+                    refreshGachaAccounts()
+                    renderGachaPanel()
+                    log("已删除抽卡账号「${acc.name}」", LogLevel.WRN)
+                } else {
+                    toast("至少保留一个账号")
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    /** 手动添加一条记录（补录 30 天窗口外的旧卡池/旧记录），写入当前账号，不动锚点 */
+    private fun editGachaRecord() {
+        if (gachaRunning) { toast("抓取中不能编辑记录"); return }
+        val ctx = applicationContext
+        val pools = try {
+            GachaCrawler.Points.load(ctx).pools
+        } catch (e: Throwable) {
+            listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道")
+        }
+
+        val nameEdit = EditText(this).apply {
+            hint = "如：银香囊"
+            setSingleLine()
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        val bannerEdit = EditText(this).apply {
+            hint = "如：至乐如真（可留空）"
+            setSingleLine()
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        val timeEdit = EditText(this).apply {
+            hint = "2026-08-01 10:30"
+            setSingleLine()
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        val poolSpin = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, R.layout.item_spinner_account, pools)
+        }
+        val rarSpin = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@MainActivity, R.layout.item_spinner_account, listOf("特出", "优异", "新生")
+            )
+        }
+
+        fun row(label: String, view: View): View = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, dp(6))
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = label
+                    setTextColor(getColor(R.color.text_secondary))
+                    textSize = 13f
+                },
+                LinearLayout.LayoutParams(dp(76), ViewGroup.LayoutParams.WRAP_CONTENT)
+            )
+            addView(view, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+
+        val form = ScrollView(this).apply {
+            addView(
+                LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(16), dp(8), dp(16), dp(4))
+                    addView(row("卡池大类", poolSpin))
+                    addView(row("卡池小类", bannerEdit))
+                    addView(row("器者名", nameEdit))
+                    addView(row("稀有度", rarSpin))
+                    addView(row("抽卡时间", timeEdit))
+                    addView(
+                        TextView(this@MainActivity).apply {
+                            text = "时间格式：2026-08-01 10:30（可补录 30 天窗口外的旧记录，不影响锚点）"
+                            setTextColor(getColor(R.color.text_secondary))
+                            textSize = 11f
+                            setPadding(0, dp(6), 0, 0)
+                        }
+                    )
+                }
+            )
+        }
+
+        val dlg = AlertDialog.Builder(this)
+            .setTitle("手动添加记录")
+            .setView(form)
+            .setPositiveButton("添加", null)
+            .setNegativeButton("取消", null)
+            .create()
+        dlg.setOnShowListener {
+            dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val name = nameEdit.text.toString().trim()
+                val banner = bannerEdit.text.toString().trim()
+                val ts = GachaDictionary.parseManualTime(timeEdit.text.toString().trim())
+                val rarity = rarSpin.selectedItem?.toString() ?: "新生"
+                val pool = poolSpin.selectedItem?.toString() ?: pools[0]
+                if (name.isEmpty()) { toast("器者名不能为空"); return@setOnClickListener }
+                if (ts == null) { toast("时间格式不对：应如 2026-08-01 10:30"); return@setOnClickListener }
+                val rec = GachaStore.addManualRecord(ctx, pool, banner, name, rarity, ts)
+                dlg.dismiss()
+                renderGachaPanel()
+                log("手动添加记录：[${rec.uid}]", LogLevel.INFO)
+            }
+        }
+        dlg.show()
+    }
+
+    /** 抓取入口：运行中再点一次 = 停止。与任务队列互斥（两边都注入同一个虚拟屏） */
+    private fun startGachaCrawl() {
+        if (gachaRunning) {
+            gachaJob?.cancel()
+            binding.tvGachaStatus.text = "停止中…"
+            return
+        }
+        if (isTaskRunning) { toast("任务队列运行中，不能同时抓取"); return }
+        if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并把游戏打开到「招募记录」页"); return }
+        gachaRunning = true
+        binding.btnGachaRun.text = getString(R.string.gacha_stop)
+        binding.tvGachaStatus.text = "准备…"
+        gachaJob = lifecycleScope.launch {
+            var runSummary = ""
+            try {
+                RunLogStore.begin(applicationContext, "抽卡抓取", -1)
+                val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
+                val crawler = GachaCrawler(applicationContext, ocr) { m, lv -> log(m, lv) }
+                val report = crawler.crawl { p ->
+                    runOnUiThread { binding.tvGachaStatus.text = p }
+                }
+                runSummary = "新增 ${report.added} 条"
+                binding.tvGachaStatus.text = "✓ 新增 ${report.added} 条"
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                runSummary = "已停止"
+                binding.tvGachaStatus.text = "◼ 已停止"
+                throw e
+            } catch (e: Exception) {
+                runSummary = "失败：${e.message}"
+                log("抽卡抓取失败：${e.message}", LogLevel.ERR)
+                binding.tvGachaStatus.text = "✗ ${e.message}"
+            } finally {
+                RunLogStore.end(runSummary)
+                gachaRunning = false
+                gachaJob = null
+                binding.btnGachaRun.text = getString(R.string.gacha_run)
+                renderGachaPanel()
+            }
+        }
+    }
+
+    /** 面板：每池一张卡片（头部统计 + 垫抽 + 特出明细），纯 TextView 无图片资源 */
+    private fun renderGachaPanel() {
+        val container = binding.llGachaCards
+        container.removeAllViews()
+        val all = GachaStore.loadRecords(applicationContext)
+        val cfg = GachaStore.loadConfig(applicationContext)
+        if (!gachaRunning) {
+            binding.tvGachaStatus.text = when {
+                cfg.lastCrawlMs > 0 ->
+                    "「${GachaStore.activeAccountName(applicationContext)}」上次抓取：${
+                        SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))
+                    } · 库存 ${all.size} 条"
+                else -> getString(R.string.gacha_status_default)
+            }
+        }
+        if (all.isEmpty()) {
+            container.addView(simpleText("还没有数据。把虚拟屏里的游戏停在「招募记录」页，再点「开始抓取」。", R.color.text_secondary, 12f))
+            return
+        }
+        val pools = try {
+            GachaCrawler.Points.load(applicationContext).pools
+        } catch (e: Throwable) {
+            listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道")
+        }
+        for (pool in pools) {
+            val rs = all.filter { it.pool == pool }
+            if (rs.isNotEmpty()) container.addView(buildPoolCard(pool, rs))
+        }
+    }
+
+    private fun buildPoolCard(pool: String, rs: List<GachaStore.Record>): View {
+        val st = GachaStore.poolStats(rs)
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_card)
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8) }
+        }
+        // 头部：池名 + 总抽数/特出/平均
+        card.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(cell(pool, R.color.text_primary, 15f, bold = true, weight = 1f))
+            addView(cell("总抽数 ${st.total} · 特出 ${st.teCount} · 平均 ${st.avgText}", R.color.text_secondary, 12f))
+        })
+        // 当前垫抽
+        card.addView(cell("当前垫抽：${st.dian} 抽", if (st.dian >= 50) R.color.warn_orange else R.color.text_primary, 13f).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(4) }
+        })
+        // 特出明细按小类（招集列）分组成子卡片
+        val groups = LinkedHashMap<String, MutableList<GachaStore.Record>>()
+        for (r in rs) {
+            val b = if (r.banner.isBlank()) "未识别" else r.banner
+            groups.getOrPut(b) { mutableListOf() }.add(r)
+        }
+        val te = GachaStore.teListWithCost(rs)
+        for ((banner, list) in groups) {
+            val label = banner.substringAfter('/', banner)
+            val sub = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(0xFF151C29.toInt())
+                    cornerRadius = dp(6).toFloat()
+                }
+                setPadding(dp(8), dp(6), dp(8), dp(6))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(6) }
+            }
+            sub.addView(cell("『$label』 · ${list.size} 抽", R.color.accent, 13f, bold = true).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            })
+            val teInBanner = te.filter { it.first.banner == banner }
+            if (teInBanner.isEmpty()) {
+                sub.addView(cell("暂无特出", R.color.text_secondary, 12f).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = dp(2) }
+                })
+            } else {
+                for ((rec, cost) in teInBanner) {
+                    sub.addView(LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply { topMargin = dp(3) }
+                        addView(cell("特出", R.color.err_red, 12f, bold = true, weight = 0.8f))
+                        addView(cell(rec.name, R.color.text_primary, 12f, weight = 1.4f))
+                        addView(cell(cost, R.color.warn_orange, 12f, weight = 0.9f))
+                        addView(cell(GachaStore.shortTime(rec.ts), R.color.text_secondary, 12f, weight = 1.1f))
+                    })
+                }
+            }
+            card.addView(sub)
+        }
+        return card
+    }
+
+    /**
+     * 写一行任务日志（对标 maameow：时间 + 级别徽标 + 正文，级别自带颜色）。
+     * 可从任意线程调用；渲染合并在 [TaskLogView] 里做。
+     */
+    /**
+     * 公告弹窗（圆底图标标题头 + 滚动正文 + 不再显示勾选 + 确认按钮）。
+     * auto=true 为启动时自动弹出：该版本公告若已勾选「不再显示」则跳过。
+     */
+    private fun showAnnouncement(auto: Boolean = false) {
+        val f = File(filesDir, "announcement.txt")
+        val content = if (f.isFile) f.readText() else getString(R.string.about_announcement_default)
+        val hash = Integer.toHexString(content.hashCode())
+        val prefs = getSharedPreferences("maawh_announcement", MODE_PRIVATE)
+        if (auto && prefs.getString("dismissedHash", "") == hash) return
+
+        fun divider() = View(this).apply {
+            setBackgroundColor(0xFF2E3947.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
+            ).apply { topMargin = dp(12); bottomMargin = dp(4) }
+        }
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), dp(16))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(16).toFloat()
+                setColor(getColor(R.color.bg_card))
+            }
+        }
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(TextView(this@MainActivity).apply {
+                text = "📢"
+                gravity = Gravity.CENTER
+                textSize = 16f
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(0x333A7BD5)
+                }
+                layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "重要公告"
+                setTextColor(getColor(R.color.text_primary))
+                textSize = 18f
+                paint.isFakeBoldText = true
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginStart = dp(12) }
+            })
+        })
+        root.addView(divider())
+
+        val contentView = TextView(this).apply {
+            text = content
+            setTextColor(getColor(R.color.text_primary))
+            textSize = 14f
+            setLineSpacing(dp(3).toFloat(), 1f)
+            setPadding(0, dp(8), 0, dp(8))
+        }
+        val contentScroll = ScrollView(this).apply { addView(contentView) }
+        root.addView(
+            contentScroll,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
+
+        val dontShow = CheckBox(this).apply {
+            text = "下次公告更新前不再显示"
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+        }
+        var dlgRef: android.app.Dialog? = null
+        root.addView(
+            dontShow,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(6) }
+        )
+
+        root.addView(TextView(this).apply {
+            text = "确认"
+            gravity = Gravity.CENTER
+            setTextColor(android.graphics.Color.WHITE)
+            textSize = 15f
+            paint.isFakeBoldText = true
+            setPadding(dp(10), dp(12), dp(10), dp(12))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(12).toFloat()
+                setColor(getColor(R.color.accent))
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(10) }
+            isClickable = true
+            setOnClickListener {
+                prefs.edit()
+                    .putString("dismissedHash", if (dontShow.isChecked) hash else "")
+                    .apply()
+                dlgRef?.dismiss()
+            }
+        })
+
+        val dlg = android.app.Dialog(this)
+        dlgRef = dlg
+        dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+        dlg.setContentView(root)
+        dlg.window?.apply {
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+            setGravity(Gravity.CENTER)
+            setLayout(resources.displayMetrics.widthPixels - dp(28), (resources.displayMetrics.heightPixels * 0.78f).toInt())
+        }
+        dlg.show()
+    }
+
     private fun buildGuideSteps(): List<Onboarding.Step> = listOf(
         Onboarding.Step(0, null, "✨",
             getString(R.string.guide_welcome_title), getString(R.string.guide_welcome_body)),
@@ -1758,19 +2561,19 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.guide_start_title), getString(R.string.guide_start_body)),
         Onboarding.Step(0, { binding.btnQuick }, "⚡",
             getString(R.string.guide_quick_title), getString(R.string.guide_quick_body)),
-        Onboarding.Step(1, { binding.scrollLog }, "📜",
+        Onboarding.Step(2, { binding.scrollLog }, "📜",
             getString(R.string.guide_log_title), getString(R.string.guide_log_body)),
-        Onboarding.Step(2, { binding.cardStatus }, "⚙️",
+        Onboarding.Step(3, { binding.cardStatus }, "⚙️",
             getString(R.string.guide_settings_title), getString(R.string.guide_settings_body)),
         Onboarding.Step(0, null, "🎉",
             getString(R.string.guide_done_title), getString(R.string.guide_done_body)),
     )
 
-    /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序） */
+    /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序：主页/抽卡/日志/设置） */
     private fun guideShowPage(page: Int) {
         when (page) {
-            1 -> switchTo(binding.panelLog)
-            2 -> switchTo(binding.panelSettings)
+            2 -> switchTo(binding.panelLog)
+            3 -> switchTo(binding.panelSettings)
             else -> switchTo(binding.panelHome)
         }
         binding.bottomNav.menu.getItem(page).isChecked = true
@@ -1784,7 +2587,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun switchTo(panel: View) {
-        listOf(binding.panelHome, binding.panelLog, binding.panelSettings)
+        listOf(binding.panelHome, binding.panelLog, binding.panelSettings, binding.panelGacha)
             .forEach { it.visibility = if (it === panel) View.VISIBLE else View.GONE }
     }
 
@@ -1793,6 +2596,7 @@ class MainActivity : AppCompatActivity() {
     // ==================================================================
 
     /** 抓一帧物理屏刷新预览（快捷选项里的「截图」；虚拟屏运行时用它的实时帧） */
+
     private fun takeScreenshot() {
         if (!shizukuReady()) { log("无法截图：Shizuku 未就绪"); refreshStatus(); return }
         lifecycleScope.launch {
@@ -1892,8 +2696,11 @@ class MainActivity : AppCompatActivity() {
     // 工具
     // ==================================================================
 
+
     private fun updateInfoTexts() {
-        binding.tvAbout.text = getString(R.string.about_text)
+        binding.tvAboutVersion.text = runCatching {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        }.getOrNull() ?: "0.1.0"
         binding.tvPaths.text = "内部: ${File(filesDir, "taskpacks")}\n外部: ${getExternalFilesDir(null)}/taskpacks"
     }
 
@@ -1901,7 +2708,10 @@ class MainActivity : AppCompatActivity() {
      * 写一行任务日志（对标 maameow：时间 + 级别徽标 + 正文，级别自带颜色）。
      * 可从任意线程调用；渲染合并在 [TaskLogView] 里做。
      */
+
+
     private fun log(msg: String, level: LogLevel = LogLevel.INFO) {
+        RunLogStore.append(level.name, msg)   // 会话日志落盘（历史日志页浏览）
         android.util.Log.i("MaaWH", "${level.name} $msg")
         val time = synchronized(timeFmt) { timeFmt.format(Date()) }
         vdHandler.post { logView?.add(time, level, msg) }
@@ -1922,6 +2732,33 @@ class MainActivity : AppCompatActivity() {
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
     private fun match() = ViewGroup.LayoutParams.MATCH_PARENT
     private fun wrap() = ViewGroup.LayoutParams.WRAP_CONTENT
+
+    private fun simpleText(text: String, colorRes: Int, sizeSp: Float): TextView =
+        TextView(this).apply {
+            this.text = text
+            setTextColor(getColor(colorRes))
+            textSize = sizeSp
+        }
+
+    private fun cell(
+        text: String,
+        colorRes: Int,
+        sizeSp: Float,
+        bold: Boolean = false,
+        weight: Float = 0f
+    ): TextView = TextView(this).apply {
+        this.text = text
+        setTextColor(getColor(colorRes))
+        textSize = sizeSp
+        paint.isFakeBoldText = bold
+        layoutParams = if (weight > 0f) {
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight)
+        } else {
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+    }
 
     companion object {
         private const val REQ_SHIZUKU = 1001

@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-15T22:14:52+08:00",
+        "generatedAt": "2026-09-17T21:57:34+08:00",
         "flowFile": "行会签到.flow.json",
-        "flowHash": "sha256:a33afd4ea17163ead985956671036285f82c1ae7255c38e9f4883edd02fd6145",
-        "pipelineHash": "sha256:ca70d983f35bacd30cb1e19f6f233e479490e5c1315b9a9cfffaef6c18f57b5d",
+        "flowHash": "sha256:f7039c39ea71caed9cc5f3a21785c69b3e35f92e88d99430e628fead5fb696ff",
+        "pipelineHash": "sha256:f884358bb07e3c6eb37772150fcfcaf5a4219655b921414db73ab04ba4d91fa8",
         "frameW": 1280,
         "frameH": 720
     },
@@ -20,6 +20,17 @@
         "threshold": 0.6,
         "action": "Click",
         "timeout": 8000,
+        "post_delay": 3000,
+        "next": [
+            "VF_行会签到_03"
+        ]
+    },
+    "VF_行会签到_03": {
+        "action": "Click",
+        "target": [
+            426,
+            103
+        ],
         "post_delay": 1000,
         "next": [
             "VF_行会签到_02"

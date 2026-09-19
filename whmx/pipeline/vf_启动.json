@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-16T22:02:10+08:00",
+        "generatedAt": "2026-09-17T18:42:51+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:e6e995a8cb2fe347aa83e5b13fcc8376ca1b4c235250edfa7994e10dcfc8bffa",
-        "pipelineHash": "sha256:453b3dd73eff451eb40fb5aab5c9e594bbd916378efad9d9c0e13dea830925a1",
+        "flowHash": "sha256:85db2eee77057c7f9852048f428b4bbf2f1f8534a44286d91c5938d09ce713f5",
+        "pipelineHash": "sha256:63e3228207c36e818ac9762c1c1a6ecb37ecfc983cc843988ed1bc7297effd66",
         "frameW": 1280,
         "frameH": 720
     },
@@ -17,26 +17,23 @@
     "VF_启动_01": {
         "action": "StartApp",
         "package": "com.cipaishe.wuhua.bilibili",
-        "post_delay": 20000,
+        "post_delay": 25000,
         "next": [
-            "VF_启动_11"
+            "VF_启动_12"
         ]
     },
-    "VF_启动_11": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_启动_11_Hit"
-        ],
-        "on_error": [
-            "VF_启动_10"
-        ]
-    },
-    "VF_启动_11_Hit": {
+    "VF_启动_12": {
         "recognition": "TemplateMatch",
         "template": "ks_cha.png",
-        "threshold": 0.7,
+        "threshold": 0.8,
         "action": "DoNothing",
+        "timeout": 20000,
+        "roi": [
+            1108,
+            59,
+            125,
+            68
+        ],
         "next": [
             "VF_启动_10"
         ]
@@ -48,7 +45,7 @@
             "VF_启动_10_Hit"
         ],
         "on_error": [
-            "VF_启动_11"
+            "VF_启动_12"
         ]
     },
     "VF_启动_10_Hit": {
@@ -57,28 +54,22 @@
         "threshold": 0.7,
         "action": "DoNothing",
         "roi": [
-            1141,
-            67,
-            68,
-            55
-        ],
-        "next": [
-            "VF_启动_02"
-        ]
-    },
-    "VF_启动_02": {
-        "recognition": "TemplateMatch",
-        "template": "ks_cha.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "roi": [
-            1135,
-            62,
-            90,
+            1116,
+            65,
+            122,
             62
         ],
+        "next": [
+            "VF_启动_11"
+        ]
+    },
+    "VF_启动_11": {
+        "action": "Click",
+        "target": [
+            1173,
+            95
+        ],
+        "post_delay": 500,
         "next": [
             "VF_启动_03"
         ]

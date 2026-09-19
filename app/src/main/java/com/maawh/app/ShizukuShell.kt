@@ -54,6 +54,14 @@ object ShizukuShell {
     @Volatile
     private var pendingLatch: CountDownLatch? = null
 
+    /**
+     * UserService「新绑定完成」钩子（对齐 maameow startAutoRestore 的"服务连接建立"时机：
+     * 连接建立 = 上一个游戏会话必然已结束，此刻的静音标记必是残留）。只在真正新建连接后
+     * 触发一次，已绑定的快路径不触发；在工作线程回调，钩子内部自行处理线程与耗时。
+     */
+    @Volatile
+    var onServiceReady: (() -> Unit)? = null
+
     @Volatile
     private var args: Shizuku.UserServiceArgs? = null
 
@@ -128,6 +136,122 @@ object ShizukuShell {
         false
     }
 
+    /**
+     * 仅对游戏静音：appops 按包拒绝其播放音频（PLAY_AUDIO deny，同 maameow 的按包+uid 语义）。
+     * 不动系统音量，音量键调节也不影响；appops 状态持久，结束时必须恢复（见 resetGameAudio）。
+     * 不要用 --uid：uid 级 mode 包级 reset 清不掉，是静音残留反复出现的根因之一。
+     */
+    fun setGameAudioMuted(muted: Boolean): Boolean {
+        return try {
+            if (muted) {
+                execBlocking("appops", "set", MaaConst.GAME_PKG, "PLAY_AUDIO", "deny")
+                // uid 级收回 default：避免与按包 deny 产生 allow/deny 叠加歧义
+                runCatching { execBlocking("appops", "set", "--uid", MaaConst.GAME_PKG, "PLAY_AUDIO", "default") }
+            } else {
+                execBlocking("appops", "set", MaaConst.GAME_PKG, "PLAY_AUDIO", "allow")
+            }
+            true
+        } catch (e: Throwable) {
+            report(LogLevel.WRN, "游戏音频静音失败: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * 主动放行游戏音频（ColorOS AudioHardening 反制，进虚拟屏时调用）：
+     * uid 级 PLAY_AUDIO + CONTROL_AUDIO(_PARTIAL) 显式 allow。
+     * AudioHardening 的「后台闩锁」会跨游戏重启、跨虚拟屏重建存活——虚拟屏里的游戏每条
+     * 新音轨一启动就被打 muted(opPlayAudio)，appops 值看着全干净也被压（2026-09-19 实测，
+     * 反制当场验证有效：显式 allow 后 muted source:none 立即解除）。
+     * 静音开启时不要调（包级 deny 优先于 uid 级 allow，但别依赖这个优先级）。
+     * AOSP 设备没有后两个 op，set 失败无害。返回是否全部执行成功。
+     */
+    fun assertGameAudioAllowed(): Boolean {
+        if (runCatching { execBlocking("appops", "set", "--uid", MaaConst.GAME_PKG, "PLAY_AUDIO", "allow") }.isFailure) {
+            return false
+        }
+        val a = runCatching { execBlocking("appops", "set", MaaConst.GAME_PKG, "CONTROL_AUDIO", "allow") }.isSuccess
+        val b = runCatching { execBlocking("appops", "set", MaaConst.GAME_PKG, "CONTROL_AUDIO_PARTIAL", "allow") }.isSuccess
+        return a && b
+    }
+
+    /** 游戏当前是否被 appops 拒绝播放音频（包级或 uid 级 deny 都算）；Shizuku 不可用时按未静音处理 */
+    fun isGameAudioMuted(): Boolean = try {
+        String(execBlocking("appops", "get", MaaConst.GAME_PKG, "PLAY_AUDIO"), Charsets.UTF_8)
+            .contains("deny")
+    } catch (e: Throwable) {
+        false
+    }
+
+    /**
+     * 把游戏音频恢复成系统默认（对齐 maameow 的 resetPackage：reset 整包 op 回默认态，
+     * 而不是显式 allow）；--uid default 兜住历史版本用 --uid deny 设下的 uid 级残留。
+     *
+     * ColorOS AudioHardening 反制（2026-09-19 实测）：静音 deny→allow 切换后，系统音频加固
+     * 会对虚拟屏里的游戏进入「后台评估」状态，每 ~7s 把声音重新压上（音频事件
+     * muted source:opPlayAudio，解除后 58ms 内复压），且 appops 值看着全是干净也被压。
+     * 恢复时把 PLAY_AUDIO 提到 uid 级显式 allow、CONTROL_AUDIO(_PARTIAL) 显式 allow，
+     * 声明「此包音频不受加固管理」。AOSP 设备没有这几个 op，set 失败无害（runCatching）。
+     * 返回恢复后 PLAY_AUDIO 是否已不在 deny。
+     */
+    fun resetGameAudio(): Boolean = try {
+        execBlocking("appops", "reset", MaaConst.GAME_PKG)
+        runCatching { execBlocking("appops", "set", "--uid", MaaConst.GAME_PKG, "PLAY_AUDIO", "default") }
+        runCatching { execBlocking("appops", "set", "--uid", MaaConst.GAME_PKG, "PLAY_AUDIO", "allow") }
+        runCatching { execBlocking("appops", "set", MaaConst.GAME_PKG, "CONTROL_AUDIO", "allow") }
+        runCatching { execBlocking("appops", "set", MaaConst.GAME_PKG, "CONTROL_AUDIO_PARTIAL", "allow") }
+        !isGameAudioMuted()
+    } catch (e: Throwable) {
+        report(LogLevel.WRN, "恢复游戏声音失败: ${e.message}")
+        false
+    }
+
+    /**
+     * 幂等恢复游戏声音：检测到 PLAY_AUDIO 仍是 deny（残留）才 reset 回默认。
+     * appops 是持久系统设置——MaaWH 所有「不再管控游戏」的出口（队列收尾/关虚拟屏/
+     * 退出/划掉最近任务、以及下次启动凭标记的自愈）都必须走这里，否则残留 deny
+     * 会让用户自己打开游戏也没声。返回是否执行了恢复。
+     */
+    fun restoreGameAudioIfMuted(): Boolean {
+        if (!isGameAudioMuted()) return false
+        val ok = resetGameAudio()
+        if (ok) report(LogLevel.INFO, "检测到游戏静音残留（appops PLAY_AUDIO deny），已恢复游戏声音")
+        return ok
+    }
+
+    /**
+     * 派发「恢复游戏声音」到独立 shell 后台进程（孤儿进程，主 sh 立即返回）。
+     * 与 [restoreGameAudioIfMuted] 的区别：退出瞬间（划掉最近任务/onDestroy）ColorOS 会
+     * 立刻杀掉 MaaWH 进程，普通恢复线程根本跑不完（2026-09-19 实测残留 deny 就是这么来的）；
+     * 孤儿进程挂在 init 下，MaaWH 死了照样把恢复执行完。命令毫秒级返回，可在主线程同步调用。
+     * 只在 UserService 已绑定时派发（静音本来就是它设的，此时必已绑定）；未绑定则静默跳过。
+     */
+    fun requestGameAudioRestore(): Boolean {
+        val srv = service?.takeIf { it.asBinder().isBinderAlive } ?: return false
+        val pipe = ParcelFileDescriptor.createPipe()
+        return try {
+            runCatching { pipe[0].close() }   // 读端 App 侧不用（后台进程输出已重定向 /dev/null）
+            srv.exec(
+                arrayOf(
+                    "/system/bin/sh", "-c",
+                    "( appops get ${MaaConst.GAME_PKG} PLAY_AUDIO | grep -q deny " +
+                        "&& { appops reset ${MaaConst.GAME_PKG}; " +
+                        "appops set --uid ${MaaConst.GAME_PKG} PLAY_AUDIO default; " +
+                        "appops set --uid ${MaaConst.GAME_PKG} PLAY_AUDIO allow; " +
+                        "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO allow; " +
+                        "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO_PARTIAL allow; } ) >/dev/null 2>&1 &"
+                ),
+                pipe[1]
+            )
+            true
+        } catch (e: Throwable) {
+            report(LogLevel.WRN, "派发恢复游戏声音失败: ${e.message}")
+            false
+        } finally {
+            runCatching { pipe[1].close() }
+        }
+    }
+
     /** 读取媒体流音量（服务端 AudioManager，规避 shell 命令不生效的问题） */
     fun getMusicVolume(): Int = try {
         ensureService().getStreamVolume(android.media.AudioManager.STREAM_MUSIC)
@@ -195,6 +319,12 @@ object ShizukuShell {
     fun init(context: Context) {
         appContext = context.applicationContext
     }
+
+    /**
+     * 以 shell 权限执行系统命令（appops set 这类自授权小操作）。
+     * 阻塞调用，勿在主线程直接使用；失败抛异常。
+     */
+    fun execShellCommand(vararg cmd: String): ByteArray = execBlocking(*cmd)
 
     /** 截取当前屏幕，返回与屏幕物理分辨率一致的位图。 */
     suspend fun screencap(): Bitmap {
@@ -287,7 +417,9 @@ object ShizukuShell {
             if (!latch.await(15, TimeUnit.SECONDS)) {
                 throw RuntimeException("连接 Shizuku UserService 超时")
             }
-            return checkNotNull(service) { "Shizuku UserService 连接失败" }
+            checkNotNull(service) { "Shizuku UserService 连接失败" }
+            onServiceReady?.invoke()
+            return service!!
         }
     }
 

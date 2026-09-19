@@ -52,7 +52,13 @@ object QueueStore {
          */
         val home: Map<String, String> = emptyMap(),
         /** 「后台运行时自动画中画」开关（App 级状态）；老存档缺字段默认开 */
-        val pipOn: Boolean = true
+        val pipOn: Boolean = true,
+        /**
+         * 「游戏启动后关闭游戏声音」：启动任务/进虚拟屏把游戏跑起来时自动静音，
+         * 游戏还挂在虚拟屏里就保持。与手动「关闭游戏声音」是两个独立开关。
+         * 老存档缺字段默认关。
+         */
+        val autoMute: Boolean = false
     )
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
@@ -111,7 +117,8 @@ object QueueStore {
             mute = root.optBoolean("mute", false),
             closeAfter = root.optBoolean("closeAfter", false),
             home = toMap(root.optJSONObject("home")),
-            pipOn = root.optBoolean("pipOn", true)
+            pipOn = root.optBoolean("pipOn", true),
+            autoMute = root.optBoolean("autoMute", false)
         )
     }
 
@@ -162,6 +169,7 @@ object QueueStore {
         put("tab", state.tab)
         put("mute", state.mute)
         put("closeAfter", state.closeAfter)
+        put("autoMute", state.autoMute)
         if (!state.pipOn) put("pipOn", false)
         put("profiles", JSONArray().apply {
             state.profiles.forEach { p ->

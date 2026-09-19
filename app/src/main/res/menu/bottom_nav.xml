@@ -5,6 +5,10 @@
         android:icon="@drawable/ic_home"
         android:title="@string/tab_home" />
     <item
+        android:id="@+id/nav_gacha"
+        android:icon="@drawable/ic_gacha"
+        android:title="@string/tab_gacha" />
+    <item
         android:id="@+id/nav_log"
         android:icon="@drawable/ic_log"
         android:title="@string/tab_log" />

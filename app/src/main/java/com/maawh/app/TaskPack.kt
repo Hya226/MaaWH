@@ -20,7 +20,9 @@ object TaskPack {
      * 将 APK 内置任务包（assets/whmx）释放到内部存储 files/taskpacks/whmx。
      *  - 首次安装：全量释放
      *  - version.txt 与内置版本不同（覆盖安装了新版 APK）：重新释放，
-     *    但保留 pipeline/vf_*.json（流程编辑器同步的可视化流程优先于内置版本）
+     *    但保留 pipeline/vf_*.json（流程编辑器同步的可视化流程优先于内置版本）；
+     *    interface.json 做合并：手机版独有的 task/option 条目（编辑器 register_on_phone
+     *    注册的）保留追加，同名条目以内置（仓库定稿）版为准
      *  - 版本相同：直接跳过（启动零开销）
      * 返回是否发生了释放。version.txt 在全部文件拷贝完成后才写入，中途失败下次会重试。
      */
@@ -34,25 +36,61 @@ object TaskPack {
         val marker = File(dest, "version.txt")
         if (marker.exists() && marker.readText().trim() == assetsVer) return false
 
-        // 备份可视化流程（vf_*.json），释放后恢复
+        // 备份可视化流程（vf_*.json）与手机版清单，释放后恢复/合并
         val pipeDir = File(dest, "pipeline")
         val backup = File(ctx.filesDir, "taskpacks/_vf_backup")
         backup.deleteRecursively()
         backup.mkdirs()
         pipeDir.listFiles { f -> f.name.startsWith("vf_") && f.name.endsWith(".json") }
             ?.forEach { it.copyTo(File(backup, it.name), overwrite = true) }
+        val oldInterface = File(dest, "interface.json")
+        if (oldInterface.exists()) oldInterface.copyTo(File(backup, "interface.json"), overwrite = true)
 
         dest.deleteRecursively()
         dest.mkdirs()
         copyAssetsDir(ctx, "whmx", dest)
 
         backup.listFiles()?.forEach {
+            if (it.name == "interface.json") return@forEach   // 清单走合并，不直接还原
             File(pipeDir, it.name).parentFile?.mkdirs()
             it.copyTo(File(pipeDir, it.name), overwrite = true)
+        }
+        File(backup, "interface.json").takeIf { it.exists() }?.let {
+            mergeInterface(File(dest, "interface.json"), it)
         }
         backup.deleteRecursively()
         marker.writeText(assetsVer)
         return true
+    }
+
+    /**
+     * 清单合并：current（刚释放的内置版）为基准，把 old（手机旧版，编辑器同步的）里
+     * 独有的 task（按 name）/ option（按 key）条目追加进来；同名条目以内置版为准。
+     * 合并失败保留内置原版，不影响释放流程。
+     */
+    private fun mergeInterface(current: File, old: File) {
+        try {
+            val cur = JSONObject(current.readText(Charsets.UTF_8))
+            val prev = JSONObject(old.readText(Charsets.UTF_8))
+            val curTask = cur.optJSONArray("task") ?: JSONArray()
+            val names = HashSet<String>()
+            for (i in 0 until curTask.length()) names.add(curTask.getJSONObject(i).optString("name"))
+            val oldTask = prev.optJSONArray("task") ?: JSONArray()
+            for (i in 0 until oldTask.length()) {
+                val t = oldTask.getJSONObject(i)
+                if (t.optString("name") !in names) curTask.put(t)
+            }
+            cur.put("task", curTask)
+            val curOpt = cur.optJSONObject("option") ?: JSONObject()
+            val oldOpt = prev.optJSONObject("option") ?: JSONObject()
+            for (key in oldOpt.keys()) {
+                if (!curOpt.has(key)) curOpt.put(key, oldOpt.getJSONObject(key))
+            }
+            cur.put("option", curOpt)
+            current.writeText(cur.toString(2))
+        } catch (e: Throwable) {
+            // 清单损坏等异常：放弃合并，内置版兜底
+        }
     }
 
     private fun copyAssetsDir(ctx: android.content.Context, assetsPath: String, destDir: File) {

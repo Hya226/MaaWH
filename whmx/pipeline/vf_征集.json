@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-15T22:14:21+08:00",
+        "generatedAt": "2026-09-18T19:02:13+08:00",
         "flowFile": "征集.flow.json",
-        "flowHash": "sha256:8be75c425b9733cd5250256f0088b069f9ca4ee90a661d5553cc2e2bcb40b4e7",
-        "pipelineHash": "sha256:9252bd909cb4a59e0a6f03b21f2809044fa2d31fd333aa9dd37b0955b0e85436",
+        "flowHash": "sha256:4a6b6016ddba906d0dc0bb51ac23f0a4dc7e4bab4f96e87432a7a490cbb63d14",
+        "pipelineHash": "sha256:d46cc5cd8e787b914bb2d9879b4732a39b05d153567d501a933efa4789f35773",
         "frameW": 1280,
         "frameH": 720
     },
@@ -33,41 +33,25 @@
         "timeout": 4000,
         "post_delay": 600,
         "next": [
-            "VF_征集_16"
+            "VF_征集_17"
         ]
     },
-    "VF_征集_03": {
+    "VF_征集_17": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_征集_17_Hit"
+        ]
+    },
+    "VF_征集_17_Hit": {
         "recognition": "TemplateMatch",
         "template": "tiaoguochouka.png",
-        "threshold": 0.55,
+        "threshold": 0.75,
         "action": "Click",
-        "timeout": 20000,
-        "post_delay": 1000,
-        "order_by": "Score",
-        "rate_limit": 500,
-        "pre_delay": 1000,
+        "rate_limit": 600,
+        "post_delay": 600,
         "next": [
             "VF_征集_04"
-        ]
-    },
-    "VF_征集_16": {
-        "action": "DoNothing",
-        "timeout": 20000,
-        "next": [
-            "VF_征集_16_Hit"
-        ],
-        "on_error": [
-            "VF_征集_09"
-        ]
-    },
-    "VF_征集_16_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "tiaoguochouka.png",
-        "threshold": 0.55,
-        "action": "DoNothing",
-        "rate_limit": 500,
-        "next": [
-            "VF_征集_03"
         ]
     },
     "VF_征集_04": {
@@ -78,12 +62,7 @@
         "timeout": 8000,
         "post_delay": 900,
         "next": [
-            "VF_征集_05"
-        ]
-    },
-    "VF_征集_05": {
-        "next": [
-            "Common_点中间回主页"
+            "VF_征集_12"
         ]
     },
     "VF_征集_06": {

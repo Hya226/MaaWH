@@ -2,43 +2,21 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-17T08:12:13+08:00",
+        "generatedAt": "2026-09-18T19:08:18+08:00",
         "flowFile": "刷活动关.flow.json",
-        "flowHash": "sha256:11bce6a9fa083e0aa3b0fbea20bf590d63097cb91bd1ccd0371ddc144d92b473",
-        "pipelineHash": "sha256:b0bc9f0ac0bfa681c55745d2f516ce987cc152e87f49fb9284a186381a130496",
+        "flowHash": "sha256:7d6ace3810d1f78bcdc384b65e8c2b9f6896cec56c8046c74e3b2edfc38bb54f",
+        "pipelineHash": "sha256:e4c1e89cd21bc48db736f7f297535e492848a1239cf7acadc4af1ebcdcff3684",
         "frameW": 1280,
         "frameH": 720
     },
     "VF_刷活动关": {
         "next": [
-            "VF_刷活动关_01"
-        ]
-    },
-    "VF_刷活动关_01": {
-        "recognition": "TemplateMatch",
-        "template": "wjwy.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "next": [
-            "VF_刷活动关_02"
-        ]
-    },
-    "VF_刷活动关_02": {
-        "recognition": "TemplateMatch",
-        "template": "jhft.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "next": [
-            "VF_刷活动关_03"
+            "VF_刷活动关_13"
         ]
     },
     "VF_刷活动关_03": {
         "action": "DoNothing",
-        "timeout": 3000,
+        "timeout": 4000,
         "next": [
             "VF_刷活动关_03_Hit"
         ],
@@ -79,18 +57,25 @@
         ],
         "action": "Click",
         "timeout": 8000,
-        "post_delay": 600,
+        "post_delay": 2000,
         "next": [
-            "VF_刷活动关_06"
+            "VF_刷活动关_14"
         ]
     },
-    "VF_刷活动关_06": {
+    "VF_刷活动关_14": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_刷活动关_14_Hit"
+        ]
+    },
+    "VF_刷活动关_14_Hit": {
         "recognition": "TemplateMatch",
         "template": "sutong.png",
         "threshold": 0.8,
         "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
+        "rate_limit": 600,
+        "post_delay": 600,
         "next": [
             "VF_刷活动关_07"
         ]
@@ -103,27 +88,59 @@
         "timeout": 8000,
         "post_delay": 800,
         "next": [
-            "VF_刷活动关_09"
+            "VF_刷活动关_15"
         ]
     },
-    "VF_刷活动关_09": {
+    "VF_刷活动关_15": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_刷活动关_15_Hit"
+        ]
+    },
+    "VF_刷活动关_15_Hit": {
         "recognition": "TemplateMatch",
         "template": "duigou.png",
         "threshold": 0.8,
         "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
+        "rate_limit": 600,
+        "post_delay": 2000,
         "next": [
-            "VF_刷活动关_10"
+            "VF_刷活动关_18"
         ]
     },
-    "VF_刷活动关_10": {
-        "recognition": "TemplateMatch",
-        "template": "wancheng.png",
-        "threshold": 0.8,
+    "VF_刷活动关_18": {
         "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
+        "target": [
+            282,
+            222
+        ],
+        "post_delay": 2000,
+        "next": [
+            "VF_刷活动关_16"
+        ]
+    },
+    "VF_刷活动关_16": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_刷活动关_16_Hit"
+        ]
+    },
+    "VF_刷活动关_16_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "完成"
+        ],
+        "action": "Click",
+        "roi": [
+            1010,
+            600,
+            231,
+            76
+        ],
+        "rate_limit": 600,
+        "post_delay": 600,
         "next": [
             "VF_刷活动关_11"
         ]
@@ -131,6 +148,42 @@
     "VF_刷活动关_11": {
         "next": [
             "Common_回主页"
+        ]
+    },
+    "VF_刷活动关_13": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_刷活动关_13_Hit"
+        ]
+    },
+    "VF_刷活动关_13_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "wjwy.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_刷活动关_17"
+        ]
+    },
+    "VF_刷活动关_17": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_刷活动关_17_Hit"
+        ]
+    },
+    "VF_刷活动关_17_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "jhft.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_刷活动关_03"
         ]
     }
 }
