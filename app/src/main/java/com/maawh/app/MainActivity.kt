@@ -3309,8 +3309,10 @@ class MainActivity : AppCompatActivity() {
                 setOnClickListener { dlgRef?.dismiss(); onClick() }
                 addView(TextView(this@MainActivity).apply {
                     text = icon
-                    textSize = 17f
+                    textSize = 15f
                     gravity = Gravity.CENTER
+                    setTextColor(android.graphics.Color.WHITE)
+                    paint.isFakeBoldText = true
                     background = android.graphics.drawable.GradientDrawable().apply {
                         shape = android.graphics.drawable.GradientDrawable.OVAL
                         setColor(0x264C9AFF)
@@ -3363,13 +3365,13 @@ class MainActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
                 )
             })
-            addView(menuRow("🏠", "主界面", "5 步 · 预览 / 任务队列 / 开始任务") {
+            addView(menuRow("⌂", "主界面", "5 步 · 预览 / 任务队列 / 开始任务") {
                 onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
             })
-            addView(menuRow("🎴", "抽卡页", "4 步 · 账号 / 抓取 / 编辑 / 数据面板") {
+            addView(menuRow("✦", "抽卡页", "4 步 · 账号 / 抓取 / 编辑 / 数据面板") {
                 onboarding.start(buildGachaGuideSteps(), GuideStore.KEY_GACHA, homeFirst = false)
             })
-            addView(menuRow("⚙️", "配置管理", "2 步 · 多套配置 / 新建与复制") {
+            addView(menuRow("⚙", "配置管理", "2 步 · 多套配置 / 新建与复制") {
                 setConfigMode(true)
                 guideShowPage(0)
                 onboarding.start(buildConfigGuideSteps(), GuideStore.KEY_CONFIG, homeFirst = false)
