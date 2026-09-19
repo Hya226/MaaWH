@@ -494,10 +494,12 @@ class MainActivity : AppCompatActivity() {
             val idx = toolsTasks.indexOfFirst { it.name == s.name }
             val fromManifest = if (idx < 0) manifestItemOf(s.name, s.entry) else null
             if (fromManifest != null && !seenEntries.add(fromManifest.entry)) continue
+            // 清单与现有队列都没有 = 已取消注册/失效的条目，不再以字面量恢复——
+            // 额外队列只显示当前清单里存在的任务，与主队列的核对口径一致
+            if (idx < 0 && fromManifest == null) continue
             val item = when {
                 idx >= 0 -> toolsTasks[idx]
-                fromManifest != null -> fromManifest
-                else -> TaskItem(manifest?.name ?: "whmx", s.name, s.entry)
+                else -> fromManifest!!
             }
             if (idx >= 0 || fromManifest != null) applySavedSelection(item, s)
             item.summary = summarize(item)
