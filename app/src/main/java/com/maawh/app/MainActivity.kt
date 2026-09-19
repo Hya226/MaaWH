@@ -943,7 +943,8 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         // 切后台且虚拟屏活着/任务在跑 → 自动弹虚拟屏悬浮窗（设置页可关）
-        if (pipEnabled && (vdOn || queueRunner?.running == true)) {
+        if (pipEnabled && (vdOn || queueRunner?.running == true || gachaRunning)) {
+            if (gachaRunning) FloatingPanel.update("▶ 抽卡记录识别中")
             if (FloatingPanel.isPermissionGranted(this)) {
                 FloatingPanel.showForBackground(this)
             } else if (!overlayPrompted) {
@@ -2933,10 +2934,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** 抓取入口：运行中再点一次 = 停止。与任务队列互斥（两边都注入同一个虚拟屏） */
+    private fun stopGachaCrawl() {
+        gachaJob?.cancel()
+        binding.tvGachaStatus.text = "停止中…"
+        if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
+    }
+
     private fun startGachaCrawl() {
         if (gachaRunning) {
-            gachaJob?.cancel()
-            binding.tvGachaStatus.text = "停止中…"
+            stopGachaCrawl()
             return
         }
         if (isTaskRunning) { toast("任务队列运行中，不能同时抓取"); return }
@@ -2945,6 +2951,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnGachaRun.text = getString(R.string.gacha_stop)
         binding.tvGachaStatus.text = "准备…"
         if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
+        // 悬浮窗联动：状态行显示识别中，■停止按钮换为停止抓取（结束后恢复默认）
+        FloatingPanel.stopCallback = { stopGachaCrawl() }
+        FloatingPanel.update("▶ 抽卡记录识别中")
         gachaJob = lifecycleScope.launch {
             var runSummary = ""
             try {
@@ -2953,6 +2962,7 @@ class MainActivity : AppCompatActivity() {
                 val crawler = GachaCrawler(applicationContext, ocr) { m, lv -> log(m, lv) }
                 val report = crawler.crawl { p ->
                     runOnUiThread { binding.tvGachaStatus.text = p }
+                    FloatingPanel.update("▶ 抽卡识别：$p")
                 }
                 runSummary = "新增 ${report.added} 条"
                 binding.tvGachaStatus.text = "✓ 新增 ${report.added} 条"
@@ -2972,6 +2982,8 @@ class MainActivity : AppCompatActivity() {
                 if (homeTab == HomeTab.TOOLBOX) {
                     binding.btnStartQueue.text = getString(R.string.btn_start_queue)
                 }
+                FloatingPanel.stopCallback = { QueueRunner.requestStopCurrent() }
+                FloatingPanel.update(if (runSummary.isEmpty()) "抽卡识别结束" else "抽卡识别：$runSummary")
                 renderGachaPanel()
             }
         }
@@ -3520,6 +3532,10 @@ class MainActivity : AppCompatActivity() {
     private fun switchTo(panel: View) {
         listOf(binding.panelHome, binding.panelLog, binding.panelSettings, binding.panelGacha)
             .forEach { it.visibility = if (it === panel) View.VISIBLE else View.GONE }
+        // 日志页打开即定位到最新一条（日志追加在底部）
+        if (panel === binding.panelLog) {
+            binding.scrollLog.post { binding.scrollLog.fullScroll(View.FOCUS_DOWN) }
+        }
     }
 
     // ==================================================================

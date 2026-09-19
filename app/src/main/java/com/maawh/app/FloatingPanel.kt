@@ -72,6 +72,13 @@ object FloatingPanel {
         mainHandler.post { statusView?.text = text }
     }
 
+    /**
+     * 悬浮窗「■停止」的行为（默认 = 停止当前任务队列）。
+     * 抽卡识别运行时由 MainActivity 换成停止抓取，结束后恢复默认。
+     */
+    @Volatile
+    var stopCallback: (() -> Unit)? = null
+
     // ------------------------------------------------------------------
 
     private val frameTick = object : Runnable {
@@ -131,8 +138,14 @@ object FloatingPanel {
         }
         row.addView(status)
         row.addView(chip("■") {
-            QueueRunner.requestStopCurrent()
-            Toast.makeText(ctx, "已请求停止任务", Toast.LENGTH_SHORT).show()
+            val cb = stopCallback
+            if (cb != null) {
+                cb()
+                Toast.makeText(ctx, "已请求停止", Toast.LENGTH_SHORT).show()
+            } else {
+                QueueRunner.requestStopCurrent()
+                Toast.makeText(ctx, "已请求停止任务", Toast.LENGTH_SHORT).show()
+            }
         })
         row.addView(chip("×") {
             dismissed = true
