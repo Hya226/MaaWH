@@ -2997,13 +2997,9 @@ class MainActivity : AppCompatActivity() {
         val all = GachaStore.loadRecords(applicationContext)
         val cfg = GachaStore.loadConfig(applicationContext)
         if (!gachaRunning) {
-            binding.tvGachaStatus.text = when {
-                cfg.lastCrawlMs > 0 ->
-                    "上次抓取：${
-                        SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))
-                    }\n库存 ${all.size} 条"
-                else -> getString(R.string.gacha_status_default)
-            }
+            // 状态行已随按钮搬到小工具 tab；上次抓取/库存信息由该面板的专属行承担
+            binding.tvGachaStatus.text =
+                if (cfg.lastCrawlMs > 0) "空闲" else getString(R.string.gacha_status_default)
         }
         if (all.isEmpty()) {
             container.addView(simpleText("还没有录入过抽卡记录哦", R.color.text_secondary, 12f))
