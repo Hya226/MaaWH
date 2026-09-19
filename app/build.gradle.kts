@@ -126,7 +126,15 @@ val syncWhmxAssets = tasks.register<Sync>("syncWhmxAssets") {
             .writeText(System.currentTimeMillis().toString())
     }
 }
-tasks.named("preBuild") { dependsOn(syncWhmxAssets) }
+
+// 抽卡器者名单正本（gacha/names.json）同步进 assets：随包预置，首装释放到
+// files/gacha/names.json（已存在则不动，用户手编不被覆盖）；后台更新名单 =
+// 改仓库正本重编译，或 adb 直推手机 files/gacha/names.json
+val syncGachaNames = tasks.register<Sync>("syncGachaNames") {
+    from(rootProject.file("gacha/names.json"))
+    into(file("src/main/assets/gacha"))
+}
+tasks.named("preBuild") { dependsOn(syncWhmxAssets, syncGachaNames) }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
