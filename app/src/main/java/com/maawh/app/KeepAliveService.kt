@@ -41,9 +41,12 @@ class KeepAliveService : Service() {
                     ShizukuShell.scheduleGameAudioRestoreGuard()
                     val top = ShizukuShell.topForegroundPkg()
                     if (top == MaaConst.GAME_PKG) {
-                        // 游戏被用户切到物理屏前台玩：挂机静音让位（清标记 + 恢复 appops）
+                        // 游戏被用户切到物理屏前台玩：挂机静音让位（清标记 + 恢复 appops）。
+                        // 让位后停掉守护（标记已清，后续轮次只会空转）；重新挂机随 keepAlive 重启
                         if (GameAudioMarker.restoreIfNeeded(applicationContext)) {
-                            android.util.Log.i("MaaWH", "挂机守护：游戏切到物理屏，已恢复游戏声音")
+                            autoMuteWatch = false
+                            watchHandler.removeCallbacks(watchRunnable)
+                            android.util.Log.i("MaaWH", "挂机守护：游戏切到物理屏，已恢复游戏声音，守护退出")
                         }
                     }
                 }
