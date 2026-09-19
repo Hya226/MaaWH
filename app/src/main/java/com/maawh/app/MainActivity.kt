@@ -224,6 +224,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
         binding.btnNewProfile.setOnClickListener { createProfile() }
         binding.btnGachaRun.setOnClickListener { startGachaCrawl() }
+        GachaDictionary.names = GachaStore.loadNames(this)
         setupGachaAccounts()
         renderGachaPanel()
         buildVdOverlay()
@@ -2289,10 +2290,11 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER
             textSize = 13f
             paint.isFakeBoldText = true
-            setPadding(dp(10), dp(9), dp(10), dp(9))
+            setPadding(dp(6), dp(9), dp(6), dp(9))
         }
         val tabUp = tabBtn("标注UP器者")
-        val tabAdd = tabBtn("添加抽卡记录")
+        val tabAdd = tabBtn("添加记录")
+        val tabNames = tabBtn("器者名单")
         fun styleTab(t: TextView, sel: Boolean) {
             t.setTextColor(getColor(if (sel) R.color.text_primary else R.color.text_secondary))
             t.background = android.graphics.drawable.GradientDrawable().apply {
@@ -2303,8 +2305,9 @@ class MainActivity : AppCompatActivity() {
         val tabRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(dp(14), dp(6), dp(14), dp(2))
-            addView(tabUp, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(6) })
-            addView(tabAdd, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            addView(tabUp, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(5) })
+            addView(tabAdd, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(5) })
+            addView(tabNames, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         }
 
         // ===== 面板1：标注UP器者 =====
@@ -2584,21 +2587,167 @@ class MainActivity : AppCompatActivity() {
         }
         refreshManualList()
 
-        // ===== 组装：页签 + 两面板切换 =====
+        // ===== 面板3：器者名单（记录统计 ∪ 手动字典；编辑只写字典，不动记录） =====
+        val nameInput = EditText(this).apply {
+            hint = "新增器者名"
+            setSingleLine()
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+        }
+        val btnNameAdd = TextView(this).apply {
+            text = "＋ 添加"
+            gravity = Gravity.CENTER
+            setTextColor(android.graphics.Color.WHITE)
+            textSize = 13f
+            paint.isFakeBoldText = true
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(8).toFloat()
+                setColor(getColor(R.color.accent))
+            }
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+        }
+        val namesBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(8) }
+        }
+
+        fun saveNameList(list: List<String>) {
+            GachaStore.saveNames(ctx, list)
+            GachaDictionary.names = list
+        }
+
+        fun refreshNameList() {
+            namesBox.removeAllViews()
+            val counts = HashMap<String, Int>()
+            for (r in GachaStore.loadRecords(ctx)) counts[r.name] = (counts[r.name] ?: 0) + 1
+            val dict = GachaStore.loadNames(ctx)
+            val sorted = (dict + counts.keys).distinct()
+                .sortedWith(compareByDescending<String> { counts[it] ?: 0 }.thenBy { it })
+            if (sorted.isEmpty()) {
+                namesBox.addView(TextView(this@MainActivity).apply {
+                    text = "名单为空：抓取记录或手动添加后显示"
+                    setTextColor(getColor(R.color.text_secondary))
+                    textSize = 12f
+                })
+                return
+            }
+            for (name in sorted) {
+                val inDict = name in dict
+                val cnt = counts[name] ?: 0
+                val line = LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, dp(5), 0, dp(5))
+                    addView(LinearLayout(this@MainActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        addView(TextView(this@MainActivity).apply {
+                            text = name
+                            setTextColor(getColor(R.color.text_primary))
+                            textSize = 13f
+                            paint.isFakeBoldText = true
+                        })
+                        addView(TextView(this@MainActivity).apply {
+                            text = if (cnt > 0) "  ·$cnt 次" else "  手动"
+                            setTextColor(getColor(R.color.text_secondary))
+                            textSize = 10f
+                        })
+                    }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                    addView(TextView(this@MainActivity).apply {
+                        text = "✎"
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 14f
+                        setPadding(dp(8), dp(4), dp(4), dp(4))
+                        setOnClickListener {
+                            promptGachaAccountName(
+                                if (inDict) "修改名单" else "收录到名单", name
+                            ) { newName ->
+                                val trimmed = newName.trim()
+                                if (trimmed.isEmpty()) return@promptGachaAccountName
+                                val list = GachaStore.loadNames(ctx).toMutableList()
+                                list.remove(name)
+                                if (!list.contains(trimmed)) list.add(trimmed)
+                                saveNameList(list)
+                                refreshNameList()
+                            }
+                        }
+                    })
+                    if (inDict) {
+                        addView(TextView(this@MainActivity).apply {
+                            text = "✕"
+                            setTextColor(getColor(R.color.text_secondary))
+                            textSize = 14f
+                            setPadding(dp(8), dp(4), dp(4), dp(4))
+                            setOnClickListener {
+                                val list = GachaStore.loadNames(ctx).toMutableList()
+                                list.remove(name)
+                                saveNameList(list)
+                                refreshNameList()
+                                toast("已移出名单（记录不受影响）")
+                            }
+                        })
+                    }
+                }
+                namesBox.addView(line)
+            }
+        }
+
+        btnNameAdd.setOnClickListener {
+            val n = nameInput.text.toString().trim()
+            if (n.isEmpty()) { toast("名字不能为空"); return@setOnClickListener }
+            val list = GachaStore.loadNames(ctx).toMutableList()
+            if (list.contains(n)) { toast("已在名单中"); return@setOnClickListener }
+            list.add(n)
+            saveNameList(list)
+            nameInput.setText("")
+            refreshNameList()
+            toast("已添加")
+        }
+
+        val panelNames = ScrollView(this).apply {
+            addView(
+                LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(16), dp(8), dp(16), dp(12))
+                    addView(LinearLayout(this@MainActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        addView(nameInput, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                        addView(btnNameAdd, LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply { marginStart = dp(8) })
+                    })
+                    addView(TextView(this@MainActivity).apply {
+                        text = "名单用于抓取时自动纠正 OCR 识别错字（就近纠错，距离 ≤2）。✎ 改名 / ✕ 删除只影响名单，不改已有记录。"
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 11f
+                        setPadding(0, dp(8), 0, 0)
+                    })
+                    addView(namesBox)
+                }
+            )
+        }
+        refreshNameList()
+
+        // ===== 组装：页签 + 三面板切换 =====
         val frame = FrameLayout(this)
         frame.addView(panelUpWrap)
         frame.addView(panelAdd)
+        frame.addView(panelNames)
         panelAdd.visibility = View.GONE
+        panelNames.visibility = View.GONE
 
-        fun switchTab(up: Boolean) {
-            panelUpWrap.visibility = if (up) View.VISIBLE else View.GONE
-            panelAdd.visibility = if (up) View.GONE else View.VISIBLE
-            styleTab(tabUp, up)
-            styleTab(tabAdd, !up)
+        val panels = listOf(panelUpWrap, panelAdd, panelNames)
+        val tabs = listOf(tabUp, tabAdd, tabNames)
+        fun switchTab(idx: Int) {
+            panels.forEachIndexed { i, p -> p.visibility = if (i == idx) View.VISIBLE else View.GONE }
+            tabs.forEachIndexed { i, t -> styleTab(t, i == idx) }
         }
-        tabUp.setOnClickListener { switchTab(true) }
-        tabAdd.setOnClickListener { switchTab(false) }
-        switchTab(true)
+        tabUp.setOnClickListener { switchTab(0) }
+        tabAdd.setOnClickListener { switchTab(1) }
+        tabNames.setOnClickListener { switchTab(2) }
+        switchTab(0)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL

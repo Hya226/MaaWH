@@ -27,6 +27,7 @@ object GachaStore {
     private const val ACCOUNTS_FILE = "accounts.json"
     private const val ACCOUNTS_DIR = "accounts"
     private const val UP_MARKS = "up_marks.json"
+    private const val NAMES_FILE = "names.json"
     private const val ANCHORS_PER_POOL = 5
 
     const val RARITY_TOP = "特出"
@@ -317,6 +318,22 @@ object GachaStore {
             if (po.length() > 0) o.put(pk, po)
         }
         atomicWrite(File(dir(ctx), UP_MARKS), o.toString())
+    }
+
+    // ---------- 器者名单（OCR 纠错字典，账号无关的全局文件） ----------
+
+    /** 名单 = 用户手动维护的条目；记录里统计到的名字由界面合并展示，不落进这份文件 */
+    fun loadNames(ctx: Context): List<String> = try {
+        val arr = JSONArray(File(rootDir(ctx), NAMES_FILE).takeIf { it.isFile }?.readText() ?: "[]")
+        (0 until arr.length()).mapNotNull { i -> arr.optString(i).takeIf { it.isNotEmpty() } }
+    } catch (e: Throwable) {
+        emptyList()
+    }
+
+    fun saveNames(ctx: Context, names: List<String>) = synchronized(this) {
+        val arr = JSONArray()
+        names.filter { it.isNotBlank() }.distinct().forEach { arr.put(it.trim()) }
+        atomicWrite(File(rootDir(ctx), NAMES_FILE), arr.toString())
     }
 
     // ---------- UP 统计（面板顶部统计卡片用；rs 必须新→旧） ----------
