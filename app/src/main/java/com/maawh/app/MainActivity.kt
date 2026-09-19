@@ -2099,7 +2099,7 @@ class MainActivity : AppCompatActivity() {
         // 点账号名 = 管理菜单（改名/删除/新建/切换）；点倒三角 = 直接弹账号切换列表
         binding.tvGachaAccountName.setOnClickListener { showGachaAccountMenu() }
         binding.btnGachaAccountArrow.setOnClickListener {
-            showGachaAccountPicker(binding.btnGachaAccountArrow)
+            showGachaAccountPicker()
         }
         binding.btnGachaEdit.setOnClickListener { editGachaRecord() }
         refreshGachaAccounts()
@@ -2169,7 +2169,7 @@ class MainActivity : AppCompatActivity() {
             addView(menuRow("✎", "改名", R.color.text_primary) { renameGachaAccount() })
             addView(menuRow("⇄", "切换账号", R.color.text_primary) {
                 // 锚点必须用 Activity 窗口的 view：dialog 内部 view 会让 PopupMenu 定位失败
-                showGachaAccountPicker(binding.tvGachaAccountName)
+                showGachaAccountPicker()
             })
             addView(divider())
             addView(menuRow("✕", "删除", R.color.err_red) { deleteGachaAccount() })
@@ -2185,25 +2185,32 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 账号切换列表（PopupMenu，● 标当前账号），点选即切换并刷新面板 */
-    private fun showGachaAccountPicker(anchor: View) {
+    /** 账号切换下拉（两个入口共用）：ListPopupWindow 锚定账号名，宽度=账号名左缘→倒三角右缘 */
+    private fun showGachaAccountPicker() {
         val accounts = GachaStore.listAccounts(applicationContext)
         val active = GachaStore.activeAccountId(applicationContext)
-        val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
-        accounts.forEachIndexed { i, acc ->
-            popup.menu.add(0, i, i, if (acc.id == active) "● ${acc.name}" else acc.name)
-        }
-        popup.setOnMenuItemClickListener { mi ->
-            val acc = accounts.getOrNull(mi.itemId) ?: return@setOnMenuItemClickListener false
-            if (acc.id != GachaStore.activeAccountId(applicationContext)) {
+        val items = accounts.map { if (it.id == active) "● ${it.name}" else it.name }
+        val lpw = androidx.appcompat.widget.ListPopupWindow(this)
+        lpw.setAdapter(ArrayAdapter(this, R.layout.item_spinner_account, items))
+        lpw.setAnchorView(binding.tvGachaAccountName)
+        val nameLoc = IntArray(2)
+        binding.tvGachaAccountName.getLocationOnScreen(nameLoc)
+        val arrowLoc = IntArray(2)
+        binding.btnGachaAccountArrow.getLocationOnScreen(arrowLoc)
+        lpw.setWidth(
+            maxOf(arrowLoc[0] + binding.btnGachaAccountArrow.width - nameLoc[0], dp(160))
+        )
+        lpw.setOnItemClickListener { _, _, pos, _ ->
+            val acc = accounts.getOrNull(pos)
+            if (acc != null && acc.id != GachaStore.activeAccountId(applicationContext)) {
                 GachaStore.setActiveAccount(applicationContext, acc.id)
                 log("抽卡账号切换：${acc.name}（记录/锚点随账号独立）", LogLevel.INFO)
                 refreshGachaAccounts()
                 renderGachaPanel()
             }
-            true
+            lpw.dismiss()
         }
-        popup.show()
+        lpw.show()
     }
 
     private fun refreshGachaAccounts() {
