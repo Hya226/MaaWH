@@ -250,30 +250,40 @@ object ShizukuShell {
      * 由挂机守护轮询（10s）持续续埋，App 任意方式死亡后 90 秒内必有孤儿醒来收尾。
      * ColorOS 划卡片被处理成 force-stop、任何回调都不触发的场景（2026-09-19 实测）
      * 靠这个兜底。
+     *
+     * ⚠ 派发的孤儿是 & 后台进程，会持有管道写端直到它退出（90 秒）——绝不能走
+     * execBlocking（reader.join 30s 会阻塞调用方，QueueRunner 启动被拖 30s 的实测
+     * 来源）。这里 fire-and-forget：srv.exec 返回即孤儿已 fork，读端回收挂在
+     * 独立 daemon 线程等 EOF 自清理，调用方立即返回。
      */
     fun scheduleGameAudioRestoreGuard(delaySec: Long = 90): Boolean {
         val srv = service?.takeIf { it.asBinder().isBinderAlive } ?: return false
         val pipe = ParcelFileDescriptor.createPipe()
         return try {
-            runCatching { pipe[0].close() }
-            srv.exec(
-                arrayOf(
-                    "/system/bin/sh", "-c",
-                    "( sleep $delaySec; dumpsys display | grep -q MaaWH-VD || " +
-                        "{ appops get ${MaaConst.GAME_PKG} PLAY_AUDIO | grep -q deny && " +
-                        "{ appops reset ${MaaConst.GAME_PKG}; " +
-                        "appops set --uid ${MaaConst.GAME_PKG} PLAY_AUDIO allow; " +
-                        "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO allow; " +
-                        "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO_PARTIAL allow; }; } ) >/dev/null 2>&1 &"
-                ),
-                pipe[1]
+            val cmd = arrayOf(
+                "/system/bin/sh", "-c",
+                "( sleep $delaySec; dumpsys display | grep -q MaaWH-VD || " +
+                    "{ appops get ${MaaConst.GAME_PKG} PLAY_AUDIO | grep -q deny && " +
+                    "{ appops reset ${MaaConst.GAME_PKG}; " +
+                    "appops set --uid ${MaaConst.GAME_PKG} PLAY_AUDIO allow; " +
+                    "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO allow; " +
+                    "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO_PARTIAL allow; }; } ) >/dev/null 2>&1 &"
             )
+            thread(name = "audio-guard-dispatch", isDaemon = true) {
+                try {
+                    srv.exec(cmd, pipe[1])
+                } catch (_: Throwable) {
+                } finally {
+                    runCatching { pipe[0].close() }
+                    runCatching { pipe[1].close() }
+                }
+            }
             true
         } catch (e: Throwable) {
             report(LogLevel.WRN, "预埋延时恢复失败: ${e.message}")
-            false
-        } finally {
+            runCatching { pipe[0].close() }
             runCatching { pipe[1].close() }
+            false
         }
     }
 
