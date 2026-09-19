@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-18T19:08:18+08:00",
+        "generatedAt": "2026-09-19T20:21:37+08:00",
         "flowFile": "刷活动关.flow.json",
-        "flowHash": "sha256:7d6ace3810d1f78bcdc384b65e8c2b9f6896cec56c8046c74e3b2edfc38bb54f",
-        "pipelineHash": "sha256:e4c1e89cd21bc48db736f7f297535e492848a1239cf7acadc4af1ebcdcff3684",
+        "flowHash": "sha256:d11c3c3b3701040c12b87751a69bdc93946fda509867264bc220ac24ead9555d",
+        "pipelineHash": "sha256:816b4b6ca36d3ecc19cb94c43291a6e977e2712666693beeef9525a392dae02d",
         "frameW": 1280,
         "frameH": 720
     },
@@ -99,6 +99,43 @@
         ]
     },
     "VF_刷活动关_15_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 2000,
+        "next": [
+            "VF_刷活动关_19"
+        ]
+    },
+    "VF_刷活动关_19": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_刷活动关_19_Hit"
+        ],
+        "on_error": [
+            "VF_刷活动关_18"
+        ]
+    },
+    "VF_刷活动关_19_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_刷活动关_20"
+        ]
+    },
+    "VF_刷活动关_20": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_刷活动关_20_Hit"
+        ]
+    },
+    "VF_刷活动关_20_Hit": {
         "recognition": "TemplateMatch",
         "template": "duigou.png",
         "threshold": 0.8,
