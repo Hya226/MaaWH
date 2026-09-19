@@ -69,3 +69,11 @@ whmx/**/*.bak_*
 
 # 开发交接文档（含本机路径/设备序列号，仅本地保留，不随仓库公开）
 AGENTS.md
+
+# 本地备份与调试产物（不上传）
+_tools/backup_20260918/
+_tools/tmp_ort/
+_tools/tmp_phone_now/
+_tools/tmp_phone_pl/
+_tools/*.broken
+_tools/*.xml
