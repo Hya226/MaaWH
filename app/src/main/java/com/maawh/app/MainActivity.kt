@@ -2296,9 +2296,18 @@ class MainActivity : AppCompatActivity() {
     private fun showGachaAccountPicker() {
         val accounts = GachaStore.listAccounts(applicationContext)
         val active = GachaStore.activeAccountId(applicationContext)
-        val items = accounts.map { if (it.id == active) "● ${it.name}" else it.name }
         val lpw = androidx.appcompat.widget.ListPopupWindow(this)
-        lpw.setAdapter(ArrayAdapter(this, R.layout.item_spinner_account, items))
+        lpw.setAdapter(object : ArrayAdapter<String>(
+            this, R.layout.item_account_picker, accounts.map { it.name }
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val v = convertView ?: layoutInflater.inflate(R.layout.item_account_picker, parent, false)
+                v.findViewById<TextView>(R.id.mark).text =
+                    if (accounts[position].id == active) "●" else ""
+                v.findViewById<TextView>(R.id.name).text = accounts[position].name
+                return v
+            }
+        })
         lpw.setAnchorView(binding.tvGachaAccountName)
         lpw.setWidth(accountPopupWidth())
         lpw.setOnItemClickListener { _, _, pos, _ ->
