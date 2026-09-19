@@ -226,6 +226,22 @@ object ShizukuShell {
      * 孤儿进程挂在 init 下，MaaWH 死了照样把恢复执行完。命令毫秒级返回，可在主线程同步调用。
      * 只在 UserService 已绑定时派发（静音本来就是它设的，此时必已绑定）；未绑定则静默跳过。
      */
+    /**
+     * 当前物理屏（display 0）前台 Activity 的包名；Shizuku 断线/查询失败返回 null。
+     * 挂机守护用：游戏被用户切到物理屏玩 = 该值等于游戏包名（虚拟屏 display 的
+     * topResumedActivity 行排在物理屏行之后，取第一行即物理屏）。
+     */
+    fun topForegroundPkg(): String? {
+        return try {
+            val out = execBlocking("/system/bin/sh", "-c",
+                "dumpsys activity a | grep topResumedActivity | head -1"
+            ).toString(Charsets.UTF_8)
+            Regex("topResumedActivity=ActivityRecord\\{[^}]*u0 ([^/ }]+)").find(out)?.groupValues?.get(1)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
     fun requestGameAudioRestore(): Boolean {
         val srv = service?.takeIf { it.asBinder().isBinderAlive } ?: return false
         val pipe = ParcelFileDescriptor.createPipe()

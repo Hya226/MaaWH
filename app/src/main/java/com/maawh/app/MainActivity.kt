@@ -948,13 +948,26 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         ShizukuShell.onServiceReady = null
-        // 退出兜底：appops 静音是持久系统设置，MaaWH 不再管控游戏（队列没跑、虚拟屏已关）
-        // 时必须清掉 deny 残留，否则用户退出后自己打开物华弥新也没声。
-        // 必须用孤儿 shell 派发（requestGameAudioRestore）——退出瞬间进程随时被杀，
-        // 异步线程/同步 appops 都可能跑一半就没了，孤儿进程挂在 init 下必然执行完。
-        if (queueRunner?.running != true && !vdOn) {
+        if (queueRunner?.running == true) return
+        if (isFinishing && vdOn) {
+            // 用户主动关闭主界面 = 结束 MaaWH 会话：收虚拟屏、恢复游戏声音、停保活。
+            // 挂机静音只覆盖「Home 键切后台」（onStop，Activity 不销毁）——主动退出后
+            // 用户回物理屏打开游戏必须有声（appops deny 是包级设置，不清就永久无声）。
+            vdOn = false
+            FloatingPanel.hide()
+            KeepAliveService.stop(this)
+            Thread {
+                runCatching { ShizukuShell.stopVirtual() }
+                runCatching { GameAudioMarker.restoreIfNeeded(applicationContext) }
+            }.start()
+        } else if (!vdOn) {
+            // 退出兜底：appops 静音是持久系统设置，MaaWH 不再管控游戏（队列没跑、虚拟屏已关）
+            // 时必须清掉 deny 残留，否则用户退出后自己打开物华弥新也没声。
+            // 必须用孤儿 shell 派发（requestGameAudioRestore）——退出瞬间进程随时被杀，
+            // 异步线程/同步 appops 都可能跑一半就没了，孤儿进程挂在 init 下必然执行完。
             ShizukuShell.requestGameAudioRestore()
         }
+        // 其余情况（切后台后被系统销毁、但虚拟屏仍存活）：挂机继续，静音保持
     }
 
     /** 按服务端虚拟屏状态同步 UI：避免 vdOn 标志丢失导致预览黑屏/点击不注入 */
@@ -1707,9 +1720,14 @@ class MainActivity : AppCompatActivity() {
     // 保活（前台服务）：任务运行中 / 虚拟屏存活期间常驻，避免被系统当缓存进程回收
     // ==================================================================
 
-    private fun keepAlive(text: String) = KeepAliveService.start(this, text)
+    private fun keepAlive(text: String) = KeepAliveService.start(this, text).also {
+        KeepAliveService.autoMuteWatch = autoMuteEnabled
+    }
 
-    private fun stopKeepAlive() = KeepAliveService.stop(this)
+    private fun stopKeepAlive() {
+        KeepAliveService.autoMuteWatch = false
+        KeepAliveService.stop(this)
+    }
 
     /** Android 13+ 通知权限：给了前台服务通知才可见（被拒也不影响服务本身与优先级） */
     private fun requestNotifPermission() {
