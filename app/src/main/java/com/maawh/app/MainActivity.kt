@@ -216,16 +216,15 @@ class MainActivity : AppCompatActivity() {
         binding.btnRequest.setOnClickListener { requestShizukuPermission() }
         binding.btnRefresh.setOnClickListener { refreshStatus() }
         binding.imageShot.setOnTouchListener { _, ev -> handleImageTouch(ev) }
-        binding.btnStartQueue.setOnClickListener { startQueue() }
+        binding.btnStartQueue.setOnClickListener {
+            // 小工具 tab：开始/停止抽卡识别；其他 tab：跑对应队列
+            if (homeTab == HomeTab.TOOLBOX) startGachaCrawl() else startQueue()
+        }
         binding.btnQuick.setOnClickListener { showQuickMenu() }
         // tab 切换：一键长草 / 额外队列
         binding.btnTabOneClick.setOnClickListener { switchTab(HomeTab.ONECLICK) }
         binding.btnTabTools.setOnClickListener { switchTab(HomeTab.TOOLS) }
         binding.btnTabToolbox.setOnClickListener { switchTab(HomeTab.TOOLBOX) }
-        binding.btnToolboxGacha.setOnClickListener {
-            // 与抽卡页「开始抓取」同一入口：运行中再点即停止，按钮文字由 startGachaCrawl 同步
-            startGachaCrawl()
-        }
         // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
         binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
         binding.btnNewProfile.setOnClickListener { createProfile() }
@@ -1166,7 +1165,24 @@ class MainActivity : AppCompatActivity() {
         binding.btnTabOneClick.isChecked = tab == HomeTab.ONECLICK
         binding.btnTabTools.isChecked = tab == HomeTab.TOOLS
         binding.btnTabToolbox.isChecked = tab == HomeTab.TOOLBOX
+        if (tab == HomeTab.TOOLBOX) {
+            refreshToolboxPanel()
+            binding.btnStartQueue.text =
+                getString(if (gachaRunning) R.string.quick_stop else R.string.btn_start_queue)
+        } else if (!isTaskRunning) {
+            binding.btnStartQueue.text = getString(R.string.btn_start_queue)
+        }
         scheduleSave()
+    }
+
+    /** 小工具 tab：刷新抽卡识别面板（上次抓取时间与实时库存） */
+    private fun refreshToolboxPanel() {
+        val all = GachaStore.loadRecords(applicationContext)
+        val cfg = GachaStore.loadConfig(applicationContext)
+        binding.tvToolboxLastCrawl.text = if (cfg.lastCrawlMs > 0)
+            "上次抓取：${SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))}"
+        else "尚未抓取"
+        binding.tvToolboxCount.text = "实时库存：${all.size} 条"
     }
 
     /** 一键长草：队列视图 ⇄ 配置管理 */
@@ -2932,7 +2948,6 @@ class MainActivity : AppCompatActivity() {
         if (gachaRunning) {
             gachaJob?.cancel()
             binding.tvGachaStatus.text = "停止中…"
-            binding.tvToolboxGachaState.text = "停止中…"
             return
         }
         if (isTaskRunning) { toast("任务队列运行中，不能同时抓取"); return }
@@ -2940,8 +2955,7 @@ class MainActivity : AppCompatActivity() {
         gachaRunning = true
         binding.btnGachaRun.text = getString(R.string.gacha_stop)
         binding.tvGachaStatus.text = "准备…"
-        binding.btnToolboxGacha.text = getString(R.string.toolbox_gacha_stop)
-        binding.tvToolboxGachaState.text = "抓取中…（详细进度见抽卡页）"
+        if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
         gachaJob = lifecycleScope.launch {
             var runSummary = ""
             try {
@@ -2953,23 +2967,23 @@ class MainActivity : AppCompatActivity() {
                 }
                 runSummary = "新增 ${report.added} 条"
                 binding.tvGachaStatus.text = "✓ 新增 ${report.added} 条"
-                binding.tvToolboxGachaState.text = "✓ 抓取完成：新增 ${report.added} 条"
             } catch (e: kotlinx.coroutines.CancellationException) {
                 runSummary = "已停止"
                 binding.tvGachaStatus.text = "◼ 已停止"
-                binding.tvToolboxGachaState.text = "◼ 已停止"
                 throw e
             } catch (e: Exception) {
                 runSummary = "失败：${e.message}"
                 log("抽卡抓取失败：${e.message}", LogLevel.ERR)
                 binding.tvGachaStatus.text = "✗ ${e.message}"
-                binding.tvToolboxGachaState.text = "✗ 失败：${e.message}"
             } finally {
                 RunLogStore.end(runSummary)
                 gachaRunning = false
                 gachaJob = null
                 binding.btnGachaRun.text = getString(R.string.gacha_run)
-                binding.btnToolboxGacha.text = getString(R.string.toolbox_gacha)
+                if (homeTab == HomeTab.TOOLBOX) {
+                    binding.btnStartQueue.text = getString(R.string.btn_start_queue)
+                    refreshToolboxPanel()
+                }
                 renderGachaPanel()
             }
         }
