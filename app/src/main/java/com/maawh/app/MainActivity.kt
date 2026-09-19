@@ -879,6 +879,13 @@ class MainActivity : AppCompatActivity() {
             vdOn = true
             lifecycleScope.launch(Dispatchers.IO) {
                 val r = ShizukuShell.startVirtualGame()
+                // 与 toggleVd 同口径：进虚拟屏即按开关应用静音（任务稍后在 run() 里还会应用一次）
+                if (muteEnabled || autoMuteEnabled) {
+                    runCatching { GameAudioMarker.mark(this@MainActivity, MaaConst.GAME_PKG) }
+                    runCatching { ShizukuShell.setGameAudioMuted(true) }
+                } else {
+                    runCatching { ShizukuShell.assertGameAudioAllowed() }
+                }
                 runOnUiThread { log(r) }
                 runOnUiThread {
                     VdStreamer.start()
@@ -1674,11 +1681,23 @@ class MainActivity : AppCompatActivity() {
         dlg.show()
     }
 
-    /** 静音残留自愈：凭持久化标记恢复上次会话没恢复成的静音（队列运行中不动作） */
+    /**
+     * 静音残留自愈：凭持久化标记恢复上次会话没恢复成的静音（队列运行中不动作）。
+     * 恢复后若「游戏启动后关闭游戏声音」开着且虚拟屏还活着（游戏仍在跑，App 被杀重启
+     * 时虚拟屏挂在 Shizuku 服务上会幸存），立即按开关重新静音——否则冷启动后挂机中的
+     * 游戏一直有声，直到下次跑任务。autoMute 从持久化读，避免与 onCreate 主线程加载竞态。
+     */
     private fun selfHealGameAudio() {
         if (queueRunner?.running == true) return
         if (GameAudioMarker.restoreIfNeeded(applicationContext)) {
             log("检测到上次会话的游戏静音残留，已恢复游戏声音", LogLevel.INFO)
+            val autoMute = runCatching { QueueStore.load(applicationContext)?.autoMute }.getOrDefault(false)
+            if (autoMute && ShizukuShell.isVdAlive()) {
+                GameAudioMarker.mark(applicationContext, MaaConst.GAME_PKG)
+                if (ShizukuShell.setGameAudioMuted(true)) {
+                    log("已按「游戏启动后关闭游戏声音」重新静音（虚拟屏存活，游戏仍在运行）", LogLevel.INFO)
+                }
+            }
         }
     }
 
@@ -1870,9 +1889,17 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 val r = ShizukuShell.startVirtualGame()
                 runCatching { File(filesDir, "m4result.txt").writeText(r) }
-                // AudioHardening 反制：闩锁跨会话存活，进虚拟屏就主动放行游戏音频
-                // （任一静音开关是开的话跳过——游戏本来就该被静音）
-                if (!muteEnabled && !autoMuteEnabled) runCatching { ShizukuShell.assertGameAudioAllowed() }
+                // 静音应用：任一开关开着 → 先落标记再 deny（autoMute 语义 = 游戏启动即静音）；
+                // 都关才走 AudioHardening 反制主动放行（闩锁跨会话存活，进虚拟屏就放行游戏音频）
+                if (muteEnabled || autoMuteEnabled) {
+                    runCatching { GameAudioMarker.mark(this@MainActivity, MaaConst.GAME_PKG) }
+                    runCatching { ShizukuShell.setGameAudioMuted(true) }
+                    if (autoMuteEnabled && !muteEnabled) {
+                        runOnUiThread { log("已按「游戏启动后关闭游戏声音」静音游戏") }
+                    }
+                } else {
+                    runCatching { ShizukuShell.assertGameAudioAllowed() }
+                }
                 runOnUiThread {
                     log(r)
                     setRunState("虚拟屏运行中（点预览=游戏内点击）", R.color.ok_green)
