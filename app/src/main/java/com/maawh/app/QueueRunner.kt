@@ -266,7 +266,9 @@ class QueueRunner(
             // 仅当游戏已退出（如本队列末尾勾选了关闭游戏）才恢复音量。
             // 这里的调用必须兜异常：Shizuku 若在任务期间被系统回收，execBlocking 会抛异常，
             // 而本协程没有外层 catch —— 未捕获异常会直接把 App 打崩（虚拟屏也随之没）。
-            if (closeAfterEnabled) {
+            // 「任务自动结束时关闭游戏」只在非手动停止时执行：用户点「停止任务」是主动介入，
+            // 多半还要继续手动操作游戏/挂机，此时关游戏不符合预期；自然跑完与失败结束才关
+            if (closeAfterEnabled && !stopRequested) {
                 runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
             }
             // 收尾体检：Shizuku 掉了要说清"不是 MaaWH 关的"并给出保活办法，
