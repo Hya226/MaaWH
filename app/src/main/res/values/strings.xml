@@ -55,7 +55,7 @@
     <string name="toolbox_start_hint">点底部「开始任务」开始识别；识别中按钮变为「停止任务」，点它可随时停止。</string>
     <string name="toolbox_state_idle">未在抓取。与抽卡页的「开始抓取」是同一入口，状态两边同步显示。</string>
     <string name="toolbox_desc">把虚拟屏里的游戏停在「招集记录」页后点下方按钮即可抓取（与抽卡页共用同一功能，运行状态在抽卡页也可查看）。</string>
-    <string name="tools_maintip">额外队列：任务包清单声明的工具任务（如刷活动关、博物研学）+ adb 直达入口。单击左侧任务行在右侧改参数，勾选后点「开始任务」；不影响一键长草主队列</string>
+    <string name="tools_maintip">额外队列：独立于一键长草主队列的任务队列 + adb 直达入口。单击左侧任务行在右侧改参数，勾选后点「开始任务」；不影响一键长草主队列</string>
     <string name="tools_edit_hint">单击左侧任务行查看/编辑参数</string>
     <string name="tools_target_label">目标角色名（穿戴装备搜索用）</string>
     <string name="tools_target_hint">如：商周十供</string>
