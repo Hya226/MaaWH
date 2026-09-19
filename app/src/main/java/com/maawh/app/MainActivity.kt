@@ -1245,7 +1245,9 @@ class MainActivity : AppCompatActivity() {
         val ctx = this
         for (inp in o.inputs) {
             val label = TextView(ctx).apply {
-                text = "${o.label} · ${inp.label}"
+                // 字段标题留空会被编辑器回退成参数名；与参数名同名时只显示一段，避免「刷取次数 · 刷取次数」
+                text = if (inp.label.isBlank() || inp.label == o.label) o.label
+                       else "${o.label} · ${inp.label}"
                 setTextColor(getColorCompat(R.color.text_secondary))
                 textSize = 12f
                 setPadding(0, dp(10), 0, 0)
