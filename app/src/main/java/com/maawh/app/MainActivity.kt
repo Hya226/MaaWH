@@ -2171,6 +2171,9 @@ class MainActivity : AppCompatActivity() {
                 // 锚点必须用 Activity 窗口的 view：dialog 内部 view 会让 PopupMenu 定位失败
                 showGachaAccountPicker()
             })
+            addView(menuRow("↺", "恢复账号", R.color.text_primary) {
+                showGachaRestoreList()
+            })
             addView(divider())
             addView(menuRow("✕", "删除", R.color.err_red) { deleteGachaAccount() })
         }
@@ -2185,6 +2188,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** 账号下拉宽度：账号名左缘 → 倒三角右缘 */
+    private fun accountPopupWidth(): Int {
+        val nameLoc = IntArray(2)
+        binding.tvGachaAccountName.getLocationOnScreen(nameLoc)
+        val arrowLoc = IntArray(2)
+        binding.btnGachaAccountArrow.getLocationOnScreen(arrowLoc)
+        return maxOf(arrowLoc[0] + binding.btnGachaAccountArrow.width - nameLoc[0], dp(160))
+    }
+
     /** 账号切换下拉（两个入口共用）：ListPopupWindow 锚定账号名，宽度=账号名左缘→倒三角右缘 */
     private fun showGachaAccountPicker() {
         val accounts = GachaStore.listAccounts(applicationContext)
@@ -2193,13 +2205,7 @@ class MainActivity : AppCompatActivity() {
         val lpw = androidx.appcompat.widget.ListPopupWindow(this)
         lpw.setAdapter(ArrayAdapter(this, R.layout.item_spinner_account, items))
         lpw.setAnchorView(binding.tvGachaAccountName)
-        val nameLoc = IntArray(2)
-        binding.tvGachaAccountName.getLocationOnScreen(nameLoc)
-        val arrowLoc = IntArray(2)
-        binding.btnGachaAccountArrow.getLocationOnScreen(arrowLoc)
-        lpw.setWidth(
-            maxOf(arrowLoc[0] + binding.btnGachaAccountArrow.width - nameLoc[0], dp(160))
-        )
+        lpw.setWidth(accountPopupWidth())
         lpw.setOnItemClickListener { _, _, pos, _ ->
             val acc = accounts.getOrNull(pos)
             if (acc != null && acc.id != GachaStore.activeAccountId(applicationContext)) {
@@ -2209,6 +2215,37 @@ class MainActivity : AppCompatActivity() {
                 renderGachaPanel()
             }
             lpw.dismiss()
+        }
+        lpw.show()
+    }
+
+    /** 恢复最近删除的账号（回收站保留 3 份），点选即恢复为新账号并激活 */
+    private fun showGachaRestoreList() {
+        val trash = GachaStore.listTrashedAccounts(applicationContext)
+        if (trash.isEmpty()) {
+            toast("最近没有可恢复的删除记录")
+            return
+        }
+        val fmt = SimpleDateFormat("MM-dd HH:mm", Locale.US)
+        val items = trash.map {
+            "${it.name} · ${fmt.format(Date(it.deletedAt))} · ${it.recordCount} 条"
+        }
+        val lpw = androidx.appcompat.widget.ListPopupWindow(this)
+        lpw.setAdapter(ArrayAdapter(this, R.layout.item_spinner_account, items))
+        lpw.setAnchorView(binding.tvGachaAccountName)
+        lpw.setWidth(accountPopupWidth())
+        lpw.setOnItemClickListener { _, _, pos, _ ->
+            lpw.dismiss()
+            val t = trash.getOrNull(pos) ?: return@setOnItemClickListener
+            val acc = GachaStore.restoreAccount(applicationContext, t)
+            if (acc == null) {
+                toast("恢复失败：备份数据已损坏")
+            } else {
+                refreshGachaAccounts()
+                renderGachaPanel()
+                log("已从回收站恢复账号「${acc.name}」（${t.recordCount} 条记录）", LogLevel.INFO)
+                toast("已恢复「${acc.name}」")
+            }
         }
         lpw.show()
     }

@@ -28,6 +28,8 @@ object GachaStore {
     private const val ACCOUNTS_DIR = "accounts"
     private const val UP_MARKS = "up_marks.json"
     private const val NAMES_FILE = "names.json"
+    private const val TRASH_DIR = "trash"
+    private const val TRASH_KEEP = 3
     private const val ANCHORS_PER_POOL = 5
 
     const val RARITY_TOP = "特出"
@@ -553,14 +555,94 @@ object GachaStore {
         }
     }
 
-    /** 删除账号及其全部记录；至少保留一个。返回是否删除成功 */
+    /** 删除账号及其全部记录；至少保留一个。删除前数据收进回收站（保留最近 TRASH_KEEP 份），可通过恢复账号找回。返回是否删除成功 */
     fun deleteAccount(ctx: Context, id: String): Boolean = synchronized(this) {
         val reg = ensureRegistry(ctx)
         if (reg.accounts.size <= 1) return false
+        val acc = reg.accounts.find { it.id == id } ?: return false
         if (!reg.accounts.removeIf { it.id == id }) return false
         val newActive = if (reg.activeId == id) reg.accounts[0].id else reg.activeId
         saveRegistry(ctx, Registry(newActive, reg.accounts))
+        trashAccount(ctx, id, acc.name)
         accountDir(ctx, id).deleteRecursively()
         true
+    }
+
+    // ---------- 账号回收站（删除账号的滚动备份，供手动恢复） ----------
+
+    data class TrashedAccount(
+        val file: File,
+        val id: String,       // 删除时的原 id
+        val name: String,
+        val deletedAt: Long,
+        val recordCount: Int
+    )
+
+    private fun trashAccount(ctx: Context, id: String, name: String) {
+        val d = accountDir(ctx, id)
+        if (!d.isDirectory) return
+        val recs = File(d, RECORDS).takeIf { it.isFile }?.readText() ?: "[]"
+        val cfg = File(d, CONFIG).takeIf { it.isFile }?.readText() ?: "{}"
+        val ups = File(d, UP_MARKS).takeIf { it.isFile }?.readText() ?: "{}"
+        val doc = try {
+            JSONObject().apply {
+                put("id", id)
+                put("name", name)
+                put("deletedAt", System.currentTimeMillis())
+                put("all_records", JSONArray(recs))
+                put("config", JSONObject(cfg))
+                put("up_marks", JSONObject(ups))
+            }
+        } catch (e: Throwable) {
+            return
+        }
+        val dir = File(rootDir(ctx), TRASH_DIR)
+        dir.mkdirs()
+        atomicWrite(File(dir, "t${doc.optLong("deletedAt")}.json"), doc.toString())
+        // 滚动清理：只留最近 TRASH_KEEP 份（文件名前缀 t+时间戳，字典序即时间序）
+        val files = dir.listFiles { f -> f.name.startsWith("t") && f.name.endsWith(".json") }
+            ?.sortedByDescending { it.name } ?: return
+        files.drop(TRASH_KEEP).forEach { it.delete() }
+    }
+
+    fun listTrashedAccounts(ctx: Context): List<TrashedAccount> {
+        val dir = File(rootDir(ctx), TRASH_DIR)
+        return dir.listFiles { f -> f.name.startsWith("t") && f.name.endsWith(".json") }
+            ?.mapNotNull { f ->
+                try {
+                    val o = JSONObject(f.readText())
+                    TrashedAccount(
+                        f, o.optString("id"), o.optString("name"),
+                        o.optLong("deletedAt"), o.optInt("recordCount",
+                            o.optJSONArray("all_records")?.length() ?: 0)
+                    )
+                } catch (e: Throwable) {
+                    null
+                }
+            }?.sortedByDescending { it.deletedAt } ?: emptyList()
+    }
+
+    /** 从回收站恢复账号：生成新 id 写回全部数据并立即激活，恢复后删除该备份。返回恢复的账号 */
+    fun restoreAccount(ctx: Context, trash: TrashedAccount): AccountInfo? = synchronized(this) {
+        val doc = try {
+            JSONObject(trash.file.readText())
+        } catch (e: Throwable) {
+            return null
+        }
+        val reg = ensureRegistry(ctx)
+        val info = AccountInfo(
+            newAccountId(),
+            trash.name.ifBlank { "已恢复账号" },
+            System.currentTimeMillis()
+        )
+        val d = accountDir(ctx, info.id)
+        d.mkdirs()
+        atomicWrite(File(d, RECORDS), (doc.optJSONArray("all_records") ?: JSONArray()).toString())
+        atomicWrite(File(d, CONFIG), (doc.optJSONObject("config") ?: JSONObject()).toString())
+        atomicWrite(File(d, UP_MARKS), (doc.optJSONObject("up_marks") ?: JSONObject()).toString())
+        reg.accounts.add(info)
+        saveRegistry(ctx, Registry(info.id, reg.accounts))
+        trash.file.delete()
+        info
     }
 }
