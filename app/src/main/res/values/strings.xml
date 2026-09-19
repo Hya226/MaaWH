@@ -18,7 +18,7 @@
     <string name="about_announcement">查看公告</string>
     <string name="about_guide">新手引导</string>
     <string name="about_announcement_default">请勿在物华弥新的各平台官方动态（包括但不限于 B站、微博、小红书）下讨论任何与 MaaWH 有关的内容，共同维护社区环境。\n\nMaaWH 完全免费开源，不会以「关注 / 三连 / 私信」作为获取安装包的条件。请优先通过官方渠道获取：\n　· GitHub Releases（项目仓库的 Release 页）\n　· 官方 QQ 群：群公告与群文件\n\n请避免从网盘、论坛帖子、不明链接等非官方途径下载；对各类「整合包 / 修改版 / 二次打包」保持警惕，除非完全信任来源并已自行完成安全检测。\n\n请注意辨别来源，保护好你的账号与设备安全。也欢迎转告身边的朋友，避免踩坑。</string>
-    <string name="gacha_note">抓取：数据基于游戏最近 30 天记录\n抓取前把虚拟屏里的游戏停在「招募记录」页</string>
+    <string name="gacha_note">抓取数据基于游戏内最近30天记录\n抓取前请把虚拟屏里的游戏停在「招集记录」页</string>
     <string name="gacha_status_default">尚未抓取</string>
 
     <string name="label_preview">虚拟屏预览（图上点按=模拟点击）</string>
