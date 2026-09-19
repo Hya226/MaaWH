@@ -322,12 +322,26 @@ object GachaStore {
 
     // ---------- 器者名单（OCR 纠错字典，账号无关的全局文件） ----------
 
-    /** 名单 = 用户手动维护的条目；记录里统计到的名字由界面合并展示，不落进这份文件 */
-    fun loadNames(ctx: Context): List<String> = try {
-        val arr = JSONArray(File(rootDir(ctx), NAMES_FILE).takeIf { it.isFile }?.readText() ?: "[]")
-        (0 until arr.length()).mapNotNull { i -> arr.optString(i).takeIf { it.isNotEmpty() } }
-    } catch (e: Throwable) {
-        emptyList()
+    /**
+     * 名单 = 后台预置（assets/gacha/names.json 随包，首装文件不存在时释放一次）
+     * + 用户手动编辑（编辑面板/adb 直推覆盖），全局共享，与账号和抽卡记录完全解耦。
+     */
+    fun loadNames(ctx: Context): List<String> = synchronized(this) {
+        val f = File(rootDir(ctx), NAMES_FILE)
+        if (!f.isFile) {
+            runCatching {
+                ctx.assets.open("gacha/$NAMES_FILE").use { input ->
+                    f.parentFile?.mkdirs()
+                    f.outputStream().use { output -> input.copyTo(output) }
+                }
+            }
+        }
+        try {
+            val arr = JSONArray(f.takeIf { it.isFile }?.readText() ?: "[]")
+            (0 until arr.length()).mapNotNull { i -> arr.optString(i).takeIf { it.isNotEmpty() } }
+        } catch (e: Throwable) {
+            emptyList()
+        }
     }
 
     fun saveNames(ctx: Context, names: List<String>) = synchronized(this) {

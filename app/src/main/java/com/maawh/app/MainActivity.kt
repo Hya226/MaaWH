@@ -2595,7 +2595,7 @@ class MainActivity : AppCompatActivity() {
         }
         refreshManualList()
 
-        // ===== 面板3：器者名单（记录统计 ∪ 手动字典；编辑只写字典，不动记录） =====
+        // ===== 面板3：器者名单（后台预置 + 手动编辑；与抽卡记录解耦，次数按账号统计） =====
         val nameInput = EditText(this).apply {
             hint = "新增器者名"
             setSingleLine()
@@ -2635,19 +2635,18 @@ class MainActivity : AppCompatActivity() {
             val counts = HashMap<String, Int>()
             for (r in GachaStore.loadRecords(ctx)) counts[r.name] = (counts[r.name] ?: 0) + 1
             val dict = GachaStore.loadNames(ctx)
-            val sorted = (dict + counts.keys).distinct()
-                .sortedWith(compareByDescending<String> { counts[it] ?: 0 }.thenBy { it })
-            tvNameCount.text = "器者总数：${sorted.size}（记录出现 ${counts.size} 种 · 手动字典 ${dict.size}）"
+            // 名单 = 后台预置 + 手动编辑（字典），与抽卡记录解耦；次数 = 当前账号记录计数
+            val sorted = dict.sortedWith(compareByDescending<String> { counts[it] ?: 0 }.thenBy { it })
+            tvNameCount.text = "器者总数：${sorted.size}"
             if (sorted.isEmpty()) {
                 namesBox.addView(TextView(this@MainActivity).apply {
-                    text = "名单为空：抓取记录或手动添加后显示"
+                    text = "名单为空：手动添加后显示"
                     setTextColor(getColor(R.color.text_secondary))
                     textSize = 12f
                 })
                 return
             }
             for (name in sorted) {
-                val inDict = name in dict
                 val cnt = counts[name] ?: 0
                 val line = LinearLayout(this@MainActivity).apply {
                     orientation = LinearLayout.HORIZONTAL
@@ -2663,7 +2662,7 @@ class MainActivity : AppCompatActivity() {
                             paint.isFakeBoldText = true
                         })
                         addView(TextView(this@MainActivity).apply {
-                            text = if (cnt > 0) "  ·$cnt 次" else "  手动"
+                            text = "  ·$cnt 次"
                             setTextColor(getColor(R.color.text_secondary))
                             textSize = 10f
                         })
@@ -2674,9 +2673,7 @@ class MainActivity : AppCompatActivity() {
                         textSize = 14f
                         setPadding(dp(8), dp(4), dp(4), dp(4))
                         setOnClickListener {
-                            promptGachaAccountName(
-                                if (inDict) "修改名字（联动记录）" else "改名并收录", name
-                            ) { newName ->
+                            promptGachaAccountName("修改名字（联动记录）", name) { newName ->
                                 val trimmed = newName.trim()
                                 if (trimmed.isEmpty() || trimmed == name) return@promptGachaAccountName
                                 val list = GachaStore.loadNames(ctx).toMutableList()
@@ -2696,28 +2693,11 @@ class MainActivity : AppCompatActivity() {
                         textSize = 14f
                         setPadding(dp(8), dp(4), dp(4), dp(4))
                         setOnClickListener {
-                            if (cnt > 0) {
-                                AlertDialog.Builder(this@MainActivity)
-                                    .setTitle("删除「$name」")
-                                    .setMessage("该名字在记录中出现 $cnt 次，删除将一并移除这些记录（不可恢复）。")
-                                    .setPositiveButton("删除") { _, _ ->
-                                        GachaStore.deleteRecordsByName(ctx, name)
-                                        val list = GachaStore.loadNames(ctx).toMutableList()
-                                        list.remove(name)
-                                        saveNameList(list)
-                                        refreshNameList()
-                                        renderGachaPanel()
-                                        toast("已删除 $cnt 条记录")
-                                    }
-                                    .setNegativeButton("取消", null)
-                                    .show()
-                            } else {
-                                val list = GachaStore.loadNames(ctx).toMutableList()
-                                list.remove(name)
-                                saveNameList(list)
-                                refreshNameList()
-                                toast("已移出名单")
-                            }
+                            val list = GachaStore.loadNames(ctx).toMutableList()
+                            list.remove(name)
+                            saveNameList(list)
+                            refreshNameList()
+                            toast("已移出名单（记录不受影响）")
                         }
                     })
                 }
@@ -2754,7 +2734,7 @@ class MainActivity : AppCompatActivity() {
                         ).apply { marginStart = dp(8) })
                     })
                     addView(TextView(this@MainActivity).apply {
-                        text = "名单用于抓取时自动纠正 OCR 识别错字（就近纠错，距离 ≤2）。✎ 改名 / ✕ 删除只影响名单，不改已有记录。"
+                        text = "名单 = 后台预置 + 手动编辑，全部账号共享，不受抽卡记录删减影响；次数为当前账号记录计数。抓取时按名单自动纠正 OCR 错字（距离 ≤2）。✎ 改名会联动当前账号的记录。"
                         setTextColor(getColor(R.color.text_secondary))
                         textSize = 11f
                         setPadding(0, dp(8), 0, 0)
