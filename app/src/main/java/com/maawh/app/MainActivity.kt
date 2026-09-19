@@ -3007,8 +3007,7 @@ class MainActivity : AppCompatActivity() {
             "上次抓取：${SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))}"
         else "尚未抓取"
         binding.tvGachaCount.text = "库存 ${all.size} 条"
-        val te = all.count { it.rarity == GachaStore.RARITY_TOP }
-        binding.tvGachaAccountSub.text = "累计 ${all.size} 抽 · 特出 $te"
+        binding.tvGachaAccountSub.visibility = View.GONE
         if (all.isEmpty()) {
             container.addView(simpleText("还没有录入过抽卡记录哦", R.color.text_secondary, 12f))
             return
