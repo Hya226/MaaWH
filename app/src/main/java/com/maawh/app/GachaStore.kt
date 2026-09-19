@@ -336,6 +336,80 @@ object GachaStore {
         atomicWrite(File(rootDir(ctx), NAMES_FILE), arr.toString())
     }
 
+    /**
+     * 名单改名联动（当前激活账号）：记录里所有 old 改为 newName（uid 按原序号重建），
+     * 锚点与 UP 标注同步替换。返回改动的记录条数。
+     * 其他账号的记录不动——下次抓取时靠字典纠错自动归正。
+     */
+    fun renameEverywhere(ctx: Context, old: String, newName: String): Int = synchronized(this) {
+        if (old == newName || newName.isBlank()) return 0
+        val all = ArrayList(loadRecords(ctx))
+        var changed = 0
+        for (i in all.indices) {
+            val r = all[i]
+            if (r.name != old) continue
+            val seq = r.uid.substringAfterLast("_").toIntOrNull() ?: 1
+            all[i] = r.copy(name = newName, uid = uidOf(r.ts, r.pool, newName, seq))
+            changed++
+        }
+        if (changed > 0) atomicWrite(recordsFile(ctx), serializeRecords(all))
+
+        val cfg = loadConfig(ctx)
+        saveConfigAnchors(
+            ctx,
+            cfg.anchors.mapValues { (_, list) -> list.map { if (it.n == old) it.copy(n = newName) else it } },
+            cfg.lastCrawlMs
+        )
+
+        val marks = loadUpMarks(ctx)
+        var dirty = false
+        for ((_, m) in marks) {
+            for ((k, v) in m) if (v == old) { m[k] = newName; dirty = true }
+        }
+        if (dirty) saveUpMarks(ctx, marks)
+        changed
+    }
+
+    /**
+     * 名单删除联动（当前激活账号）：从记录中删掉所有该名字的记录，锚点同步清理。
+     * 名单条目本身由调用方维护。返回删除的记录条数。
+     */
+    fun deleteRecordsByName(ctx: Context, name: String): Int = synchronized(this) {
+        val all = ArrayList(loadRecords(ctx))
+        val before = all.size
+        all.removeAll { it.name == name }
+        val removed = before - all.size
+        if (removed > 0) atomicWrite(recordsFile(ctx), serializeRecords(all))
+
+        val cfg = loadConfig(ctx)
+        saveConfigAnchors(
+            ctx,
+            cfg.anchors.mapValues { (_, list) -> list.filter { it.n != name } },
+            cfg.lastCrawlMs
+        )
+
+        val marks = loadUpMarks(ctx)
+        var dirty = false
+        for ((_, m) in marks) {
+            for ((k, v) in m) if (v == name) { m.remove(k); dirty = true }
+        }
+        if (dirty) saveUpMarks(ctx, marks)
+        removed
+    }
+
+    private fun saveConfigAnchors(ctx: Context, anchors: Map<String, List<Anchor>>, lastCrawlMs: Long) {
+        val a = JSONObject()
+        for ((pool, list) in anchors) {
+            a.put(pool, JSONArray(list.map {
+                JSONObject().apply { put("t", it.t); put("n", it.n) }
+            }))
+        }
+        atomicWrite(configFile(ctx), JSONObject().apply {
+            put("anchors", a)
+            put("lastCrawlMs", lastCrawlMs)
+        }.toString())
+    }
+
     // ---------- UP 统计（面板顶部统计卡片用；rs 必须新→旧） ----------
 
     data class UpStats(

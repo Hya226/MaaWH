@@ -2168,7 +2168,8 @@ class MainActivity : AppCompatActivity() {
             addView(menuRow("＋", "新建", R.color.text_primary) { createGachaAccount() })
             addView(menuRow("✎", "改名", R.color.text_primary) { renameGachaAccount() })
             addView(menuRow("⇄", "切换账号", R.color.text_primary) {
-                showGachaAccountPicker(head)
+                // 锚点必须用 Activity 窗口的 view：dialog 内部 view 会让 PopupMenu 定位失败
+                showGachaAccountPicker(binding.tvGachaAccountName)
             })
             addView(divider())
             addView(menuRow("✕", "删除", R.color.err_red) { deleteGachaAccount() })
@@ -2611,6 +2612,11 @@ class MainActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = dp(8) }
         }
+        val tvNameCount = TextView(this).apply {
+            setTextColor(getColor(R.color.text_primary))
+            textSize = 13f
+            paint.isFakeBoldText = true
+        }
 
         fun saveNameList(list: List<String>) {
             GachaStore.saveNames(ctx, list)
@@ -2624,6 +2630,7 @@ class MainActivity : AppCompatActivity() {
             val dict = GachaStore.loadNames(ctx)
             val sorted = (dict + counts.keys).distinct()
                 .sortedWith(compareByDescending<String> { counts[it] ?: 0 }.thenBy { it })
+            tvNameCount.text = "器者总数：${sorted.size}（记录出现 ${counts.size} 种 · 手动字典 ${dict.size}）"
             if (sorted.isEmpty()) {
                 namesBox.addView(TextView(this@MainActivity).apply {
                     text = "名单为空：抓取记录或手动添加后显示"
@@ -2661,33 +2668,51 @@ class MainActivity : AppCompatActivity() {
                         setPadding(dp(8), dp(4), dp(4), dp(4))
                         setOnClickListener {
                             promptGachaAccountName(
-                                if (inDict) "修改名单" else "收录到名单", name
+                                if (inDict) "修改名字（联动记录）" else "改名并收录", name
                             ) { newName ->
                                 val trimmed = newName.trim()
-                                if (trimmed.isEmpty()) return@promptGachaAccountName
+                                if (trimmed.isEmpty() || trimmed == name) return@promptGachaAccountName
                                 val list = GachaStore.loadNames(ctx).toMutableList()
                                 list.remove(name)
                                 if (!list.contains(trimmed)) list.add(trimmed)
                                 saveNameList(list)
+                                val n = GachaStore.renameEverywhere(ctx, name, trimmed)
                                 refreshNameList()
+                                renderGachaPanel()
+                                if (n > 0) toast("已改名，联动更新 $n 条记录")
                             }
                         }
                     })
-                    if (inDict) {
-                        addView(TextView(this@MainActivity).apply {
-                            text = "✕"
-                            setTextColor(getColor(R.color.text_secondary))
-                            textSize = 14f
-                            setPadding(dp(8), dp(4), dp(4), dp(4))
-                            setOnClickListener {
+                    addView(TextView(this@MainActivity).apply {
+                        text = "✕"
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 14f
+                        setPadding(dp(8), dp(4), dp(4), dp(4))
+                        setOnClickListener {
+                            if (cnt > 0) {
+                                AlertDialog.Builder(this@MainActivity)
+                                    .setTitle("删除「$name」")
+                                    .setMessage("该名字在记录中出现 $cnt 次，删除将一并移除这些记录（不可恢复）。")
+                                    .setPositiveButton("删除") { _, _ ->
+                                        GachaStore.deleteRecordsByName(ctx, name)
+                                        val list = GachaStore.loadNames(ctx).toMutableList()
+                                        list.remove(name)
+                                        saveNameList(list)
+                                        refreshNameList()
+                                        renderGachaPanel()
+                                        toast("已删除 $cnt 条记录")
+                                    }
+                                    .setNegativeButton("取消", null)
+                                    .show()
+                            } else {
                                 val list = GachaStore.loadNames(ctx).toMutableList()
                                 list.remove(name)
                                 saveNameList(list)
                                 refreshNameList()
-                                toast("已移出名单（记录不受影响）")
+                                toast("已移出名单")
                             }
-                        })
-                    }
+                        }
+                    })
                 }
                 namesBox.addView(line)
             }
@@ -2710,6 +2735,9 @@ class MainActivity : AppCompatActivity() {
                 LinearLayout(this@MainActivity).apply {
                     orientation = LinearLayout.VERTICAL
                     setPadding(dp(16), dp(8), dp(16), dp(12))
+                    addView(tvNameCount, LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = dp(8) })
                     addView(LinearLayout(this@MainActivity).apply {
                         orientation = LinearLayout.HORIZONTAL
                         gravity = Gravity.CENTER_VERTICAL
