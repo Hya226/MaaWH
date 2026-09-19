@@ -708,34 +708,33 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <Spinner
-                    android:id="@+id/spinnerGachaAccounts"
+                <TextView
+                    android:id="@+id/tvGachaAccountName"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1" />
+                    android:layout_weight="1"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:text="@string/gacha_account_label"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/btnGachaRename"
+                    android:id="@+id/btnGachaAccountArrow"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="?android:attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="8dp"
-                    android:text="@string/gacha_btn_rename"
-                    android:textColor="@color/accent"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/btnGachaDelete"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="?android:attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:padding="8dp"
-                    android:text="@string/gacha_btn_delete"
-                    android:textColor="@color/err_red"
+                    android:paddingStart="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/gacha_account_arrow"
+                    android:textColor="@color/text_secondary"
                     android:textSize="14sp" />
 
                 <TextView
@@ -747,18 +746,6 @@
                     android:focusable="true"
                     android:padding="8dp"
                     android:text="@string/gacha_btn_edit"
-                    android:textColor="@color/accent"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/btnGachaNew"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="?android:attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:padding="8dp"
-                    android:text="@string/gacha_btn_new"
                     android:textColor="@color/accent"
                     android:textSize="14sp" />
             </LinearLayout>

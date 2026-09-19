@@ -2094,40 +2094,55 @@ class MainActivity : AppCompatActivity() {
     private var gachaRunning = false
     private var gachaJob: kotlinx.coroutines.Job? = null
 
-    /** 刷新 Spinner 时压住 onItemSelected 回调，避免程序性选择被当成用户切号 */
-    private var suppressGachaSpinner = false
-
     private fun setupGachaAccounts() {
-        binding.spinnerGachaAccounts.onItemSelectedListener =
-            object : android.widget.AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, pos: Int, id: Long) {
-                    if (suppressGachaSpinner) return
-                    val acc = GachaStore.listAccounts(applicationContext).getOrNull(pos) ?: return
-                    if (acc.id != GachaStore.activeAccountId(applicationContext)) {
-                        GachaStore.setActiveAccount(applicationContext, acc.id)
-                        log("抽卡账号切换：${acc.name}（记录/锚点随账号独立）", LogLevel.INFO)
-                        renderGachaPanel()
-                    }
-                }
-
-                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-            }
-        binding.btnGachaRename.setOnClickListener { renameGachaAccount() }
-        binding.btnGachaDelete.setOnClickListener { deleteGachaAccount() }
-        binding.btnGachaNew.setOnClickListener { createGachaAccount() }
+        // 点账号名 = 管理菜单（改名/删除/新建/切换）；点倒三角 = 直接弹账号切换列表
+        binding.tvGachaAccountName.setOnClickListener { showGachaAccountMenu() }
+        binding.btnGachaAccountArrow.setOnClickListener {
+            showGachaAccountPicker(binding.btnGachaAccountArrow)
+        }
         binding.btnGachaEdit.setOnClickListener { editGachaRecord() }
         refreshGachaAccounts()
     }
 
-    private fun refreshGachaAccounts() {
+    /** 账号名弹窗：改名 / 删除 / 新建 / 切换账号 */
+    private fun showGachaAccountMenu() {
+        val items = listOf("改名", "删除", "新建", "切换账号")
+        AlertDialog.Builder(this)
+            .setTitle("账号「${GachaStore.activeAccountName(applicationContext)}」")
+            .setItems(items.toTypedArray()) { _, which ->
+                when (which) {
+                    0 -> renameGachaAccount()
+                    1 -> deleteGachaAccount()
+                    2 -> createGachaAccount()
+                    3 -> showGachaAccountPicker(binding.tvGachaAccountName)
+                }
+            }
+            .show()
+    }
+
+    /** 账号切换列表（PopupMenu，● 标当前账号），点选即切换并刷新面板 */
+    private fun showGachaAccountPicker(anchor: View) {
         val accounts = GachaStore.listAccounts(applicationContext)
         val active = GachaStore.activeAccountId(applicationContext)
-        suppressGachaSpinner = true
-        val adapter = ArrayAdapter(this, R.layout.item_spinner_account, accounts.map { it.name })
-        adapter.setDropDownViewResource(R.layout.item_spinner_account)
-        binding.spinnerGachaAccounts.adapter = adapter
-        binding.spinnerGachaAccounts.setSelection(accounts.indexOfFirst { it.id == active }.coerceAtLeast(0))
-        suppressGachaSpinner = false
+        val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
+        accounts.forEachIndexed { i, acc ->
+            popup.menu.add(0, i, i, if (acc.id == active) "● ${acc.name}" else acc.name)
+        }
+        popup.setOnMenuItemClickListener { mi ->
+            val acc = accounts.getOrNull(mi.itemId) ?: return@setOnMenuItemClickListener false
+            if (acc.id != GachaStore.activeAccountId(applicationContext)) {
+                GachaStore.setActiveAccount(applicationContext, acc.id)
+                log("抽卡账号切换：${acc.name}（记录/锚点随账号独立）", LogLevel.INFO)
+                refreshGachaAccounts()
+                renderGachaPanel()
+            }
+            true
+        }
+        popup.show()
+    }
+
+    private fun refreshGachaAccounts() {
+        binding.tvGachaAccountName.text = GachaStore.activeAccountName(applicationContext)
     }
 
     private fun promptGachaAccountName(title: String, initial: String, onOk: (String) -> Unit) {
