@@ -77,3 +77,8 @@ _tools/tmp_phone_now/
 _tools/tmp_phone_pl/
 _tools/*.broken
 _tools/*.xml
+
+# 个人游戏数据与调试快照（不上传）
+gacha/_dump*.json
+gacha/frame_*.jpg
+_tools/*.xml
