@@ -22,40 +22,45 @@ import com.google.android.material.card.MaterialCardView
 
 /**
  * 新手引导完成标记（独立于任务配置存档 QueueStore：引导是 App 级状态，跟任务包无关）。
- * 存「看完时的引导版本」，以后步骤改版把 GUIDE_VERSION +1 就能重新弹一次。
+ * 按引导集（key）分别记录：main=全局主引导，gacha/config 等为场景首访引导。
+ * 存「看完时的引导版本」，改版把 GUIDE_VERSION +1，所有场景都会重弹一次。
  */
 object GuideStore {
     private const val PREF = "maawh_guide"
-    private const val KEY_VERSION = "done_version"
+    private const val KEY_PREFIX = "done_"
 
-    /** 步骤内容或顺序改版时 +1，老用户会再看到一次引导 */
-    const val GUIDE_VERSION = 1
+    /** 任一引导内容或顺序改版时 +1，老用户所有场景会各重看一次 */
+    const val GUIDE_VERSION = 2
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
 
-    fun isDone(ctx: Context) = prefs(ctx).getInt(KEY_VERSION, 0) >= GUIDE_VERSION
+    fun isDone(ctx: Context, key: String = KEY_MAIN): Boolean =
+        prefs(ctx).getInt(KEY_PREFIX + key, 0) >= GUIDE_VERSION
 
-    fun markDone(ctx: Context) {
+    fun markDone(ctx: Context, key: String = KEY_MAIN) {
         try {
-            prefs(ctx).edit().putInt(KEY_VERSION, GUIDE_VERSION).apply()
+            prefs(ctx).edit().putInt(KEY_PREFIX + key, GUIDE_VERSION).apply()
         } catch (_: Throwable) {
         }
     }
+
+    const val KEY_MAIN = "main"
+    const val KEY_GACHA = "gacha"
+    const val KEY_CONFIG = "config"
 }
 
 /**
  * 新手引导（对标 MAA-Meow 的聚光灯引导，View 体系实现，不引新依赖）：
- * 全屏半透明遮罩在目标控件处挖一个圆角洞 + 描边高亮，讲解卡片贴着洞摆放
+ * 全屏半透明遮罩在目标控件处挖一个圆角洞 + 呼吸描边高亮，讲解卡片贴着洞摆放
  * （优先洞下方 → 上方 → 左右 → 都放不下则贴空间更大一侧允许压住洞），无靶点时卡片居中。
- * 跨页步骤自动切页；遮罩吞掉全部触摸（洞内也不透），只有卡片按钮可点；返回键 = 上一步/退出。
- * 首次启动自动弹出（GuideStore），设置页「查看新手引导」可重看。
+ * 卡片带进度圆点与滑入动画；跨页步骤自动切页；遮罩吞掉全部触摸，只有卡片按钮可点；
+ * 返回键 = 上一步/退出。支持多引导集：main=全局主引导，gacha/config=场景首访引导。
  */
 class Onboarding(
     private val activity: ComponentActivity,
-    private val steps: List<Step>,
-    /** 引导要求切到某页（0 主页 / 1 日志 / 2 设置），随步骤自动切 */
+    /** 引导要求切到某页（0 主页 / 1 抽卡 / 2 日志 / 3 设置），随步骤自动切 */
     private val showPage: (Int) -> Unit,
-    /** 开始前把主页归位到 一键长草 + 队列视图（配置管理模式下靶点面板不存在） */
+    /** 开始前把主页归位到 一键长草 + 队列视图（仅主引导需要；场景引导已在其页面） */
     private val ensureHome: () -> Unit,
     /** 引导结束（看完或跳过）回调 */
     private val onFinished: () -> Unit,
@@ -69,6 +74,9 @@ class Onboarding(
         val title: String,
         val body: String,
     )
+
+    private var steps: List<Step> = emptyList()
+    private var guideKey = GuideStore.KEY_MAIN
 
     /** 洞与遮罩透明度上限，比普通弹窗深才衬得出聚光灯 */
     private val scrimMax = 0.72f
@@ -86,9 +94,12 @@ class Onboarding(
 
     val isActive: Boolean get() = active
 
-    fun start() {
+    /** 启动一个引导集；homeFirst=true 时先归位主页（主引导用，场景引导已在其页面） */
+    fun start(steps: List<Step>, key: String = GuideStore.KEY_MAIN, homeFirst: Boolean = true) {
         if (active) return
-        ensureHome()
+        this.steps = steps
+        guideKey = key
+        if (homeFirst) ensureHome()
         stepIndex = 0
         active = true
         buildOverlay()
@@ -100,11 +111,11 @@ class Onboarding(
         showStep(0)
     }
 
-    /** 结束（看完最后一步 / 点跳过 / 第一步按返回），标记已完成 */
+    /** 结束（看完最后一步 / 点跳过 / 第一步按返回），标记该引导集已完成 */
     fun finish() {
         if (!active) return
         active = false
-        GuideStore.markDone(activity)
+        GuideStore.markDone(activity, guideKey)
         (root.parent as? ViewGroup)?.removeView(root)
         root.viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
         backCallback?.isEnabled = false
@@ -164,7 +175,13 @@ class Onboarding(
                 View.MeasureSpec.AT_MOST
             ),
         )
-        positionCard(c, hole)
+        val (x, y) = resolvePos(hole, c.measuredWidth, c.measuredHeight)
+        c.translationX = x
+        // 入场：自下方 12dp 滑入 + 淡入
+        c.translationY = y + dp(14)
+        c.alpha = 0f
+        c.animate().translationY(y).alpha(1f).setDuration(200)
+            .setInterpolator(DecelerateInterpolator()).start()
     }
 
     private fun positionCard(c: View, hole: RectF?) {
@@ -216,14 +233,22 @@ class Onboarding(
             setPadding(dp(18).toInt(), dp(14).toInt(), dp(18).toInt(), dp(10).toInt())
         }
 
-        // 头部：emoji 图标 + 标题 / 步数
+        // 头部：emoji 圆底 + 标题 / 步数
         val head = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
         head.addView(
-            TextView(ctx).apply { text = step.emoji; textSize = 24f },
-            LinearLayout.LayoutParams(-2, -2)
+            TextView(ctx).apply {
+                text = step.emoji
+                textSize = 19f
+                gravity = Gravity.CENTER
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(0x264C9AFF)
+                }
+            },
+            LinearLayout.LayoutParams(dp(40).toInt(), dp(40).toInt())
         )
         val titles = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -256,6 +281,29 @@ class Onboarding(
             },
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10).toInt() }
         )
+
+        // 进度圆点（单步引导不显示）
+        if (steps.size > 1) {
+            val dots = LinearLayout(ctx).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                orientation = LinearLayout.HORIZONTAL
+            }
+            for (i in steps.indices) {
+                val dot = View(ctx).apply {
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(if (i == stepIndex) 0xFF4C9AFF.toInt() else 0x3A8E9AAB.toInt())
+                    }
+                }
+                dots.addView(
+                    dot,
+                    LinearLayout.LayoutParams(dp(6).toInt(), dp(6).toInt()).apply {
+                        marginStart = dp(3).toInt(); marginEnd = dp(3).toInt()
+                    }
+                )
+            }
+            col.addView(dots, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12).toInt() })
+        }
 
         // 底部按钮：跳过（最后一步没有）| 弹性 | 上一步 下一步/完成
         val isLast = stepIndex == steps.lastIndex
@@ -337,7 +385,39 @@ class Onboarding(
             color = 0xFF4C9AFF.toInt()
             alpha = 230
         }
+        /** 外圈柔光：低 alpha 粗描边叠在主描边下，与主描边一起呼吸 */
+        private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = dp(5f)
+            color = 0xFF4C9AFF.toInt()
+            alpha = 60
+        }
         private var anim: ValueAnimator? = null
+
+        /** 呼吸循环：描边 alpha 230↔150 缓慢往返 */
+        private val breath = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 900
+            repeatMode = ValueAnimator.REVERSE
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            addUpdateListener {
+                val f = it.animatedValue as Float
+                val a = 230 - (f * 80).toInt()
+                strokePaint.alpha = a
+                glowPaint.alpha = 45 + (f * 35).toInt()
+                invalidate()
+            }
+        }
+
+        override fun onAttachedToWindow() {
+            super.onAttachedToWindow()
+            breath.start()
+        }
+
+        override fun onDetachedFromWindow() {
+            breath.cancel()
+            super.onDetachedFromWindow()
+        }
 
         var hole: RectF? = null
             private set
@@ -380,6 +460,7 @@ class Onboarding(
             hole?.let {
                 val r = dp(16)
                 c.drawRoundRect(it, r, r, clearPaint)
+                c.drawRoundRect(it, r, r, glowPaint)
                 c.drawRoundRect(it, r, r, strokePaint)
             }
             c.restoreToCount(sc)

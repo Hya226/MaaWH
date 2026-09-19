@@ -246,23 +246,27 @@ class MainActivity : AppCompatActivity() {
         // （新手引导 1.6s 先弹，这里放 2.2s 错开：引导展示中 maybePromptShizuku 会直接让路）
         vdHandler.postDelayed({ maybePromptShizuku() }, 2200)
 
-        // 新手引导：首次启动自动弹一次，之后设置页「查看新手引导」可重看
+        // 新手引导：首次启动自动弹全局主引导；场景引导（抽卡页/配置管理）各自首次进入时弹；
+        // 设置页「查看新手引导」重看主引导
         onboarding = Onboarding(
             this,
-            buildGuideSteps(),
             ::guideShowPage,
             ::guideEnsureHome,
         ) { maybePromptShizuku() }
-        binding.btnGuide.setOnClickListener { onboarding.start() }
+        binding.btnGuide.setOnClickListener {
+            onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
+        }
         binding.btnAnnouncement.setOnClickListener { showAnnouncement() }
         // 公告自动弹出：首次启动时让位给新手引导，之后每次打开若公告有更新（内容变化）则弹出
         vdHandler.postDelayed({
             if (!isFinishing && !onboarding.isActive) showAnnouncement(auto = true)
         }, 2500)
         binding.btnAnnouncement.setOnClickListener { showAnnouncement() }
-        if (!GuideStore.isDone(this)) {
+        if (!GuideStore.isDone(this, GuideStore.KEY_MAIN)) {
             vdHandler.postDelayed({
-                if (!isFinishing && !isTaskRunning) onboarding.start()
+                if (!isFinishing && !isTaskRunning) {
+                    onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
+                }
             }, 1600)
         }
 
@@ -1132,7 +1136,15 @@ class MainActivity : AppCompatActivity() {
         binding.panelConfig.visibility = if (on) View.VISIBLE else View.GONE
         binding.tvQueueHint.text = if (on) "当前生效：$activeProfile" else getString(R.string.hint_queue)
         binding.btnEditConfig.text = getString(if (on) R.string.config_done else R.string.config_edit)
-        if (on) refreshProfilePanel()
+        if (on) {
+            refreshProfilePanel()
+            // 配置管理首访引导
+            vdHandler.postDelayed({
+                if (canShowScenarioGuide(GuideStore.KEY_CONFIG)) {
+                    onboarding.start(buildConfigGuideSteps(), GuideStore.KEY_CONFIG, homeFirst = false)
+                }
+            }, 450)
+        }
     }
 
     /** 刷新某任务的列表摘要显示（主队列与小工具队列各刷一次） */
@@ -2083,7 +2095,15 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_home -> switchTo(binding.panelHome)
                 R.id.nav_log -> switchTo(binding.panelLog)
                 R.id.nav_settings -> switchTo(binding.panelSettings)
-                R.id.nav_gacha -> switchTo(binding.panelGacha)
+                R.id.nav_gacha -> {
+                    switchTo(binding.panelGacha)
+                    // 抽卡页首访引导：等切页布局完成再弹，避免与任务/抓取运行冲突
+                    vdHandler.postDelayed({
+                        if (canShowScenarioGuide(GuideStore.KEY_GACHA)) {
+                            onboarding.start(buildGachaGuideSteps(), GuideStore.KEY_GACHA, homeFirst = false)
+                        }
+                    }, 450)
+                }
             }
             true
         }
@@ -3237,32 +3257,49 @@ class MainActivity : AppCompatActivity() {
         dlg.show()
     }
 
+    /** 主引导：5 步核心流（欢迎 → 预览 → 任务队列 → 开始 → 完成），细节交给场景引导 */
     private fun buildGuideSteps(): List<Onboarding.Step> = listOf(
         Onboarding.Step(0, null, "✨",
             getString(R.string.guide_welcome_title), getString(R.string.guide_welcome_body)),
         Onboarding.Step(0, { binding.imageShot }, "🖥️",
             getString(R.string.guide_preview_title), getString(R.string.guide_preview_body)),
-        Onboarding.Step(0, { binding.btnTabOneClick.parent as? View }, "🗂️",
-            getString(R.string.guide_tabs_title), getString(R.string.guide_tabs_body)),
         Onboarding.Step(0, { binding.rvTaskList }, "📋",
             getString(R.string.guide_queue_title), getString(R.string.guide_queue_body)),
-        Onboarding.Step(0, { binding.panelEdit }, "🛠️",
-            getString(R.string.guide_edit_title), getString(R.string.guide_edit_body)),
         Onboarding.Step(0, { binding.btnStartQueue }, "▶️",
             getString(R.string.guide_start_title), getString(R.string.guide_start_body)),
-        Onboarding.Step(0, { binding.btnQuick }, "⚡",
-            getString(R.string.guide_quick_title), getString(R.string.guide_quick_body)),
-        Onboarding.Step(2, { binding.scrollLog }, "📜",
-            getString(R.string.guide_log_title), getString(R.string.guide_log_body)),
-        Onboarding.Step(3, { binding.cardStatus }, "⚙️",
-            getString(R.string.guide_settings_title), getString(R.string.guide_settings_body)),
         Onboarding.Step(0, null, "🎉",
             getString(R.string.guide_done_title), getString(R.string.guide_done_body)),
     )
 
+    /** 抽卡页首访引导（4 步）：账号 → 抓取 → 编辑 → 数据面板 */
+    private fun buildGachaGuideSteps(): List<Onboarding.Step> = listOf(
+        Onboarding.Step(1, { binding.tvGachaAccountName }, "👤",
+            getString(R.string.guide_g_acc_title), getString(R.string.guide_g_acc_body)),
+        Onboarding.Step(1, { binding.btnGachaRun }, "📥",
+            getString(R.string.guide_g_run_title), getString(R.string.guide_g_run_body)),
+        Onboarding.Step(1, { binding.btnGachaEdit }, "✏️",
+            getString(R.string.guide_g_edit_title), getString(R.string.guide_g_edit_body)),
+        Onboarding.Step(1, { binding.llGachaCards }, "📊",
+            getString(R.string.guide_g_stat_title), getString(R.string.guide_g_stat_body)),
+    )
+
+    /** 配置管理首访引导（2 步）：配置列表 → 新建/复制 */
+    private fun buildConfigGuideSteps(): List<Onboarding.Step> = listOf(
+        Onboarding.Step(0, { binding.panelConfig }, "⚙️",
+            getString(R.string.guide_c_list_title), getString(R.string.guide_c_list_body)),
+        Onboarding.Step(0, { binding.btnNewProfile }, "➕",
+            getString(R.string.guide_c_new_title), getString(R.string.guide_c_new_body)),
+    )
+
+    /** 场景引导通用门禁：引导没看过、没在引导中、没有任务/抓取在跑 */
+    private fun canShowScenarioGuide(key: String): Boolean =
+        !GuideStore.isDone(this, key) && !onboarding.isActive && !isTaskRunning &&
+                !gachaRunning && !isFinishing
+
     /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序：主页/抽卡/日志/设置） */
     private fun guideShowPage(page: Int) {
         when (page) {
+            1 -> switchTo(binding.panelGacha)
             2 -> switchTo(binding.panelLog)
             3 -> switchTo(binding.panelSettings)
             else -> switchTo(binding.panelHome)
