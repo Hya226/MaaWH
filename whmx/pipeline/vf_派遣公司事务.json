@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-17T08:09:36+08:00",
+        "generatedAt": "2026-09-18T18:59:11+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:ddb0ffc384e3077b193d8b5bc0d9be03c1a4c19ace40bb10779f1a81c743e54d",
-        "pipelineHash": "sha256:920fdd799ece2c3c9d9fe193652120176fb54c8ac5c46ff4a86724c0426bc6b0",
+        "flowHash": "sha256:14fb4189c77a7f4f18714042c68693528058a571147c1b33bd618aa2ad2ac9df",
+        "pipelineHash": "sha256:71784f3f68e3e86bd999666f25b791af8921c641ccb1e019f121697fd6fdfccd",
         "frameW": 1280,
         "frameH": 720
     },
@@ -203,7 +203,7 @@
             174
         ],
         "order_by": "Vertical",
-        "pre_delay": 800,
+        "pre_delay": 1000,
         "next": [
             "VF_派遣公司事务_43"
         ]
@@ -215,7 +215,7 @@
             "VF_派遣公司事务_43_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_37"
+            "VF_派遣公司事务_47"
         ]
     },
     "VF_派遣公司事务_43_Hit": {
@@ -262,7 +262,7 @@
             "VF_派遣公司事务_44_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_37"
+            "VF_派遣公司事务_47"
         ]
     },
     "VF_派遣公司事务_44_Hit": {
@@ -272,6 +272,25 @@
         "action": "DoNothing",
         "next": [
             "VF_派遣公司事务_17"
+        ]
+    },
+    "VF_派遣公司事务_47": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_47_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_38"
+        ]
+    },
+    "VF_派遣公司事务_47_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "chashi_tuichu.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_37"
         ]
     },
     "VF_派遣公司事务_17": {
@@ -561,7 +580,7 @@
             "VF_派遣公司事务_45_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_37"
+            "VF_派遣公司事务_47"
         ]
     },
     "VF_派遣公司事务_45_Hit": {

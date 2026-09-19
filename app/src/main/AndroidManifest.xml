@@ -42,6 +42,11 @@
         </service>
 
         <activity
+            android:name=".HistoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaaWH"
+            android:screenOrientation="portrait" />
+        <activity
             android:name=".VdFullscreenActivity"
             android:exported="false"
             android:theme="@style/Theme.MaaWH"

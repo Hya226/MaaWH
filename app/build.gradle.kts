@@ -1,4 +1,5 @@
 import java.util.Properties
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 
 plugins {
     id("com.android.application")
@@ -102,6 +103,13 @@ android {
         viewBinding = true
         aidl = true
     }
+
+    // APK 产物名固定为 maawh-<变体>.apk（maawh-release / maawh-beta / maawh-debug）
+    applicationVariants.all {
+        outputs.all {
+            (this as BaseVariantOutputImpl).outputFileName = "maawh-$name.apk"
+        }
+    }
 }
 
 // 打包前把 whmx 任务包同步进 assets（内置资源，首次启动释放到内部存储），
@@ -140,4 +148,11 @@ dependencies {
 
     // 隐藏 API 绕过（Shizuku 服务内使用 DisplayManager/SurfaceControl 等隐藏接口）
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:4.3")
+
+    // 抽卡记录本地 OCR：PP-OCR v4 rec ONNX 推理（模型文件不进 APK，放 files/gacha/ocr_models/）
+    // ⚠ 版本必须钉在 1.19.2：jniLibs 里 MaaFw 预编译的 libonnxruntime.so 是 1.19.2
+    //   （libfastdeploy_ppocr 依赖它，C++ ABI 不兼容其它版本），jniLibs 合并优先级高于
+    //   aar——aar 的 JNI 必须与这份运行时同版本，否则 dlopen 报 cannot locate symbol
+    //   "OrtGetApiBase"。引擎（启动任务）也会因此挂掉。
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.19.2")
 }

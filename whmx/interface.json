@@ -67,6 +67,30 @@
       "description": "虚拟屏投游戏并收口到主页"
     },
     {
+      "name": "清体力",
+      "label": "清体力",
+      "entry": "VF_清体力",
+      "group": [
+        "daily"
+      ],
+      "option": [
+        "类型",
+        "次数"
+      ]
+    },
+    {
+      "name": "刷活动关",
+      "label": "刷活动关",
+      "entry": "VF_刷活动关",
+      "group": [
+        "daily"
+      ],
+      "option": [
+        "刷取次数",
+        "关卡名"
+      ]
+    },
+    {
       "name": "征集",
       "label": "征集",
       "entry": "VF_征集",
@@ -88,8 +112,8 @@
       ]
     },
     {
-      "name": "每日免费礼包购买",
-      "label": "每日免费礼包购买",
+      "name": "每日免费礼包",
+      "label": "每日免费礼包",
       "entry": "VF_每日免费礼包",
       "default_check": true,
       "group": [
@@ -114,7 +138,7 @@
         "operator"
       ],
       "option": [
-        "目标角色"
+        "角色名"
       ]
     },
     {
@@ -125,33 +149,14 @@
         "operator"
       ],
       "option": [
-        "目标角色",
-        "礼物次数"
-      ]
-    },
-    {
-      "name": "查找器者",
-      "label": "查找器者",
-      "entry": "VF_查找器者",
-      "group": [
-        "tools"
-      ],
-      "option": [
-        "目标角色"
+        "礼物次数",
+        "角色名"
       ]
     },
     {
       "name": "装备分解",
       "label": "装备分解",
       "entry": "VF_装备分解",
-      "group": [
-        "daily"
-      ]
-    },
-    {
-      "name": "领取奖励",
-      "label": "领取奖励",
-      "entry": "VF_领取奖励",
       "group": [
         "daily"
       ]
@@ -165,6 +170,14 @@
       ]
     },
     {
+      "name": "领取奖励",
+      "label": "领取奖励",
+      "entry": "VF_领取奖励",
+      "group": [
+        "daily"
+      ]
+    },
+    {
       "name": "关闭游戏",
       "label": "关闭游戏",
       "entry": "关闭游戏",
@@ -173,14 +186,14 @@
       ]
     },
     {
-      "name": "刷活动关",
-      "label": "刷活动关",
-      "entry": "VF_刷活动关",
+      "name": "查找器者",
+      "label": "查找器者",
+      "entry": "VF_查找器者",
       "group": [
         "tools"
       ],
       "option": [
-        "刷取次数"
+        "角色名"
       ]
     },
     {
@@ -195,18 +208,6 @@
         "器者2",
         "器者3",
         "器者4"
-      ]
-    },
-    {
-      "name": "清体力",
-      "label": "清体力",
-      "entry": "VF_清体力",
-      "group": [
-        "tools"
-      ],
-      "option": [
-        "类型",
-        "次数"
       ]
     },
     {
@@ -230,7 +231,6 @@
     "征集次数": {
       "type": "select",
       "label": "征集次数",
-      "default_case": "1",
       "cases": [
         {
           "name": "1",
@@ -266,45 +266,12 @@
             }
           }
         }
-      ]
-    },
-    "目标角色": {
-      "type": "input",
-      "label": "目标角色",
-      "description": "选择要操作的角色，需与 image/ 下 <角色名>.png 模板一致",
-      "inputs": [
-        {
-          "name": "角色",
-          "label": "角色名",
-          "default": "蛙锣",
-          "pipeline_type": "string"
-        }
       ],
-      "pipeline_override": {
-        "VF_装卸装备_11_Hit": {
-          "template": "{角色}.png"
-        },
-        "VF_装卸装备_02": {
-          "template": "{角色}.png"
-        },
-        "VF_升好感度_08_Hit": {
-          "template": "{角色}.png"
-        },
-        "VF_升好感度_02": {
-          "template": "{角色}.png"
-        },
-        "VF_查找器者_03_Hit": {
-          "template": "{角色}.png"
-        },
-        "VF_查找器者_02": {
-          "template": "{角色}.png"
-        }
-      }
+      "default_case": "1"
     },
     "礼物次数": {
       "type": "input",
       "label": "礼物次数",
-      "description": "升好感度时点击礼物的次数（1~20）",
       "inputs": [
         {
           "name": "礼物次数",
@@ -319,7 +286,8 @@
         "VF_升好感度_04": {
           "repeat": "{礼物次数}"
         }
-      }
+      },
+      "description": "升好感度时点击礼物的次数（1~20）"
     },
     "刷取次数": {
       "type": "input",
@@ -527,6 +495,69 @@
         }
       ],
       "default_case": "2"
+    },
+    "关卡名": {
+      "type": "select",
+      "label": "关卡名",
+      "cases": [
+        {
+          "name": "07",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "07"
+            }
+          }
+        },
+        {
+          "name": "08",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "08"
+            }
+          }
+        },
+        {
+          "name": "09",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "09"
+            }
+          }
+        }
+      ],
+      "default_case": "07"
+    },
+    "角色名": {
+      "type": "input",
+      "label": "角色名",
+      "inputs": [
+        {
+          "name": "角色名",
+          "label": "角色名",
+          "default": "",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "VF_升好感度_37_03_Hit": {
+          "template": "{角色名}.png"
+        },
+        "VF_升好感度_37_01": {
+          "template": "{角色名}.png"
+        },
+        "VF_查找器者_03_Hit": {
+          "template": "{角色名}.png"
+        },
+        "VF_查找器者_01": {
+          "template": "{角色名}.png"
+        },
+        "VF_装卸装备_12_03_Hit": {
+          "template": "{角色名}.png"
+        },
+        "VF_装卸装备_12_01": {
+          "template": "{角色名}.png"
+        }
+      }
     }
   }
 }

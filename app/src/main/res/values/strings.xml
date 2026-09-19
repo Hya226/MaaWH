@@ -5,6 +5,23 @@
     <string name="tab_home">主页</string>
     <string name="tab_log">日志</string>
     <string name="tab_settings">设置</string>
+    <string name="tab_gacha">抽卡</string>
+    <string name="gacha_run">开始抓取</string>
+    <string name="gacha_stop">停止抓取</string>
+    <string name="gacha_account_label">账号</string>
+    <string name="gacha_btn_rename">改名</string>
+    <string name="gacha_btn_delete">删除</string>
+    <string name="gacha_btn_edit">编辑</string>
+    <string name="gacha_btn_new">新建</string>
+    <string name="about_title">关于</string>
+    <string name="about_version">版本</string>
+    <string name="about_developer">开发者</string>
+    <string name="about_developer_value">Hyalin</string>
+    <string name="about_announcement">查看公告</string>
+    <string name="about_guide">新手引导</string>
+    <string name="about_announcement_default">请勿在物华弥新的各平台官方动态（包括但不限于 B站、微博、小红书）下讨论任何与 MaaWH 有关的内容，共同维护社区环境。\n\nMaaWH 完全免费开源，不会以「关注 / 三连 / 私信」作为获取安装包的条件。请优先通过官方渠道获取：\n　· GitHub Releases（项目仓库的 Release 页）\n　· 官方 QQ 群：群公告与群文件\n\n请避免从网盘、论坛帖子、不明链接等非官方途径下载；对各类「整合包 / 修改版 / 二次打包」保持警惕，除非完全信任来源并已自行完成安全检测。\n\n请注意辨别来源，保护好你的账号与设备安全。也欢迎转告身边的朋友，避免踩坑。</string>
+    <string name="gacha_note">数据基于游戏最近 30 天记录 · 抓取前把虚拟屏里的游戏停在「招募记录」页</string>
+    <string name="gacha_status_default">尚未抓取</string>
 
     <string name="label_preview">虚拟屏预览（图上点按=模拟点击）</string>
     <string name="btn_shot">截图</string>
@@ -47,6 +64,7 @@
     <string name="btn_start_queue">开始任务</string>
     <string name="btn_quick">快捷选项</string>
     <string name="quick_mute">关闭游戏声音</string>
+    <string name="quick_unmute">恢复游戏声音</string>
     <string name="quick_autofmute">游戏启动后关闭游戏声音</string>
     <string name="quick_close">任务自动结束时关闭游戏</string>
     <string name="quick_closegame">关闭游戏</string>
@@ -97,5 +115,4 @@
     <string name="guide_settings_body">Shizuku 状态与权限申请在这里，首次使用先点「申请 Shizuku 权限」；「后台运行时自动画中画」开关也在这页。</string>
     <string name="guide_done_title">可以开始了</string>
     <string name="guide_done_body">引导结束。装好并启动 Shizuku、在设置页申请权限后，回到主页点「开始任务」即可。\n\n以后想再看这份引导，去「设置 → 查看新手引导」。</string>
-    <string name="about_text">MaaWH — 仿 MAA-Meow 的安卓自动化宿主\n\n任务包目录：\n内部 files/taskpacks/\n外部 Android/data/com.maawh.app/files/taskpacks/\n\n新包结构：\ndefault_pipeline.json\npipeline/（任务 json）\nimage/（模板 png）\n\n在电脑执行：\nadb push 你的包文件夹 \\\n    /sdcard/Android/data/com.maawh.app/files/taskpacks/\n\n引擎说明：识别用图为「短边720」归一化坐标系。</string>
 </resources>

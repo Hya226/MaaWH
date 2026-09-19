@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-17T08:07:24+08:00",
+        "generatedAt": "2026-09-17T21:56:24+08:00",
         "flowFile": "清体力.flow.json",
-        "flowHash": "sha256:ffb9737a08379345f9ef25aad417100ac4dc1011f74242c852f60a1d681e71bd",
-        "pipelineHash": "sha256:1a83181fa64cf8bc776f6c8c6249e26517f2bda75b7558f52b204f97fd1e5f6e",
+        "flowHash": "sha256:17160cf61baf29a5c525eb392a9723d839ba141db47c4eafe2b5d1d7d7980e6d",
+        "pipelineHash": "sha256:feee5dae643e64e55380e05332474cd65834a4347db846e3b2b0645ead1bee76",
         "frameW": 1280,
         "frameH": 720
     },
@@ -87,57 +87,14 @@
         "threshold": 0.8,
         "action": "Click",
         "timeout": 8000,
-        "post_delay": 800,
+        "post_delay": 2000,
         "next": [
-            "VF_清体力_12"
-        ]
-    },
-    "VF_清体力_12": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_清体力_12_Hit"
-        ],
-        "on_error": [
             "VF_清体力_15"
-        ]
-    },
-    "VF_清体力_12_Hit": {
-        "recognition": "OCR",
-        "expected": [
-            "部分器者好感已满"
-        ],
-        "action": "DoNothing",
-        "next": [
-            "VF_清体力_13"
-        ]
-    },
-    "VF_清体力_14": {
-        "recognition": "TemplateMatch",
-        "template": "wancheng.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "pre_delay": 500,
-        "next": [
-            "VF_清体力_16"
         ]
     },
     "VF_清体力_16": {
         "next": [
             "Common_回主页"
-        ]
-    },
-    "VF_清体力_13": {
-        "recognition": "TemplateMatch",
-        "template": "duigou.png",
-        "threshold": 0.7,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "next": [
-            "VF_清体力_15"
         ]
     },
     "VF_清体力_15": {
@@ -149,7 +106,32 @@
         "post_delay": 500,
         "pre_delay": 500,
         "next": [
-            "VF_清体力_14"
+            "VF_清体力_18"
+        ]
+    },
+    "VF_清体力_18": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_清体力_18_Hit"
+        ]
+    },
+    "VF_清体力_18_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "完成"
+        ],
+        "action": "Click",
+        "roi": [
+            988,
+            589,
+            248,
+            95
+        ],
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_清体力_16"
         ]
     }
 }

@@ -2,513 +2,60 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-15T22:14:21+08:00",
+        "generatedAt": "2026-09-18T23:01:05+08:00",
         "flowFile": "查找器者.flow.json",
-        "flowHash": "sha256:e58b5d07c6ce924729166c5d956dc7e1eeccae230c6f920a9777958e790f59c0",
-        "pipelineHash": "sha256:21f8b642d2a7ee7d7571104c9d887137a845f58bc130a3854af423ff9d81ff9b",
+        "flowHash": "sha256:473da8e2b5b067e0fcaaa9ccddc38d87735a545c4b41769aada2c4dee6a6b90f",
+        "pipelineHash": "sha256:267b3728750f7f34fd3b46fe4c5101eea24f8fc4f6e44e95caba28f0b444d3fd",
         "frameW": 1280,
         "frameH": 720
     },
     "VF_查找器者": {
         "next": [
-            "VF_查找器者_28"
-        ]
-    },
-    "VF_查找器者_28": {
-        "action": "DoNothing",
-        "timeout": 8000,
-        "next": [
-            "VF_查找器者_28_Hit"
-        ],
-        "on_error": [
             "VF_查找器者_03"
         ]
-    },
-    "VF_查找器者_28_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "qizhe.png",
-        "threshold": 0.72,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_01"
-        ]
-    },
-    "VF_查找器者_01": {
-        "recognition": "TemplateMatch",
-        "template": "qizhe.png",
-        "threshold": 0.72,
-        "action": "Click",
-        "timeout": 5000,
-        "post_delay": 800,
-        "order_by": "Score",
-        "post_wait_freezes": 1200,
-        "next": [
-            "VF_查找器者_03"
-        ]
-    },
-    "VF_查找器者_02": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "Click",
-        "timeout": 4000,
-        "post_delay": 800,
-        "order_by": "Score",
-        "post_wait_freezes": 1500
     },
     "VF_查找器者_03": {
         "action": "DoNothing",
-        "timeout": 3000,
+        "timeout": 5000,
         "next": [
             "VF_查找器者_03_Hit"
         ],
         "on_error": [
-            "VF_查找器者_04"
+            "VF_查找器者_02"
         ]
     },
     "VF_查找器者_03_Hit": {
         "recognition": "TemplateMatch",
         "template": "蛙锣.png",
-        "threshold": 0.85,
+        "threshold": 0.75,
         "action": "DoNothing",
         "next": [
-            "VF_查找器者_02"
+            "VF_查找器者_01"
         ]
     },
-    "VF_查找器者_04": {
+    "VF_查找器者_02": {
         "action": "Swipe",
         "begin": [
-            1000,
-            650
+            1219,
+            377
         ],
         "end": [
-            200,
-            650
+            59,
+            364
         ],
         "duration": 900,
         "post_delay": 600,
-        "timeout": 2000,
         "next": [
-            "VF_查找器者_05"
+            "VF_查找器者_03"
         ]
     },
-    "VF_查找器者_05": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_05_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_06"
-        ]
-    },
-    "VF_查找器者_05_Hit": {
+    "VF_查找器者_01": {
         "recognition": "TemplateMatch",
         "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_06": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_07"
-        ]
-    },
-    "VF_查找器者_07": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_07_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_08"
-        ]
-    },
-    "VF_查找器者_07_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_08": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_09"
-        ]
-    },
-    "VF_查找器者_09": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_09_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_10"
-        ]
-    },
-    "VF_查找器者_09_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_10": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_11"
-        ]
-    },
-    "VF_查找器者_11": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_11_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_12"
-        ]
-    },
-    "VF_查找器者_11_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_12": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_13"
-        ]
-    },
-    "VF_查找器者_13": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_13_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_14"
-        ]
-    },
-    "VF_查找器者_13_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_14": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_15"
-        ]
-    },
-    "VF_查找器者_15": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_15_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_16"
-        ]
-    },
-    "VF_查找器者_15_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_16": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_17"
-        ]
-    },
-    "VF_查找器者_17": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_17_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_18"
-        ]
-    },
-    "VF_查找器者_17_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_18": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_19"
-        ]
-    },
-    "VF_查找器者_19": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_19_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_20"
-        ]
-    },
-    "VF_查找器者_19_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_20": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_21"
-        ]
-    },
-    "VF_查找器者_21": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_21_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_22"
-        ]
-    },
-    "VF_查找器者_21_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_22": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_23"
-        ]
-    },
-    "VF_查找器者_23": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_23_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_24"
-        ]
-    },
-    "VF_查找器者_23_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_24": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_25"
-        ]
-    },
-    "VF_查找器者_25": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_25_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_26"
-        ]
-    },
-    "VF_查找器者_25_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_26": {
-        "action": "Swipe",
-        "begin": [
-            1000,
-            650
-        ],
-        "end": [
-            200,
-            650
-        ],
-        "duration": 900,
-        "post_delay": 600,
-        "timeout": 2000,
-        "next": [
-            "VF_查找器者_27"
-        ]
-    },
-    "VF_查找器者_27": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_查找器者_27_Hit"
-        ],
-        "on_error": [
-            "VF_查找器者_End"
-        ]
-    },
-    "VF_查找器者_27_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.85,
-        "action": "DoNothing",
-        "next": [
-            "VF_查找器者_02"
-        ]
-    },
-    "VF_查找器者_End": {
-        "action": "DoNothing",
-        "next": []
+        "threshold": 0.75,
+        "action": "Click",
+        "timeout": 5000,
+        "post_delay": 800,
+        "order_by": "Score"
     }
 }

@@ -1,4 +1,14 @@
 {
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-18T23:59:27+08:00",
+        "flowFile": "每日免费礼包.flow.json",
+        "flowHash": "sha256:68a5c2504cd6a80cee2224f076453420e2bd9324ded4054b8146fdd280c3859d",
+        "pipelineHash": "sha256:d2de13d0a7c0c50dbca6210e22067974432bd936973166174f5af8b5c5915124",
+        "frameW": 1280,
+        "frameH": 720
+    },
     "VF_每日免费礼包": {
         "next": [
             "VF_每日免费礼包_01"
@@ -34,16 +44,49 @@
         "timeout": 8000,
         "post_delay": 800,
         "next": [
-            "VF_每日免费礼包_04"
+            "VF_每日免费礼包_07"
         ]
     },
-    "VF_每日免费礼包_04": {
-        "action": "Click",
-        "target": [
-            350,
-            665
+    "VF_每日免费礼包_07": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_每日免费礼包_07_Hit"
         ],
-        "post_delay": 500,
+        "on_error": [
+            "VF_每日免费礼包_11"
+        ]
+    },
+    "VF_每日免费礼包_07_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "免费"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            307,
+            633,
+            116,
+            59
+        ],
+        "next": [
+            "VF_每日免费礼包_10"
+        ]
+    },
+    "VF_每日免费礼包_10": {
+        "recognition": "OCR",
+        "expected": [
+            "免费"
+        ],
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "roi": [
+            296,
+            638,
+            133,
+            54
+        ],
         "next": [
             "VF_每日免费礼包_05"
         ]
@@ -56,12 +99,39 @@
         "timeout": 8000,
         "post_delay": 800,
         "next": [
-            "VF_每日免费礼包_06"
+            "VF_每日免费礼包_08"
         ]
     },
-    "VF_每日免费礼包_06": {
+    "VF_每日免费礼包_08": {
+        "action": "Click",
+        "target": [
+            1206,
+            377
+        ],
+        "post_delay": 800,
         "next": [
-            "Common_点中间回主页"
+            "VF_每日免费礼包_11"
         ]
+    },
+    "VF_每日免费礼包_11": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_每日免费礼包_11_Hit"
+        ]
+    },
+    "VF_每日免费礼包_11_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "roi": [
+            203,
+            10,
+            74,
+            49
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     }
 }

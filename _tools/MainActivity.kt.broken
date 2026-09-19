@@ -71,8 +71,6 @@ class MainActivity : AppCompatActivity() {
     @Volatile
     private var muteEnabled = false
     @Volatile
-    private var autoMuteEnabled = false
-    @Volatile
     private var closeAfterEnabled = false
 
     /** 「后台运行时自动画中画」开关：切后台是否自动弹虚拟屏悬浮窗 */
@@ -114,15 +112,6 @@ class MainActivity : AppCompatActivity() {
         // ShizukuShell 内部吞掉的故障（停虚拟屏失败、注入失败等）上报到日志页
         ShizukuShell.errorHook = { level, msg -> log(msg, level) }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-        // 静音残留自愈（maameow 的 startAutoRestore 语义：上个会话结束 = 静音标记必是残留）：
-        // 上次会话静音了游戏却没恢复成（进程被系统直接杀没有任何回调）→ 凭持久化标记恢复。
-        // 冷启动试一次 + UserService 每次新绑定完成再试一次（首次绑定可能晚于 onCreate）。
-        // 只认队列没跑——队列运行中的静音是本会话的合法状态，不能撤销。
-        lifecycleScope.launch(Dispatchers.IO) { runCatching { selfHealGameAudio() } }
-        ShizukuShell.onServiceReady = {
-            lifecycleScope.launch(Dispatchers.IO) { runCatching { selfHealGameAudio() } }
-        }
 
         // 任务日志：时间 + 级别徽标 + 颜色（TRACE 灰 / INFO 蓝 / SUCCESS 绿 / WRN 橙 / ERR 红）
         logView = TaskLogView(binding.tvLog, binding.scrollLog) { level ->
@@ -428,7 +417,6 @@ class MainActivity : AppCompatActivity() {
         restoreMainQueue(profileData[activeProfile] ?: emptyList())
         restoreToolsQueue(saved.tools)
         muteEnabled = saved.mute
-        autoMuteEnabled = saved.autoMute
         closeAfterEnabled = saved.closeAfter
         pipEnabled = saved.pipOn
         binding.switchPip.isChecked = saved.pipOn
@@ -545,7 +533,6 @@ class MainActivity : AppCompatActivity() {
                 tools = toolsTasks.mapIndexed { i, it -> savedTaskOf(it, toolsEnabled.getOrElse(i) { true }) },
                 tab = if (homeTab == HomeTab.TOOLS) "tools" else "oneclick",
                 mute = muteEnabled,
-                autoMute = autoMuteEnabled,
                 closeAfter = closeAfterEnabled,
                 pipOn = pipEnabled,
                 home = HashMap(homeOf)
@@ -928,18 +915,6 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         // 切后台可能被 LMKD 直接回收，编辑状态在这里立即落盘，不等 400ms 防抖
         saveNow()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        ShizukuShell.onServiceReady = null
-        // 退出兜底：appops 静音是持久系统设置，MaaWH 不再管控游戏（队列没跑、虚拟屏已关）
-        // 时必须清掉 deny 残留，否则用户退出后自己打开物华弥新也没声。
-        // 必须用孤儿 shell 派发（requestGameAudioRestore）——退出瞬间进程随时被杀，
-        // 异步线程/同步 appops 都可能跑一半就没了，孤儿进程挂在 init 下必然执行完。
-        if (queueRunner?.running != true && !vdOn) {
-            ShizukuShell.requestGameAudioRestore()
-        }
     }
 
     /** 按服务端虚拟屏状态同步 UI：避免 vdOn 标志丢失导致预览黑屏/点击不注入 */
@@ -1345,101 +1320,12 @@ class MainActivity : AppCompatActivity() {
                     setRunState("游戏已进虚拟屏，收口中…", R.color.accent)
                 }
                 override fun isVdOn() = vdOn
-                /** 队列收尾是否保持游戏静音：手动静音开着，或「游戏启动后静音」开着且虚拟屏还活着 */
-                override fun holdGameMute(vdAlive: Boolean) = muteEnabled || (autoMuteEnabled && vdAlive)
                 override fun onToast(msg: String) = toast(msg)
             }
         )
         lifecycleScope.launch(Dispatchers.IO) {
-            queueRunner?.run(planTasks, muteEnabled, autoMuteEnabled, closeAfterEnabled)
+            queueRunner?.run(planTasks, muteEnabled, closeAfterEnabled)
         }
-    }
-
-    /**
-     * 「关闭游戏声音」确认框（仿 MAA-Meow 的静音警告弹窗）：appops 依赖系统接口，
-     * 部分机型可能无效或无法自动恢复，先警告再执行。恢复方向不弹框（无风险）。
-     */
-    private fun showMuteConfirmDialog(onConfirm: () -> Unit) {
-        var dlg: android.app.Dialog? = null
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(20), dp(20), dp(10))
-            background = android.graphics.drawable.GradientDrawable().apply {
-                cornerRadius = dp(20).toFloat()
-                setColor(getColor(R.color.bg_card))
-            }
-        }
-        // 标题行：圆形色盘里的静音图标 + 大标题
-        card.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(FrameLayout(this@MainActivity).apply {
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    shape = android.graphics.drawable.GradientDrawable.OVAL
-                    setColor(0x264A90E2)
-                }
-                addView(ImageView(this@MainActivity).apply {
-                    setImageResource(R.drawable.ic_q_mute)
-                    setColorFilter(getColor(R.color.accent))
-                    layoutParams = FrameLayout.LayoutParams(dp(20), dp(20)).apply { gravity = Gravity.CENTER }
-                })
-                layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(12) }
-            })
-            addView(TextView(this@MainActivity).apply {
-                text = "确认关闭游戏声音？"
-                setTextColor(getColor(R.color.text_primary))
-                textSize = 17f
-                paint.isFakeBoldText = true
-            })
-        })
-        card.addView(
-            TextView(this).apply {
-                text = "该功能依赖系统接口，部分机型可能无效或者无法自动恢复声音。\n更稳妥的做法是直接用音量键把媒体音量调整到 0。"
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 14f
-                setLineSpacing(dp(2).toFloat(), 1f)
-            },
-            LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(12) }
-        )
-        val ok = TextView(this).apply {
-            text = "仍要静音"
-            setTextColor(0xFFFFFFFF.toInt())
-            textSize = 15f
-            paint.isFakeBoldText = true
-            gravity = Gravity.CENTER
-            setPadding(0, dp(12), 0, dp(12))
-            background = android.graphics.drawable.GradientDrawable().apply {
-                cornerRadius = dp(22).toFloat()
-                setColor(getColor(R.color.accent))
-            }
-            isClickable = true
-            setOnClickListener { dlg?.dismiss(); onConfirm() }
-        }
-        card.addView(
-            ok,
-            LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16) }
-        )
-        card.addView(
-            TextView(this).apply {
-                text = "取消"
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 15f
-                gravity = Gravity.CENTER
-                setPadding(0, dp(10), 0, dp(10))
-                setOnClickListener { dlg?.dismiss() }
-            },
-            LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        )
-        dlg = android.app.Dialog(this).apply {
-            requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
-            setContentView(card)
-            window?.apply {
-                setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-                setGravity(Gravity.CENTER)
-                setLayout((resources.displayMetrics.widthPixels * 0.84f).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
-            }
-        }
-        dlg.show()
     }
 
     /** 快捷选项：Meow 式底部卡片面板——快捷操作按钮区 + 自动设置勾选区 */
@@ -1540,92 +1426,45 @@ class MainActivity : AppCompatActivity() {
         }
 
         panel.addView(sectionLabel("快捷操作"))
+        val vdBtn = actionButton(if (vdOn) "停止虚拟屏" else "启动虚拟屏", R.drawable.ic_q_vd) { toggleVd() }
+        panel.addView(actionRow(vdBtn, actionButton("全屏画面", R.drawable.ic_q_full) {
+            if (!vdOn) toast("请先启动虚拟屏")
+            else startActivity(android.content.Intent(this, VdFullscreenActivity::class.java))
+        }))
         panel.addView(actionRow(
-            actionButton("全屏画面", R.drawable.ic_q_full) {
-                if (!vdOn) toast("请先启动虚拟屏")
-                else startActivity(android.content.Intent(this, VdFullscreenActivity::class.java))
-            },
+            actionButton("截图刷新", R.drawable.ic_q_shot) { takeScreenshot() },
             actionButton("防杀设置", R.drawable.ic_q_shield) { showKeepAliveDialog() }
         ))
-        // 「关闭游戏声音」框式按钮（在【关闭游戏】上面；状态自描述：静音中显示「恢复游戏声音」）。
-        // 开启走确认框（appops 依赖系统接口，部分机型可能无法恢复，先警告再执行）；
-        // 关闭是恢复方向，立即执行不弹框。
-        var muteLabel: TextView? = null
-        fun applyMuteChange(toMute: Boolean) {
-            muteEnabled = toMute
-            scheduleSave()
-            muteLabel?.text = getString(if (toMute) R.string.quick_unmute else R.string.quick_mute)
+        panel.addView(actionRow(actionButton("关闭游戏", R.drawable.ic_q_stop, danger = true) {
+            toast("正在关闭游戏…")
+            log("快捷操作：关闭游戏")
             lifecycleScope.launch(Dispatchers.IO) {
-                // 先落持久化标记再静音（对齐 maameow）：进程被杀后下次启动凭标记自愈
-                val ok = if (toMute) {
-                    GameAudioMarker.mark(this@MainActivity, MaaConst.GAME_PKG)
-                    ShizukuShell.setGameAudioMuted(true)
-                } else {
-                    GameAudioMarker.restoreIfNeeded(this@MainActivity) || !ShizukuShell.isGameAudioMuted()
-                }
+                runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
+                    .onFailure { log("关闭游戏失败: ${it.message}") }
+            }
+        }))
+
+        panel.addView(sectionLabel("自动设置"))
+        panel.addView(toggleRow(getString(R.string.quick_mute), R.drawable.ic_q_mute, muteEnabled) { checked ->
+            muteEnabled = checked
+            scheduleSave()
+            lifecycleScope.launch(Dispatchers.IO) {
+                val ok = if (checked) ShizukuShell.setGameAudioMuted(true)
+                else ShizukuShell.setGameAudioMuted(false)
                 runOnUiThread {
                     toast(
                         when {
                             !ok -> "操作失败（Shizuku 是否在线？）"
-                            toMute -> "已单独静音游戏"
+                            checked -> "已单独静音游戏"
                             else -> "已恢复游戏声音"
                         }
                     )
                 }
             }
-        }
-        val muteBtn = LinearLayout(this).apply {
-            gravity = Gravity.CENTER
-            setPadding(dp(2), dp(8), dp(2), dp(8))
-            background = android.graphics.drawable.GradientDrawable().apply {
-                cornerRadius = dp(9).toFloat()
-                setColor(0xFF1E2634.toInt())
-                setStroke(dp(1), 0xFF2E3947.toInt())
-            }
-            isClickable = true
-            isFocusable = true
-            addView(LinearLayout(this@MainActivity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER
-                addView(ImageView(this@MainActivity).apply {
-                    setImageResource(R.drawable.ic_q_mute)
-                    setColorFilter(getColor(R.color.text_primary))
-                    layoutParams = LinearLayout.LayoutParams(dp(15), dp(15)).apply { marginEnd = dp(7) }
-                })
-                addView(TextView(this@MainActivity).apply {
-                    muteLabel = this
-                    setTextColor(getColor(R.color.text_primary))
-                    textSize = 13f
-                })
-            })
-            setOnClickListener {
-                if (muteEnabled) applyMuteChange(false)
-                else showMuteConfirmDialog { applyMuteChange(true) }
-            }
-        }
-        muteLabel?.text = getString(if (muteEnabled) R.string.quick_unmute else R.string.quick_mute)
-        panel.addView(actionRow(
-            muteBtn,
-            actionButton("关闭游戏", R.drawable.ic_q_stop, danger = true) {
-                toast("正在关闭游戏…")
-                log("快捷操作：关闭游戏")
-                lifecycleScope.launch(Dispatchers.IO) {
-                    runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
-                        .onFailure { log("关闭游戏失败: ${it.message}") }
-                }
-            }
-        ))
-
-        panel.addView(sectionLabel("自动设置"))
+        })
         panel.addView(toggleRow(getString(R.string.quick_close), R.drawable.ic_q_stop, closeAfterEnabled) { checked ->
             closeAfterEnabled = checked
             scheduleSave()
-        })
-        panel.addView(toggleRow(getString(R.string.quick_autofmute), R.drawable.ic_q_mute, autoMuteEnabled) { checked ->
-            autoMuteEnabled = checked
-            scheduleSave()
-            // 无立即动作：下次「启动」任务/进虚拟屏把游戏跑起来时自动静音，
-            // 游戏还挂在虚拟屏里就保持（退出 MaaWH/关虚拟屏时照常恢复）
         })
         panel.addView(toggleRow(getString(R.string.setting_pip), R.drawable.ic_q_pip, pipEnabled) { checked ->
             binding.switchPip.isChecked = checked   // 复用设置页开关的同一套逻辑（含悬浮窗授权引导）
@@ -1656,15 +1495,25 @@ class MainActivity : AppCompatActivity() {
         dlg.show()
     }
 
-    /** 静音残留自愈：凭持久化标记恢复上次会话没恢复成的静音（队列运行中不动作） */
-    private fun selfHealGameAudio() {
-        if (queueRunner?.running == true) return
-        if (GameAudioMarker.restoreIfNeeded(applicationContext)) {
-            log("检测到上次会话的游戏静音残留，已恢复游戏声音", LogLevel.INFO)
+    /** 立即静音/恢复游戏声音（appops 按应用拒绝播放）：只哑游戏，不动系统音量，音量键不影响 */
+    private fun toggleMute() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            muteEnabled = !muteEnabled
+            scheduleSave()
+            val ok = if (muteEnabled) ShizukuShell.setGameAudioMuted(true)
+            else ShizukuShell.setGameAudioMuted(false)
+            val msg = when {
+                !ok && muteEnabled -> "游戏静音失败（Shizuku 是否在线？）"
+                !ok -> "游戏声音恢复失败（Shizuku 是否在线？）"
+                muteEnabled -> "已单独静音游戏（系统音量不受影响）"
+                else -> "已恢复游戏声音"
+            }
+            runOnUiThread {
+                log(msg, if (ok) LogLevel.INFO else LogLevel.WRN)
+                toast(msg)
+            }
         }
     }
-
-    /** 立即静音/恢复游戏声音走快捷面板的 toggleRow（GameAudioMarker 打标记 + ShizukuShell 执行） */
 
     // ==================================================================
     // 保活（前台服务）：任务运行中 / 虚拟屏存活期间常驻，避免被系统当缓存进程回收
@@ -1852,9 +1701,6 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 val r = ShizukuShell.startVirtualGame()
                 runCatching { File(filesDir, "m4result.txt").writeText(r) }
-                // AudioHardening 反制：闩锁跨会话存活，进虚拟屏就主动放行游戏音频
-                // （任一静音开关是开的话跳过——游戏本来就该被静音）
-                if (!muteEnabled && !autoMuteEnabled) runCatching { ShizukuShell.assertGameAudioAllowed() }
                 runOnUiThread {
                     log(r)
                     setRunState("虚拟屏运行中（点预览=游戏内点击）", R.color.ok_green)
@@ -1866,12 +1712,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             VdStreamer.stop()
             vdHandler.removeCallbacks(vdUiTick)
-            lifecycleScope.launch(Dispatchers.IO) {
-                ShizukuShell.stopVirtual()
-                // 虚拟屏停了就不再管控游戏：清掉 appops 静音残留，用户回物理屏打开游戏有声
-                // （快捷开关不受影响，下次跑队列仍会按它决定要不要静音）
-                runCatching { GameAudioMarker.restoreIfNeeded(this@MainActivity) }
-            }
+            lifecycleScope.launch(Dispatchers.IO) { ShizukuShell.stopVirtual() }
             hideFullscreen()
             // 画面没了，后台悬浮窗一并收起
             FloatingPanel.hide()
@@ -2357,101 +2198,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun buildPoolCard(pool: String, rs: List<GachaStore.Record>): View {
         val st = GachaStore.poolStats(rs)
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.bg_card)
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(8) }
-        }
-        // 头部：池名 + 总抽数/特出/平均
-        card.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(cell(pool, R.color.text_primary, 15f, bold = true, weight = 1f))
-            addView(cell("总抽数 ${st.total} · 特出 ${st.teCount} · 平均 ${st.avgText}", R.color.text_secondary, 12f))
-        })
-        // 当前垫抽
-        card.addView(cell("当前垫抽：${st.dian} 抽", if (st.dian >= 50) R.color.warn_orange else R.color.text_primary, 13f).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(4) }
-        })
-        // 特出明细按小类（招集列）分组成子卡片
-        val groups = LinkedHashMap<String, MutableList<GachaStore.Record>>()
-        for (r in rs) {
-            val b = if (r.banner.isBlank()) "未识别" else r.banner
-            groups.getOrPut(b) { mutableListOf() }.add(r)
-        }
-        val te = GachaStore.teListWithCost(rs)
-        for ((banner, list) in groups) {
-            val label = banner.substringAfter('/', banner)
-            val sub = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    setColor(0xFF151C29.toInt())
-                    cornerRadius = dp(6).toFloat()
-                }
-                setPadding(dp(8), dp(6), dp(8), dp(6))
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dp(6) }
-            }
-            sub.addView(cell("『$label』 · ${list.size} 抽", R.color.accent, 13f, bold = true).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            })
-            val teInBanner = te.filter { it.first.banner == banner }
-            if (teInBanner.isEmpty()) {
-                sub.addView(cell("暂无特出", R.color.text_secondary, 12f).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = dp(2) }
-                })
-            } else {
-                for ((rec, cost) in teInBanner) {
-                    sub.addView(LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_VERTICAL
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply { topMargin = dp(3) }
-                        addView(cell("特出", R.color.err_red, 12f, bold = true, weight = 0.8f))
-                        addView(cell(rec.name, R.color.text_primary, 12f, weight = 1.4f))
-                        addView(cell(cost, R.color.warn_orange, 12f, weight = 0.9f))
-                        addView(cell(GachaStore.shortTime(rec.ts), R.color.text_secondary, 12f, weight = 1.1f))
-                    })
-                }
-            }
-            card.addView(sub)
-        }
-        return card
-    }
-
-    /**
-     * 写一行任务日志（对标 maameow：时间 + 级别徽标 + 正文，级别自带颜色）。
-     * 可从任意线程调用；渲染合并在 [TaskLogView] 里做。
-     */
-    /**
-     * 公告弹窗（圆底图标标题头 + 滚动正文 + 不再显示勾选 + 确认按钮）。
-     * auto=true 为启动时自动弹出：该版本公告若已勾选「不再显示」则跳过。
-     */
-    private fun showAnnouncement(auto: Boolean = false) {
-        val f = File(filesDir, "announcement.txt")
-        val content = if (f.isFile) f.readText() else getString(R.string.about_announcement_default)
-        val hash = Integer.toHexString(content.hashCode())
-        val prefs = getSharedPreferences("maawh_announcement", MODE_PRIVATE)
-        if (auto && prefs.getString("dismissedHash", "") == hash) return
-
-        fun divider() = View(this).apply {
-            setBackgroundColor(0xFF2E3947.toInt())
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
-            ).apply { topMargin = dp(12); bottomMargin = dp(4) }
-        }
-
+        // 根布局：头部/勾选/按钮固定，仅正文区滚动
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(18), dp(20), dp(16))
@@ -2460,6 +2207,7 @@ class MainActivity : AppCompatActivity() {
                 setColor(getColor(R.color.bg_card))
             }
         }
+        // 头部：蓝色圆底喇叭图标 + 标题（固定不滚动）
         root.addView(LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -2495,7 +2243,7 @@ class MainActivity : AppCompatActivity() {
         val contentScroll = ScrollView(this).apply { addView(contentView) }
         root.addView(
             contentScroll,
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         )
 
         val dontShow = CheckBox(this).apply {
@@ -2538,178 +2286,29 @@ class MainActivity : AppCompatActivity() {
         dlgRef = dlg
         dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
         dlg.setContentView(root)
-        dlg.window?.apply {
-            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-            setGravity(Gravity.CENTER)
-            setLayout(resources.displayMetrics.widthPixels - dp(28), (resources.displayMetrics.heightPixels * 0.78f).toInt())
+
+        // 尺寸：宽 = 屏宽 - 两侧留白；内容超出屏幕 78% 时正文区自动压缩为可滚动
+        root.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        val dm = resources.displayMetrics
+        val w = dm.widthPixels - dp(28)
+        val maxH = (dm.heightPixels * 0.78f).toInt()
+        if (root.measuredHeight > maxH) {
+            val lp = contentScroll.layoutParams as LinearLayout.LayoutParams
+            lp.height = 0
+            lp.weight = 1f
+            contentScroll.layoutParams = lp
+            dlg.window?.setLayout(w, maxH)
+        } else {
+            dlg.window?.setLayout(w, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
+        dlg.window?.setGravity(Gravity.CENTER)
         dlg.show()
-    }
-
-    private fun buildGuideSteps(): List<Onboarding.Step> = listOf(
-        Onboarding.Step(0, null, "✨",
-            getString(R.string.guide_welcome_title), getString(R.string.guide_welcome_body)),
-        Onboarding.Step(0, { binding.imageShot }, "🖥️",
-            getString(R.string.guide_preview_title), getString(R.string.guide_preview_body)),
-        Onboarding.Step(0, { binding.btnTabOneClick.parent as? View }, "🗂️",
-            getString(R.string.guide_tabs_title), getString(R.string.guide_tabs_body)),
-        Onboarding.Step(0, { binding.rvTaskList }, "📋",
-            getString(R.string.guide_queue_title), getString(R.string.guide_queue_body)),
-        Onboarding.Step(0, { binding.panelEdit }, "🛠️",
-            getString(R.string.guide_edit_title), getString(R.string.guide_edit_body)),
-        Onboarding.Step(0, { binding.btnStartQueue }, "▶️",
-            getString(R.string.guide_start_title), getString(R.string.guide_start_body)),
-        Onboarding.Step(0, { binding.btnQuick }, "⚡",
-            getString(R.string.guide_quick_title), getString(R.string.guide_quick_body)),
-        Onboarding.Step(2, { binding.scrollLog }, "📜",
-            getString(R.string.guide_log_title), getString(R.string.guide_log_body)),
-        Onboarding.Step(3, { binding.cardStatus }, "⚙️",
-            getString(R.string.guide_settings_title), getString(R.string.guide_settings_body)),
-        Onboarding.Step(0, null, "🎉",
-            getString(R.string.guide_done_title), getString(R.string.guide_done_body)),
-    )
-
-    /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序：主页/抽卡/日志/设置） */
-    private fun guideShowPage(page: Int) {
-        when (page) {
-            2 -> switchTo(binding.panelLog)
-            3 -> switchTo(binding.panelSettings)
-            else -> switchTo(binding.panelHome)
-        }
-        binding.bottomNav.menu.getItem(page).isChecked = true
-    }
-
-    /** 引导开始前把主页归位：队列视图 + 一键长草（配置管理模式/小工具 tab 下靶点面板不同） */
-    private fun guideEnsureHome() {
-        setConfigMode(false)
-        switchTab(HomeTab.ONECLICK)
-        guideShowPage(0)
-    }
-
-    private fun switchTo(panel: View) {
-        listOf(binding.panelHome, binding.panelLog, binding.panelSettings, binding.panelGacha)
-            .forEach { it.visibility = if (it === panel) View.VISIBLE else View.GONE }
-    }
-
-    // ==================================================================
-    // 截图/预览
-    // ==================================================================
-
-    /** 抓一帧物理屏刷新预览（快捷选项里的「截图」；虚拟屏运行时用它的实时帧） */
-
-    private fun takeScreenshot() {
-        if (!shizukuReady()) { log("无法截图：Shizuku 未就绪"); refreshStatus(); return }
-        lifecycleScope.launch {
-            try {
-                val bmp = ShizukuShell.screencap()
-                lastBitmap = bmp
-                binding.imageShot.setImageBitmap(bmp)
-                log("预览刷新 ${bmp.width}x${bmp.height}")
-            } catch (e: Exception) {
-                log("截图失败：${e.message}")
-            }
-        }
-    }
-
-    private fun handleImageTouch(ev: MotionEvent): Boolean {
-        when (ev.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                downX = ev.x; downY = ev.y
-                gestureActive = false
-            }
-            MotionEvent.ACTION_MOVE -> {
-                // 虚拟屏实时手势：手指移动时逐点注入 MOVE（>20px 视为滑动开始）
-                if (!vdOn) return true
-                val bmp = lastBitmap ?: return true
-                val dist = Math.hypot((ev.x - downX).toDouble(), (ev.y - downY).toDouble())
-                if (!gestureActive) {
-                    if (dist > 10) {
-                        val from = mapToDevice(downX, downY, bmp) ?: return true
-                        val fx = from.x.toInt() * 2; val fy = from.y.toInt() * 2
-                        gestureActive = true
-                        ShizukuShell.touchDown(fx, fy)
-                        log("虚拟屏手势开始 ($fx,$fy)")
-                    }
-                } else {
-                    val p = mapToDevice(ev.x, ev.y, bmp) ?: return true
-                    ShizukuShell.touchMove(p.x.toInt() * 2, p.y.toInt() * 2)
-                }
-                return true
-            }
-            MotionEvent.ACTION_UP -> {
-                val bmp = lastBitmap ?: return true
-                if (gestureActive) {
-                    val to = mapToDevice(ev.x, ev.y, bmp) ?: return true
-                    val tx = to.x.toInt() * 2; val ty = to.y.toInt() * 2
-                    ShizukuShell.touchUp(tx, ty)
-                    gestureActive = false
-                    log("虚拟屏手势结束 ($tx,$ty)")
-                    return true
-                }
-                val dist = Math.hypot((ev.x - downX).toDouble(), (ev.y - downY).toDouble())
-                if (dist > 20) {
-                    // 非虚拟屏：抬起时合成一次滑动
-                    val from = mapToDevice(downX, downY, bmp) ?: return true
-                    val to = mapToDevice(ev.x, ev.y, bmp) ?: return true
-                    log("模拟滑动 (${from.x.toInt()},${from.y.toInt()})->(${to.x.toInt()},${to.y.toInt()})")
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        runCatching {
-                            ShizukuShell.swipe(from.x.toInt(), from.y.toInt(), to.x.toInt(), to.y.toInt())
-                        }
-                    }
-                    return true
-                }
-                val dev = mapToDevice(ev.x, ev.y, bmp) ?: return true
-                val x = dev.x.toInt(); val y = dev.y.toInt()
-                if (vdOn) {
-                    val nx = x * 2; val ny = y * 2
-                    log("虚拟屏点击 ($nx, $ny)")
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        val r = ShizukuShell.injectTapVD(nx, ny)
-                        runOnUiThread { log("注入: $r") }
-                    }
-                    return true
-                }
-                if (binding.switchTap.isChecked) {
-                    log("模拟点击 ($x, $y)")
-                    lifecycleScope.launch { runCatching { ShizukuShell.tap(x, y) } }
-                } else log("该点坐标 ($x, $y)")
-            }
-        }
-        return true
-    }
-
-    private fun mapToDevice(vx: Float, vy: Float, bmp: Bitmap): PointF? {
-        val vw = binding.imageShot.width.toFloat()
-        val vh = binding.imageShot.height.toFloat()
-        if (vw <= 0 || vh <= 0) return null
-        val scale = minOf(vw / bmp.width, vh / bmp.height)
-        val dw = bmp.width * scale
-        val dh = bmp.height * scale
-        val offX = (vw - dw) / 2f
-        val offY = (vh - dh) / 2f
-        if (vx < offX || vy < offY || vx > offX + dw || vy > offY + dh) return null
-        return PointF((vx - offX) / scale, (vy - offY) / scale)
-    }
-
-    // ==================================================================
-    // 工具
-    // ==================================================================
-
-
-    private fun updateInfoTexts() {
-        binding.tvAboutVersion.text = runCatching {
-            packageManager.getPackageInfo(packageName, 0).versionName
-        }.getOrNull() ?: "0.1.0"
-        binding.tvPaths.text = "内部: ${File(filesDir, "taskpacks")}\n外部: ${getExternalFilesDir(null)}/taskpacks"
     }
 
     /**
      * 写一行任务日志（对标 maameow：时间 + 级别徽标 + 正文，级别自带颜色）。
      * 可从任意线程调用；渲染合并在 [TaskLogView] 里做。
      */
-
-
     private fun log(msg: String, level: LogLevel = LogLevel.INFO) {
         RunLogStore.append(level.name, msg)   // 会话日志落盘（历史日志页浏览）
         android.util.Log.i("MaaWH", "${level.name} $msg")
@@ -2732,33 +2331,6 @@ class MainActivity : AppCompatActivity() {
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
     private fun match() = ViewGroup.LayoutParams.MATCH_PARENT
     private fun wrap() = ViewGroup.LayoutParams.WRAP_CONTENT
-
-    private fun simpleText(text: String, colorRes: Int, sizeSp: Float): TextView =
-        TextView(this).apply {
-            this.text = text
-            setTextColor(getColor(colorRes))
-            textSize = sizeSp
-        }
-
-    private fun cell(
-        text: String,
-        colorRes: Int,
-        sizeSp: Float,
-        bold: Boolean = false,
-        weight: Float = 0f
-    ): TextView = TextView(this).apply {
-        this.text = text
-        setTextColor(getColor(colorRes))
-        textSize = sizeSp
-        paint.isFakeBoldText = bold
-        layoutParams = if (weight > 0f) {
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight)
-        } else {
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        }
-    }
 
     companion object {
         private const val REQ_SHIZUKU = 1001

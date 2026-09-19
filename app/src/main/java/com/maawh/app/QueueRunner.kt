@@ -39,6 +39,8 @@ class QueueRunner(
         fun onGameEnteredVd()
         /** 虚拟屏标志当前值（收尾决定保活去留用） */
         fun isVdOn(): Boolean
+        /** 队列收尾是否保持游戏静音：手动「关闭游戏声音」开着，或「游戏启动后关闭游戏声音」开着且虚拟屏还活着 */
+        fun holdGameMute(vdAlive: Boolean): Boolean
         fun onToast(msg: String)
     }
 
@@ -91,9 +93,15 @@ class QueueRunner(
         MaaBridge.requestStop()
     }
 
-    /** 执行队列（阻塞，后台线程调用） */
-    fun run(planTasks: List<TaskItem>, muteEnabled: Boolean, closeAfterEnabled: Boolean) {
+    /** 执行队列（阻塞，后台线程调用）。muteEnabled=手动静音；autoMuteEnabled=游戏启动后自动静音 */
+    fun run(
+        planTasks: List<TaskItem>,
+        muteEnabled: Boolean,
+        autoMuteEnabled: Boolean,
+        closeAfterEnabled: Boolean
+    ) {
         current = this
+        RunLogStore.begin(context, "队列", planTasks.size)
         // 队列抬头（对标 maameow 的「开始执行任务，共 N 项」+ 设备内存）
         cb.onLog("开始执行任务，共 ${planTasks.size} 项：${planTasks.joinToString(" → ") { it.label }}", LogLevel.INFO)
         cb.onLog(memoryInfoText(), LogLevel.INFO)
@@ -108,14 +116,29 @@ class QueueRunner(
             KeepAliveService.start(context, "准备执行 ${planTasks.size} 项任务", 0, planTasks.size)
         }
 
-        val prevVolume = if (muteEnabled) getMusicVolume() else -1
+        // 仅对游戏静音（appops 按包拒绝其播放音频）：不动系统音量，音量键也不影响。
+        // 两个来源：手动「关闭游戏声音」开关、「游戏启动后关闭游戏声音」开关。
+        // 先落持久化标记再 deny（顺序不能反，对齐 maameow）：进程崩溃后重启凭标记自愈，
+        // 没标记的静音 = 永久静音。收尾按 holdGameMute 决定保持还是恢复。
+        val wantMute = muteEnabled || autoMuteEnabled
+        if (wantMute) {
+            GameAudioMarker.mark(context, MaaConst.GAME_PKG)
+            val ok = ShizukuShell.setGameAudioMuted(true)
+            if (ok) {
+                cb.onLog(
+                    if (autoMuteEnabled && !muteEnabled) "已按「游戏启动后关闭游戏声音」静音游戏" else "已单独静音游戏（系统音量不受影响）",
+                    LogLevel.INFO
+                )
+            } else {
+                cb.onLog("游戏静音失败（Shizuku 是否在线？），本次运行游戏仍有声音", LogLevel.WRN)
+            }
+        }
 
         // 订阅引擎实时事件（finally 里必须摘掉：Tasker 每任务重建，但监听器按队列生命周期走）
         MaaBridge.addEngineEventListener(engineListener)
         try {
             // M4-④a：以服务端权威状态同步虚拟屏路由(截图/点击目标屏)
             ShizukuShell.syncVdMode()
-            if (muteEnabled) setMusicVolume(0)
             var ok = true
             val failed = ArrayList<String>()
             // 跟读引擎日志：把"识别失败 / 超时 / 节点失败 / 包校验失败"按性质打进日志区
@@ -146,6 +169,14 @@ class QueueRunner(
                             notify { cb.onVdFlagSet() }
                             val vd = ShizukuShell.startVirtualGame()
                             cb.onLog(vd, LogLevel.INFO)
+                            // AudioHardening 反制：闩锁跨会话存活，进虚拟屏就主动放行游戏音频
+                            // （任一静音开关开着则改为确保静音——游戏本来就该被静音）
+                            if (muteEnabled || autoMuteEnabled) {
+                                runCatching { GameAudioMarker.mark(context, MaaConst.GAME_PKG) }
+                                runCatching { ShizukuShell.setGameAudioMuted(true) }
+                            } else {
+                                runCatching { ShizukuShell.assertGameAudioAllowed() }
+                            }
                             notify { cb.onGameEnteredVd() }
                             if (ShizukuShell.syncVdMode()) {
                                 val rr = MaaBridge.runTask(whmxDir, item.entry, logDir, "{}") { msg ->
@@ -235,10 +266,6 @@ class QueueRunner(
             if (closeAfterEnabled) {
                 runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
             }
-            if (muteEnabled && prevVolume > 0) {
-                // 游戏已退出（如末尾勾了关闭游戏）才恢复音量；Shizuku 掉线时按"还在跑"处理，保持静音
-                if (!gameAlive()) setMusicVolume(prevVolume)
-            }
             // 收尾体检：Shizuku 掉了要说清"不是 MaaWH 关的"并给出保活办法，
             // 否则用户只会看到下次打开时必须重新启用 Shizuku
             if (!shizukuRunning()) {
@@ -261,6 +288,13 @@ class QueueRunner(
                     stopped = stopRequested,
                     costText = totalText
                 )
+            )
+            RunLogStore.end(
+                when {
+                    stopRequested -> "已停止 · $totalText"
+                    ok -> "全部完成 · $totalText"
+                    else -> "失败 ${failed.size}/${planTasks.size} · $totalText"
+                }
             )
 
             notify {
@@ -321,6 +355,26 @@ class QueueRunner(
             }
         } finally {
             MaaBridge.removeEngineEventListener(engineListener)
+            // 游戏静音保持/恢复决策（2026-09-19 拆双开关）：
+            // 游戏已不在跑（跑完关游戏/自己退出）→ 一律恢复，杜绝残留；
+            // 游戏还活着且宿主说保持（手动「关闭游戏声音」开着，或「游戏启动后关闭游戏声音」
+            // 开着且虚拟屏还活着=挂机静音）→ 不动；否则恢复。
+            // 标记是唯一事实来源（手动开关的立即动作也走标记），恢复幂等：标记不在就什么都不做。
+            if (GameAudioMarker.marked(context) != null) {
+                val vdAlive = runCatching { ShizukuShell.syncVdMode() }.getOrDefault(false)
+                val gameAlive = gameAlive()
+                if (!gameAlive || !cb.holdGameMute(vdAlive)) {
+                    if (GameAudioMarker.restoreIfNeeded(context)) {
+                        cb.onLog("已恢复游戏声音", LogLevel.TRACE)
+                    } else if (ShizukuShell.isGameAudioMuted()) {
+                        cb.onLog(
+                            "⚠ 游戏静音恢复失败（Shizuku 掉线？）：游戏会暂时没声，" +
+                                "下次打开 MaaWH 会自动恢复，或执行 appops reset ${MaaConst.GAME_PKG}",
+                            LogLevel.WRN
+                        )
+                    }
+                }
+            }
             lastNode = null
             if (current === this) current = null
         }
@@ -472,5 +526,8 @@ class QueueRunner(
         fun requestStopCurrent() {
             current?.requestStop()
         }
+
+        /** 是否有队列在跑（KeepAliveService.onTaskRemoved 等无 Activity 引用的场合用） */
+        fun isAnyRunning(): Boolean = current?.running == true
     }
 }
