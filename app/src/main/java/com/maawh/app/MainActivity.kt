@@ -253,9 +253,7 @@ class MainActivity : AppCompatActivity() {
             ::guideShowPage,
             ::guideEnsureHome,
         ) { maybePromptShizuku() }
-        binding.btnGuide.setOnClickListener {
-            onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
-        }
+        binding.btnGuide.setOnClickListener { showGuideReplayDialog() }
         binding.btnAnnouncement.setOnClickListener { showAnnouncement() }
         // 公告自动弹出：首次启动时让位给新手引导，之后每次打开若公告有更新（内容变化）则弹出
         vdHandler.postDelayed({
@@ -3295,6 +3293,25 @@ class MainActivity : AppCompatActivity() {
     private fun canShowScenarioGuide(key: String): Boolean =
         !GuideStore.isDone(this, key) && !onboarding.isActive && !isTaskRunning &&
                 !gachaRunning && !isFinishing
+
+    /** 重看引导：三套引导按需选择（配置管理的靶点面板只在配置管理模式下可见，先切过去） */
+    private fun showGuideReplayDialog() {
+        val items = arrayOf("主界面（5 步）", "抽卡页（4 步）", "配置管理（2 步）")
+        AlertDialog.Builder(this)
+            .setTitle("查看新手引导")
+            .setItems(items) { _, which ->
+                when (which) {
+                    0 -> onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
+                    1 -> onboarding.start(buildGachaGuideSteps(), GuideStore.KEY_GACHA, homeFirst = false)
+                    2 -> {
+                        setConfigMode(true)
+                        guideShowPage(0)
+                        onboarding.start(buildConfigGuideSteps(), GuideStore.KEY_CONFIG, homeFirst = false)
+                    }
+                }
+            }
+            .show()
+    }
 
     /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序：主页/抽卡/日志/设置） */
     private fun guideShowPage(page: Int) {
