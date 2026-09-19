@@ -445,13 +445,8 @@ class MainActivity : AppCompatActivity() {
         closeAfterEnabled = saved.closeAfter
         pipEnabled = saved.pipOn
         binding.switchPip.isChecked = saved.pipOn
-        switchTab(
-            when (saved.tab) {
-                "tools" -> HomeTab.TOOLS
-                "toolbox" -> HomeTab.TOOLBOX
-                else -> HomeTab.ONECLICK
-            }
-        )
+        // 启动固定归位「一键长草」（上次所在 tab 不恢复——挂机/测试后重开都从主队列开始）
+        switchTab(HomeTab.ONECLICK)
         // 旧存档里的 tab="config"（配置曾是与两个 tab 平级的分区）→ 落到一键长草的队列视图。
         // 这里**不能**再重置配置模式：清单加载比窗口可点慢，重置会把用户启动瞬间点的「编辑配置」撤销掉
         log("已载入配置「$activeProfile」（队列 ${tasks.size} 项 · 额外队列 ${toolsTasks.size} 项）")
