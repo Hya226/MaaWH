@@ -2951,7 +2951,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnGachaRun.text = getString(R.string.gacha_stop)
         binding.tvGachaStatus.text = "准备…"
         if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
-        // 悬浮窗联动：状态行显示识别中，■停止按钮换为停止抓取（结束后恢复默认）
+        // 通知/悬浮窗联动：状态行显示识别中，■停止按钮换为停止抓取（结束后恢复默认）
+        keepAlive("抽卡记录识别中")
         FloatingPanel.stopCallback = { stopGachaCrawl() }
         FloatingPanel.update("▶ 抽卡记录识别中")
         gachaJob = lifecycleScope.launch {
@@ -2962,6 +2963,7 @@ class MainActivity : AppCompatActivity() {
                 val crawler = GachaCrawler(applicationContext, ocr) { m, lv -> log(m, lv) }
                 val report = crawler.crawl { p ->
                     runOnUiThread { binding.tvGachaStatus.text = p }
+                    keepAlive("▶ 抽卡识别：$p")
                     FloatingPanel.update("▶ 抽卡识别：$p")
                 }
                 runSummary = "新增 ${report.added} 条"
@@ -2982,6 +2984,7 @@ class MainActivity : AppCompatActivity() {
                 if (homeTab == HomeTab.TOOLBOX) {
                     binding.btnStartQueue.text = getString(R.string.btn_start_queue)
                 }
+                if (ShizukuShell.isVdAlive()) keepAlive(getString(R.string.keepalive_vd)) else stopKeepAlive()
                 FloatingPanel.stopCallback = { QueueRunner.requestStopCurrent() }
                 FloatingPanel.update(if (runSummary.isEmpty()) "抽卡识别结束" else "抽卡识别：$runSummary")
                 renderGachaPanel()
