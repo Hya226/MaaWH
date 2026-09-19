@@ -761,6 +761,7 @@
                     android:id="@+id/btnGachaRun"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    app:cornerRadius="8dp"
                     android:text="@string/gacha_run" />
 
                 <TextView

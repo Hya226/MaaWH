@@ -2871,9 +2871,9 @@ class MainActivity : AppCompatActivity() {
         if (!gachaRunning) {
             binding.tvGachaStatus.text = when {
                 cfg.lastCrawlMs > 0 ->
-                    "「${GachaStore.activeAccountName(applicationContext)}」上次抓取：${
+                    "上次抓取：${
                         SimpleDateFormat("MM-dd HH:mm", Locale.US).format(Date(cfg.lastCrawlMs))
-                    } · 库存 ${all.size} 条"
+                    }\n库存 ${all.size} 条"
                 else -> getString(R.string.gacha_status_default)
             }
         }
