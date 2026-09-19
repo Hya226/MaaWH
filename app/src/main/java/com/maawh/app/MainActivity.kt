@@ -3294,23 +3294,96 @@ class MainActivity : AppCompatActivity() {
         !GuideStore.isDone(this, key) && !onboarding.isActive && !isTaskRunning &&
                 !gachaRunning && !isFinishing
 
-    /** 重看引导：三套引导按需选择（配置管理的靶点面板只在配置管理模式下可见，先切过去） */
+    /** 重看引导：自定义卡片三选（与账号管理弹窗同风格），配置管理重看时自动切入配置模式 */
     private fun showGuideReplayDialog() {
-        val items = arrayOf("主界面（5 步）", "抽卡页（4 步）", "配置管理（2 步）")
-        AlertDialog.Builder(this)
-            .setTitle("查看新手引导")
-            .setItems(items) { _, which ->
-                when (which) {
-                    0 -> onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
-                    1 -> onboarding.start(buildGachaGuideSteps(), GuideStore.KEY_GACHA, homeFirst = false)
-                    2 -> {
-                        setConfigMode(true)
-                        guideShowPage(0)
-                        onboarding.start(buildConfigGuideSteps(), GuideStore.KEY_CONFIG, homeFirst = false)
+        var dlgRef: androidx.appcompat.app.AlertDialog? = null
+
+        fun menuRow(icon: String, title: String, desc: String, onClick: () -> Unit): View =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(18), dp(12), dp(18), dp(12))
+                val tv = android.util.TypedValue()
+                theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+                setBackgroundResource(tv.resourceId)
+                setOnClickListener { dlgRef?.dismiss(); onClick() }
+                addView(TextView(this@MainActivity).apply {
+                    text = icon
+                    textSize = 17f
+                    gravity = Gravity.CENTER
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.OVAL
+                        setColor(0x264C9AFF)
                     }
-                }
+                }, LinearLayout.LayoutParams(dp(38), dp(38)).apply { marginEnd = dp(12) })
+                addView(LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addView(TextView(this@MainActivity).apply {
+                        text = title
+                        setTextColor(getColor(R.color.text_primary))
+                        textSize = 14f
+                        paint.isFakeBoldText = true
+                    })
+                    addView(TextView(this@MainActivity).apply {
+                        text = desc
+                        setTextColor(getColor(R.color.text_secondary))
+                        textSize = 11f
+                        setPadding(0, dp(1), 0, 0)
+                    })
+                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             }
-            .show()
+
+        val head = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(16), dp(20), dp(14))
+            addView(TextView(this@MainActivity).apply {
+                text = "查看新手引导"
+                setTextColor(getColor(R.color.text_primary))
+                textSize = 16f
+                paint.isFakeBoldText = true
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "选一套开始播放"
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 11f
+                setPadding(0, dp(2), 0, 0)
+            })
+        }
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(16).toFloat()
+                setColor(getColor(R.color.bg_card))
+            }
+            addView(head)
+            addView(View(this@MainActivity).apply {
+                setBackgroundColor(0xFF2E3947.toInt())
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, dp(1)
+                )
+            })
+            addView(menuRow("🏠", "主界面", "5 步 · 预览 / 任务队列 / 开始任务") {
+                onboarding.start(buildGuideSteps(), GuideStore.KEY_MAIN)
+            })
+            addView(menuRow("🎴", "抽卡页", "4 步 · 账号 / 抓取 / 编辑 / 数据面板") {
+                onboarding.start(buildGachaGuideSteps(), GuideStore.KEY_GACHA, homeFirst = false)
+            })
+            addView(menuRow("⚙️", "配置管理", "2 步 · 多套配置 / 新建与复制") {
+                setConfigMode(true)
+                guideShowPage(0)
+                onboarding.start(buildConfigGuideSteps(), GuideStore.KEY_CONFIG, homeFirst = false)
+            })
+        }
+
+        val dlg = AlertDialog.Builder(this).create()
+        dlg.setView(root)
+        dlgRef = dlg
+        dlg.show()
+        dlg.window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(dp(320), ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
     }
 
     /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序：主页/抽卡/日志/设置） */
