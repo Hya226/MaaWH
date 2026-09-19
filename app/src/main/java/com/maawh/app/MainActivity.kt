@@ -3064,100 +3064,54 @@ class MainActivity : AppCompatActivity() {
                 topMargin = dp(6); bottomMargin = dp(6)
             }
         })
-        // 底部：标注过 UP → 出卡/歪(红) + UP平均（数字行与标签行两个整体居中对齐）；
-        // 否则 → 出卡 + 六星平均
-        card.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            if (st.marked) {
-                addView(LinearLayout(this@MainActivity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.CENTER_HORIZONTAL
-                    addView(LinearLayout(this@MainActivity).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_HORIZONTAL
-                        addView(TextView(this@MainActivity).apply {
-                            text = "${st.teCount}"
-                            setTextColor(getColor(R.color.text_primary))
-                            textSize = 15f
-                            paint.isFakeBoldText = true
-                        })
-                        addView(TextView(this@MainActivity).apply {
-                            text = " / "
-                            setTextColor(getColor(R.color.text_secondary))
-                            textSize = 13f
-                        })
-                        addView(TextView(this@MainActivity).apply {
-                            text = "${st.waiCount}"
-                            setTextColor(getColor(R.color.err_red))
-                            textSize = 15f
-                            paint.isFakeBoldText = true
-                        })
-                    }, LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                    ))
-                    addView(TextView(this@MainActivity).apply {
-                        text = "出卡数 / 歪"
-                        setTextColor(getColor(R.color.text_secondary))
-                        textSize = 9f
-                    }, LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = dp(1).toInt() })
-                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.1f))
-                addView(LinearLayout(this@MainActivity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.CENTER_HORIZONTAL
-                    addView(TextView(this@MainActivity).apply {
-                        text = st.upAvgText
-                        setTextColor(getColor(R.color.text_primary))
-                        textSize = 15f
-                        paint.isFakeBoldText = true
-                    })
-                    addView(TextView(this@MainActivity).apply {
-                        text = "UP平均"
-                        setTextColor(getColor(R.color.text_secondary))
-                        textSize = 9f
-                    }, LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = dp(1).toInt() })
-                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 0.9f))
-            } else {
-                addView(LinearLayout(this@MainActivity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.CENTER_HORIZONTAL
-                    addView(TextView(this@MainActivity).apply {
-                        text = "${st.teCount}"
-                        setTextColor(getColor(R.color.text_primary))
-                        textSize = 15f
-                        paint.isFakeBoldText = true
-                    })
-                    addView(TextView(this@MainActivity).apply {
-                        text = "出卡数"
-                        setTextColor(getColor(R.color.text_secondary))
-                        textSize = 9f
-                    }, LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = dp(1).toInt() })
-                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-                addView(LinearLayout(this@MainActivity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    gravity = Gravity.CENTER_HORIZONTAL
-                    addView(TextView(this@MainActivity).apply {
-                        text = if (st.teCount == 0) "0"
-                        else String.format(Locale.US, "%.1f", st.total.toDouble() / st.teCount)
-                        setTextColor(getColor(R.color.text_primary))
-                        textSize = 15f
-                        paint.isFakeBoldText = true
-                    })
-                    addView(TextView(this@MainActivity).apply {
-                        text = "六星平均"
-                        setTextColor(getColor(R.color.text_secondary))
-                        textSize = 9f
-                    }, LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = dp(1).toInt() })
-                }, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        // 底部：数字行 + 标签行按列对齐（GridLayout 同列取最宽 cell，数字正好居中于标签正上方）。
+        // 标注过 UP：出卡 / 歪 / UP平均 三列（中间斜杠列）；否则：出卡 / 六星平均 两列
+        fun buildStatGrid(): android.widget.GridLayout {
+            val gl = android.widget.GridLayout(this).apply {
+                columnCount = 5
+                rowCount = 2
             }
+            fun cell(row: Int, col: Int, text: String, color: Int, size: Float, bold: Boolean = false, leftMarginDp: Int = 0) {
+                val tv = TextView(this@MainActivity).apply {
+                    this.text = text
+                    setTextColor(getColor(color))
+                    textSize = size
+                    if (bold) paint.isFakeBoldText = true
+                }
+                val lp = android.widget.GridLayout.LayoutParams(
+                    android.widget.GridLayout.spec(row, android.widget.GridLayout.CENTER),
+                    android.widget.GridLayout.spec(col, android.widget.GridLayout.CENTER)
+                ).apply {
+                    width = ViewGroup.LayoutParams.WRAP_CONTENT
+                    height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    leftMargin = dp(leftMarginDp).toInt()
+                }
+                gl.addView(tv, lp)
+            }
+            if (st.marked) {
+                cell(0, 0, "${st.teCount}", R.color.text_primary, 15f, true)
+                cell(0, 1, "/", R.color.text_secondary, 15f)
+                cell(0, 2, "${st.waiCount}", R.color.err_red, 15f, true)
+                cell(0, 4, st.upAvgText, R.color.text_primary, 15f, true, leftMarginDp = 10)
+                cell(1, 0, "出卡数", R.color.text_secondary, 9f)
+                cell(1, 1, "/", R.color.text_secondary, 9f)
+                cell(1, 2, "歪", R.color.text_secondary, 9f)
+                cell(1, 4, "UP平均", R.color.text_secondary, 9f, leftMarginDp = 10)
+            } else {
+                cell(0, 0, "${st.teCount}", R.color.text_primary, 15f, true)
+                cell(0, 2, if (st.teCount == 0) "0"
+                else String.format(Locale.US, "%.1f", st.total.toDouble() / st.teCount),
+                    R.color.text_primary, 15f, true, leftMarginDp = 10)
+                cell(1, 0, "出卡数", R.color.text_secondary, 9f)
+                cell(1, 2, "六星平均", R.color.text_secondary, 9f, leftMarginDp = 10)
+            }
+            return gl
+        }
+        card.addView(buildStatGrid(), LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            gravity = Gravity.CENTER_HORIZONTAL
+            topMargin = dp(2).toInt()
         })
         return card
     }
