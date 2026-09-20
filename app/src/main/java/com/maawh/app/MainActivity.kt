@@ -1729,7 +1729,7 @@ class MainActivity : AppCompatActivity() {
         val rsLoc = IntArray(2)
         binding.tvRunState.getLocationOnScreen(rsLoc)
         val rsTopInWindow = rsLoc[1] - winLoc[1]
-        val gap = window.decorView.height - rsTopInWindow + dp(8).toInt()
+        val gap = window.decorView.height - rsTopInWindow
         dlg.window?.apply {
             setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
             setGravity(android.view.Gravity.BOTTOM or android.view.Gravity.START)
