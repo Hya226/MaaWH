@@ -13,6 +13,10 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- 任务运行中切后台时显示悬浮进度条（对标 MAA-Meow 的悬浮面板，见 FloatingPanel） -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 应用内更新：访问 GitHub Releases API 与下载安装包 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 拉起系统安装器安装下载的新 APK（用户需在系统设置允许「安装未知应用」） -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:allowBackup="true"
@@ -30,6 +34,17 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- 应用内更新：向系统安装器共享下载好的 APK -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- 任务运行中 / 虚拟屏存活时的保活前台服务（targetSdk 34 必须声明 FGS 类型） -->
         <service

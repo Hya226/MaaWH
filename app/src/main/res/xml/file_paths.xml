@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GitHubUpdater 下载的更新 APK（externalFilesDir/update/）共享给系统安装器 -->
+<paths>
+    <external-files-path
+        name="update_apk"
+        path="update/" />
+</paths>

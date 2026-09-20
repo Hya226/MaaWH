@@ -143,6 +143,25 @@ class MainActivity : AppCompatActivity() {
             log("日志已清空")
         }
         binding.btnHistory.setOnClickListener { showHistory() }
+        // 通过 GitHub 更新：渠道单选（稳定=最新正式发行版的 release 包，测试=最新预发行版的 beta 包）
+        when (GitHubUpdater.savedChannel(this)) {
+            GitHubUpdater.CHANNEL_BETA -> binding.rbChannelBeta.isChecked = true
+            else -> binding.rbChannelStable.isChecked = true
+        }
+        binding.tvUpdateChannelDesc.setText(
+            if (GitHubUpdater.savedChannel(this) == GitHubUpdater.CHANNEL_BETA)
+                R.string.update_channel_desc_beta else R.string.update_channel_desc_stable
+        )
+        binding.rgUpdateChannel.setOnCheckedChangeListener { _, _ ->
+            val ch = if (binding.rbChannelBeta.isChecked) GitHubUpdater.CHANNEL_BETA else GitHubUpdater.CHANNEL_STABLE
+            GitHubUpdater.saveChannel(this, ch)
+            binding.tvUpdateChannelDesc.setText(
+                if (ch == GitHubUpdater.CHANNEL_BETA) R.string.update_channel_desc_beta
+                else R.string.update_channel_desc_stable
+            )
+            binding.tvUpdateStatus.setText(R.string.update_status_idle)
+        }
+        binding.btnCheckUpdate.setOnClickListener { runUpdateCheck() }
         binding.switchPip.isChecked = pipEnabled
         binding.switchPip.setOnCheckedChangeListener { _, checked ->
             pipEnabled = checked
@@ -937,6 +956,8 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
         // 回前台收起悬浮窗（弹出的条件见 onStop）
         FloatingPanel.hide()
+        // 从「安装未知应用」授权页回来：自动继续拉起待安装的更新包
+        if (pendingInstallApk != null) tryInstallPending()
         // 虚拟屏是服务端权威状态(app 重启/切后台会丢内存标志)，回前台自动同步 UI
         syncVdUi()
     }
@@ -3607,6 +3628,91 @@ class MainActivity : AppCompatActivity() {
         // 日志页打开即定位到最新一条（日志追加在底部）
         if (panel === binding.panelLog) {
             binding.scrollLog.post { binding.scrollLog.fullScroll(View.FOCUS_DOWN) }
+        }
+    }
+
+    // ==================================================================
+    // 应用内 GitHub 更新（设置页「通过 GitHub 更新」卡片，逻辑在 GitHubUpdater）
+    // ==================================================================
+
+    private var updateBusy = false
+    private var pendingInstallApk: File? = null
+
+    private fun updateChannel(): String =
+        if (binding.rbChannelBeta.isChecked) GitHubUpdater.CHANNEL_BETA else GitHubUpdater.CHANNEL_STABLE
+
+    private fun runUpdateCheck() {
+        if (updateBusy) return
+        updateBusy = true
+        binding.btnCheckUpdate.isEnabled = false
+        binding.tvUpdateStatus.setTextColor(getColor(R.color.text_secondary))
+        binding.tvUpdateStatus.text = "连接 GitHub…"
+        lifecycleScope.launch {
+            try {
+                val upd = withContext(Dispatchers.IO) {
+                    GitHubUpdater.checkUpdate(this@MainActivity, updateChannel())
+                }
+                if (upd == null) {
+                    binding.tvUpdateStatus.text =
+                        "已是最新版本（${GitHubUpdater.currentVersion(this@MainActivity)}）"
+                } else {
+                    showUpdateDialog(upd)
+                }
+            } catch (e: Exception) {
+                binding.tvUpdateStatus.text = "无法连接 GitHub：${e.message}\n请检查网络或代理后重试"
+            } finally {
+                updateBusy = false
+                binding.btnCheckUpdate.isEnabled = true
+            }
+        }
+    }
+
+    private fun showUpdateDialog(upd: GitHubUpdater.AvailableUpdate) {
+        binding.tvUpdateStatus.setTextColor(getColor(R.color.ok_green))
+        binding.tvUpdateStatus.text =
+            "发现新版本 ${upd.tag}（${upd.apkName}，${upd.size / 1024 / 1024}MB）"
+        val notes = upd.notes.takeIf { it.isNotBlank() }?.take(600) ?: "（无说明）"
+        AlertDialog.Builder(this)
+            .setTitle("发现新版本 ${upd.tag}")
+            .setMessage(notes)
+            .setPositiveButton("下载并安装") { _, _ -> downloadAndInstall(upd) }
+            .setNegativeButton("以后再说", null)
+            .show()
+    }
+
+    private fun downloadAndInstall(upd: GitHubUpdater.AvailableUpdate) {
+        if (updateBusy) return
+        updateBusy = true
+        binding.btnCheckUpdate.isEnabled = false
+        binding.tvUpdateStatus.setTextColor(getColor(R.color.text_secondary))
+        lifecycleScope.launch {
+            try {
+                binding.tvUpdateStatus.text = "下载中 0%"
+                val apk = withContext(Dispatchers.IO) {
+                    GitHubUpdater.download(this@MainActivity, upd) { p ->
+                        runOnUiThread { binding.tvUpdateStatus.text = "下载中 $p%" }
+                    }
+                }
+                binding.tvUpdateStatus.text = "下载完成，拉起安装…"
+                pendingInstallApk = apk
+                tryInstallPending()
+            } catch (e: Exception) {
+                binding.tvUpdateStatus.text = "下载失败：${e.message}"
+            } finally {
+                updateBusy = false
+                binding.btnCheckUpdate.isEnabled = true
+            }
+        }
+    }
+
+    /** 拉起安装；未授权「安装未知应用」时先跳授权页，回来后 onResume 会自动重试 */
+    private fun tryInstallPending() {
+        val apk = pendingInstallApk ?: return
+        if (GitHubUpdater.install(this, apk)) {
+            pendingInstallApk = null
+            binding.tvUpdateStatus.text = "已拉起系统安装器，按提示完成安装"
+        } else {
+            binding.tvUpdateStatus.text = "请先允许「安装未知应用」，授权后会自动继续安装"
         }
     }
 
