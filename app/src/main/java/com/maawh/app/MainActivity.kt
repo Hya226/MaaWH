@@ -998,6 +998,7 @@ class MainActivity : AppCompatActivity() {
                     log("虚拟屏状态已同步")
                 } else if (!alive && vdOn) {
                     vdOn = false
+                    clearVdPreview()
                     if (!isTaskRunning) stopKeepAlive()
                 }
             }
@@ -1399,6 +1400,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onVdFlagSet() { vdOn = true }
                 override fun onVdClosed() {
                     vdOn = false
+                    clearVdPreview()
                     FloatingPanel.hide()
                     stopKeepAlive()
                     setRunState("虚拟屏已关闭", R.color.text_secondary)
@@ -1923,6 +1925,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** 虚拟屏关闭后清掉预览残帧（VdStreamer 停止后 ImageView 仍持有最后一帧） */
+    private fun clearVdPreview() {
+        vdHandler.removeCallbacks(vdUiTick)
+        binding.imageShot.setImageDrawable(null)
+        binding.imageShot.setBackgroundColor(0xFF000000.toInt())
+    }
+
     private fun toggleVd() {
         if (isTaskRunning) { toast("任务运行中，请先停止"); return }
         vdOn = !vdOn
@@ -1956,7 +1965,7 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             VdStreamer.stop()
-            vdHandler.removeCallbacks(vdUiTick)
+            clearVdPreview()
             lifecycleScope.launch(Dispatchers.IO) {
                 ShizukuShell.stopVirtual()
                 // 虚拟屏停了就不再管控游戏：清掉 appops 静音残留，用户回物理屏打开游戏有声
