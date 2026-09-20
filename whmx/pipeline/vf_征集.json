@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-19T14:08:25+08:00",
+        "generatedAt": "2026-09-20T17:40:53+08:00",
         "flowFile": "征集.flow.json",
-        "flowHash": "sha256:f2f8ded56f1a9e915bd11676a6f00ced2e1f5b4fcf19ff0204fb1106666b50c2",
-        "pipelineHash": "sha256:439777ac8ee3fba38cbdb3f70181786dc0964598345cbb895eaac6fd57788f1c",
+        "flowHash": "sha256:6ee0fef524e63e9776b8052e1dcc968d5211cc34adf1f8c1eacd359ed34428d8",
+        "pipelineHash": "sha256:f960adf0c403a9db32c849b07eef431a5d88af0f5ceaf4584360fcb86022b723",
         "frameW": 1280,
         "frameH": 720
     },
@@ -56,30 +56,39 @@
     },
     "VF_征集_18": {
         "action": "DoNothing",
-        "timeout": 3000,
+        "timeout": 30000,
         "next": [
             "VF_征集_18_Hit"
-        ],
-        "on_error": [
-            "VF_征集_12"
         ]
     },
     "VF_征集_18_Hit": {
         "recognition": "TemplateMatch",
         "template": "duigou.png",
         "threshold": 0.7,
-        "action": "DoNothing",
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 600,
         "next": [
-            "VF_征集_04"
+            "VF_征集_19"
         ]
     },
-    "VF_征集_04": {
+    "VF_征集_19": {
         "recognition": "TemplateMatch",
-        "template": "duigou.png",
-        "threshold": 0.6,
+        "template": "wu.png",
+        "threshold": 0.8,
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_征集_20"
+        ]
+    },
+    "VF_征集_20": {
         "action": "Click",
-        "timeout": 8000,
-        "post_delay": 900,
+        "target": [
+            812,
+            402
+        ],
+        "post_delay": 500,
         "next": [
             "VF_征集_12"
         ]
