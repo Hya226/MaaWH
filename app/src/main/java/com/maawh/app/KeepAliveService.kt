@@ -71,9 +71,12 @@ class KeepAliveService : Service() {
         // 用户从最近任务划掉 MaaWH：只要队列没在跑就清掉 appops 静音残留（PLAY_AUDIO deny
         // 是持久系统设置，没人恢复的话用户转头打开物华弥新也没声）。队列还在跑则不动——
         // 静音是任务期间的预期行为，收尾自会恢复。
+        // 静音标记还在 = 虚拟屏+游戏场景仍被 MainActivity 的退出路径管控（先 stopVirtual
+        // 拆屏、游戏销毁后才恢复）——这里绝不能抢跑：此刻游戏还活着在放 BGM，提前放开
+        // appops 会冒出一瞬间游戏声音（2026-09-20 平板实测）。标记不在才兜历史泄漏残留。
         // 必须用孤儿 shell 派发（requestGameAudioRestore）：划掉瞬间进程随时被杀，普通
         // 异步恢复跑不完（2026-09-19 实测 deny 残留就是这么来的）；命令毫秒级，同步调用即可。
-        if (!QueueRunner.isAnyRunning()) {
+        if (!QueueRunner.isAnyRunning() && GameAudioMarker.marked(this) == null) {
             ShizukuShell.requestGameAudioRestore()
         }
     }
@@ -84,7 +87,11 @@ class KeepAliveService : Service() {
         watchThread.quitSafely()
         // 服务停止 = 管控态彻底结束（虚拟屏已死/队列收尾停保活），顺手派发一次静音恢复，
         // 兜住"虚拟屏悄悄死了但 deny 还挂着"的场合；幂等（无 deny 时不动作）。
-        ShizukuShell.requestGameAudioRestore()
+        // 静音标记还在 = MainActivity 退出串行路径（拆屏后恢复）还没跑到，抢跑会放游戏
+        // 出最后一瞬间声音——跳过；标记未被清的残留由冷启动自愈兜底。
+        if (GameAudioMarker.marked(applicationContext) == null) {
+            ShizukuShell.requestGameAudioRestore()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
