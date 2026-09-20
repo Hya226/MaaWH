@@ -57,14 +57,37 @@ object GitHubUpdater {
         ""
     }
 
-    /** 数值逐段比较版本号（v 前缀与不足段已容忍）：a>b → 1，a<b → -1，相等 → 0 */
+    /**
+     * 版本比较（semver 语义，容忍 v 前缀与预发行后缀）：
+     * - 主数字段逐段比：v0.2.3-beta.1 与 v0.2.2 → 0.2.3 > 0.2.2 = 1
+     * - 主段相同：正式版 > 预发行版（0.2.3 > 0.2.3-beta.1，beta 用户应升级到正式版）
+     * - 同为预发行：比后缀数字（v0.2.3-beta.2 > v0.2.3-beta.1）
+     * ⚠ 不能对整段 toIntOrNull——"3-beta" 会转成 0，把 v0.2.3-beta.1 误判为 v0.2.0（实测踩中：
+     *   测试版渠道永远显示「已是最新」）。必须先剥离 -后缀 再比数字。
+     */
     fun compareVersion(a: String, b: String): Int {
-        val pa = a.removePrefix("v").split('.').map { it.toIntOrNull() ?: 0 }
-        val pb = b.removePrefix("v").split('.').map { it.toIntOrNull() ?: 0 }
-        val n = maxOf(pa.size, pb.size)
-        for (i in 0 until n) {
-            val x = pa.getOrElse(i) { 0 }
-            val y = pb.getOrElse(i) { 0 }
+        fun parse(v: String): Pair<List<Int>, List<Int>> {
+            val s = v.removePrefix("v")
+            val dash = s.indexOf('-')
+            val nums = (if (dash < 0) s else s.take(dash))
+                .split('.').map { it.toIntOrNull() ?: 0 }
+            val pre = if (dash < 0) emptyList()
+            else s.substring(dash + 1).split('.').map { it.toIntOrNull() ?: 0 }
+            return nums to pre
+        }
+        val (na, preA) = parse(a)
+        val (nb, preB) = parse(b)
+        for (i in 0 until maxOf(na.size, nb.size)) {
+            val x = na.getOrElse(i) { 0 }
+            val y = nb.getOrElse(i) { 0 }
+            if (x != y) return if (x > y) 1 else -1
+        }
+        if (preA.isEmpty() && preB.isEmpty()) return 0
+        if (preA.isEmpty()) return 1      // 正式 > 预发行
+        if (preB.isEmpty()) return -1
+        for (i in 0 until maxOf(preA.size, preB.size)) {
+            val x = preA.getOrElse(i) { 0 }
+            val y = preB.getOrElse(i) { 0 }
             if (x != y) return if (x > y) 1 else -1
         }
         return 0
@@ -119,6 +142,10 @@ object GitHubUpdater {
         conn.setRequestProperty("User-Agent", "MaaWH-App")
         try {
             if (conn.responseCode !in 200..299) {
+                if (conn.responseCode == 403) {
+                    // GitHub 对未认证 API 限 60 次/小时/IP；共享代理出口 IP 极易耗尽
+                    throw IOException("GitHub 拒绝访问（403，可能是代理出口 IP 触发速率限制），请稍后重试或更换节点")
+                }
                 throw IOException("GitHub API HTTP ${conn.responseCode}")
             }
             return parse(conn)
