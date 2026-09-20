@@ -77,9 +77,9 @@ git clone https://github.com/Hya226/MaaWH.git
 
 ## 赞助
 
-如果 MaaWH 帮你省下了时间，欢迎[通过爱发电支持](https://afdian.com/a/maawh)（纯自愿打赏，所有功能永远免费开源）：
-
-<a href="https://afdian.com/a/maawh"><img src="https://img.shields.io/badge/%E7%88%B1%E5%8F%91%E7%94%B5-%40maawh-946CE6?logo=afdian" alt="爱发电 @maawh" /></a>
+<a href="https://afdian.com/a/maawh">
+  <img width="200" src="https://pic1.afdiancdn.com/static/img/welcome/button-sponsorme.png" alt="在爱发电支持我" />
+</a>
 
 ## License
 
