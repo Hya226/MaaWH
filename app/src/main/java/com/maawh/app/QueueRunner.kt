@@ -223,7 +223,7 @@ class QueueRunner(
                             if (cmdOk && !alive && cb.isVdOn()) {
                                 // 游戏关了虚拟屏也没存在意义：一并关闭，切后台不再弹悬浮窗
                                 runCatching { ShizukuShell.stopVirtual() }
-                                cb.onVdClosed()
+                                notify { cb.onVdClosed() }
                                 cb.onLog("虚拟屏已同步关闭", LogLevel.INFO)
                             }
                             cmdOk && !alive
@@ -277,11 +277,17 @@ class QueueRunner(
             // 「任务自动结束时关闭游戏」只在非手动停止时执行：用户点「停止任务」是主动介入，
             // 多半还要继续手动操作游戏/挂机，此时关游戏不符合预期；自然跑完与失败结束才关
             if (closeAfterEnabled && !stopRequested) {
-                runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
+                // 收尾时检测：游戏还在运行才 force-stop，不在（途中已自行退出/被关）就跳过
+                if (gameAlive()) {
+                    runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
+                    cb.onLog("✓ 检测到游戏仍在运行，已关闭游戏", LogLevel.INFO)
+                } else {
+                    cb.onLog("游戏已不在运行，跳过关闭", LogLevel.INFO)
+                }
                 // 与【关闭游戏】任务同口径：游戏关了虚拟屏一并关闭，切后台不再弹悬浮窗
                 if (cb.isVdOn()) {
                     runCatching { ShizukuShell.stopVirtual() }
-                    cb.onVdClosed()
+                    notify { cb.onVdClosed() }
                     cb.onLog("虚拟屏已同步关闭", LogLevel.INFO)
                 }
             }

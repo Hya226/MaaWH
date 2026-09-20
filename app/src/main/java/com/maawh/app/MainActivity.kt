@@ -1679,6 +1679,19 @@ class MainActivity : AppCompatActivity() {
                 lifecycleScope.launch(Dispatchers.IO) {
                     runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
                         .onFailure { log("关闭游戏失败: ${it.message}") }
+                    // 与【关闭游戏】任务同口径：虚拟屏一并关闭（清标志/收悬浮窗/停保活）
+                    // 注意：clearVdPreview/setRunState 摸 View，必须回主线程执行
+                    if (vdOn) {
+                        runCatching { ShizukuShell.stopVirtual() }
+                        vdOn = false
+                        runOnUiThread {
+                            clearVdPreview()
+                            FloatingPanel.hide()
+                            stopKeepAlive()
+                            setRunState("虚拟屏已关闭", R.color.text_secondary)
+                        }
+                        log("虚拟屏已同步关闭")
+                    }
                 }
             }
         ))
