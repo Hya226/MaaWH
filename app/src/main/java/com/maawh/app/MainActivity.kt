@@ -216,6 +216,10 @@ class MainActivity : AppCompatActivity() {
         binding.btnRequest.setOnClickListener { requestShizukuPermission() }
         binding.btnRefresh.setOnClickListener { refreshStatus() }
         binding.imageShot.setOnTouchListener { _, ev -> handleImageTouch(ev) }
+        binding.imageShot.addOnLayoutChangeListener { v, l, _, r, _, ol, _, orr, _ ->
+            // 宽度变化（含首次布局）时让预览高度重新贴合图像比例
+            if ((r - l) != (orr - ol)) applyPreviewAspect()
+        }
         binding.btnStartQueue.setOnClickListener {
             // 小工具 tab：开始/停止抽卡识别；其他 tab：跑对应队列
             if (homeTab == HomeTab.TOOLBOX) startGachaCrawl() else startQueue()
@@ -1929,6 +1933,19 @@ class MainActivity : AppCompatActivity() {
     // M4 虚拟屏：实时预览 + 全屏
     // ==================================================================
 
+    /** 预览容器高度贴合图像宽高比：虚拟屏帧 16:9、物理截图 20:9 都铺满无黑边；比例没变时零开销 */
+    private fun applyPreviewAspect() {
+        val v = binding.imageShot
+        if (v.width <= 0) return
+        val b = lastBitmap
+        val ratio = if (b != null && b.width > 0) b.height.toFloat() / b.width else 9f / 16f
+        val h = (v.width * ratio + 0.5f).toInt()
+        if (v.layoutParams.height != h) {
+            v.layoutParams.height = h
+            v.layoutParams = v.layoutParams
+        }
+    }
+
     /** 主页预览：仅轻量显示 VdStreamer 的最新帧 */
     private val vdUiTick = object : Runnable {
         override fun run() {
@@ -1938,6 +1955,7 @@ class MainActivity : AppCompatActivity() {
                     binding.imageShot.setImageBitmap(f)
                     binding.imageShot.tag = System.identityHashCode(f)
                     lastBitmap = f
+                    applyPreviewAspect()
                 }
             }
             vdHandler.postDelayed(this, 150)
@@ -3603,6 +3621,7 @@ class MainActivity : AppCompatActivity() {
                 val bmp = ShizukuShell.screencap()
                 lastBitmap = bmp
                 binding.imageShot.setImageBitmap(bmp)
+                applyPreviewAspect()
                 log("预览刷新 ${bmp.width}x${bmp.height}")
             } catch (e: Exception) {
                 log("截图失败：${e.message}")
