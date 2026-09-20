@@ -1397,6 +1397,12 @@ class MainActivity : AppCompatActivity() {
                     binding.btnStartQueue.text = getString(R.string.btn_start_queue)
                 }
                 override fun onVdFlagSet() { vdOn = true }
+                override fun onVdClosed() {
+                    vdOn = false
+                    FloatingPanel.hide()
+                    stopKeepAlive()
+                    setRunState("虚拟屏已关闭", R.color.text_secondary)
+                }
                 override fun onGameEnteredVd() {
                     VdStreamer.start()
                     vdHandler.removeCallbacks(vdUiTick)

@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-19T20:21:37+08:00",
+        "generatedAt": "2026-09-20T08:36:24+08:00",
         "flowFile": "刷活动关.flow.json",
-        "flowHash": "sha256:d11c3c3b3701040c12b87751a69bdc93946fda509867264bc220ac24ead9555d",
-        "pipelineHash": "sha256:816b4b6ca36d3ecc19cb94c43291a6e977e2712666693beeef9525a392dae02d",
+        "flowHash": "sha256:a74f3a94deaad3ded7eb0b7f02813ae5096752ee2b4835107f18d6e18c9947d9",
+        "pipelineHash": "sha256:200f6b82e0790a148addf6359dc439e78b5363727c30b701a8c23f8a286abea4",
         "frameW": 1280,
         "frameH": 720
     },
@@ -138,7 +138,7 @@
     "VF_刷活动关_20_Hit": {
         "recognition": "TemplateMatch",
         "template": "duigou.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "Click",
         "rate_limit": 600,
         "post_delay": 2000,

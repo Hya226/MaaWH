@@ -37,6 +37,8 @@ class QueueRunner(
         fun onVdFlagSet()
         /** 「启动」任务已投屏（收口前）：刷新预览 + 状态行「游戏已进虚拟屏，收口中…」 */
         fun onGameEnteredVd()
+        /** 「关闭游戏」任务执行完：虚拟屏一并关闭（App 侧清标志/收悬浮窗/停保活） */
+        fun onVdClosed()
         /** 虚拟屏标志当前值（收尾决定保活去留用） */
         fun isVdOn(): Boolean
         /** 队列收尾是否保持游戏静音：手动「关闭游戏声音」开着，或「游戏启动后关闭游戏声音」开着且虚拟屏还活着 */
@@ -217,6 +219,12 @@ class QueueRunner(
                                 !wasRunning -> cb.onLog("游戏本来就没在运行", LogLevel.INFO)
                                 alive -> cb.onLog("✗ 关闭游戏：命令已执行，但 10s 后游戏进程仍在 ${gamePids()}", LogLevel.INFO)
                                 else -> cb.onLog("✓ 游戏已退出（force-stop 后 ${waited}ms 内）", LogLevel.INFO)
+                            }
+                            if (cmdOk && !alive && cb.isVdOn()) {
+                                // 游戏关了虚拟屏也没存在意义：一并关闭，切后台不再弹悬浮窗
+                                runCatching { ShizukuShell.stopVirtual() }
+                                cb.onVdClosed()
+                                cb.onLog("虚拟屏已同步关闭", LogLevel.INFO)
                             }
                             cmdOk && !alive
                         } else {
