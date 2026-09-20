@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 「后台运行时自动画中画」开关：切后台是否自动弹虚拟屏悬浮窗 */
     @Volatile
-    private var pipEnabled = true
+    private var pipEnabled = false
 
     private var vdOn = false
 
