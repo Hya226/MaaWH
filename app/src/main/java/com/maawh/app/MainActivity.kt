@@ -354,6 +354,8 @@ class MainActivity : AppCompatActivity() {
         adapter.notifyDataSetChanged()
         toolsAdapter.notifyDataSetChanged()
         if (tasks.isNotEmpty()) selectTask(0)
+        // 清单+存档就绪：状态行从「任务清单加载中…」切到就绪（冷启动首帧不再显示误导文案）
+        if (!isTaskRunning) setRunState(getString(R.string.run_ready), R.color.text_secondary)
     }
 
     // ==================================================================
@@ -2037,7 +2039,12 @@ class MainActivity : AppCompatActivity() {
             FloatingPanel.hide()
             // 虚拟屏没了就不用再占着前台服务（任务在跑的话保留，由 runQueue 收尾时停）
             if (!isTaskRunning) stopKeepAlive()
-            setRunState(getString(R.string.run_ready), R.color.text_secondary)
+            // 冷启动清单尚未加载完时先显示「加载中」，不显示误导性的「就绪」（首帧闪烁，用户反馈）
+            setRunState(
+                if (manifest == null) getString(R.string.manifest_loading)
+                else getString(R.string.run_ready),
+                R.color.text_secondary
+            )
             log("已停止虚拟屏")
         }
     }
