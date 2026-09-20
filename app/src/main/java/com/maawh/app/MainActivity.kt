@@ -3033,6 +3033,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnGachaRun.text = getString(R.string.gacha_stop)
         binding.tvGachaStatus.text = "准备…"
         if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
+        // 主页底部状态行同步：识别期间替换残留的队列结算文案，进度实时跟随（用户反馈）
+        setRunState("抽卡识别中…", R.color.accent)
         // 通知/悬浮窗联动：状态行显示识别中，■停止按钮换为停止抓取（结束后恢复默认）
         keepAlive("抽卡记录识别中")
         FloatingPanel.stopCallback = { stopGachaCrawl() }
@@ -3044,20 +3046,26 @@ class MainActivity : AppCompatActivity() {
                 val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
                 val crawler = GachaCrawler(applicationContext, ocr) { m, lv -> log(m, lv) }
                 val report = crawler.crawl { p ->
-                    runOnUiThread { binding.tvGachaStatus.text = p }
+                    runOnUiThread {
+                        binding.tvGachaStatus.text = p
+                        setRunState("▶ 抽卡识别：$p", R.color.accent)
+                    }
                     keepAlive("▶ 抽卡识别：$p")
                     FloatingPanel.update("▶ 抽卡识别：$p")
                 }
                 runSummary = "新增 ${report.added} 条"
                 binding.tvGachaStatus.text = "✓ 新增 ${report.added} 条"
+                setRunState("✓ 抽卡识别完成：新增 ${report.added} 条", R.color.ok_green)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 runSummary = "已停止"
                 binding.tvGachaStatus.text = "◼ 已停止"
+                setRunState("◼ 抽卡识别已停止", R.color.text_secondary)
                 throw e
             } catch (e: Exception) {
                 runSummary = "失败：${e.message}"
                 log("抽卡抓取失败：${e.message}", LogLevel.ERR)
                 binding.tvGachaStatus.text = "✗ ${e.message}"
+                setRunState("✗ 抽卡识别失败：${e.message}", R.color.err_red)
             } finally {
                 RunLogStore.end(runSummary)
                 gachaRunning = false
