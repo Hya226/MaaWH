@@ -274,6 +274,7 @@ class GachaCrawler(
                 continue
             }
             var bad = 0
+            var badTime = false
             val raws = ArrayList<GachaStore.RawRow>(bands.size)
             for (b in bands) {
                 val rarity = classifyRarity(b, pts.colors)
@@ -297,6 +298,7 @@ class GachaCrawler(
                 if (ts == null) {
                     onLog("时间解析失败：\"$timeRaw\"，跳过该行", LogLevel.WRN)
                     bad++
+                    badTime = true
                     continue
                 }
                 // 招集列（小类）：识别失败不影响本行入库，仅归到"未识别"组
@@ -307,6 +309,14 @@ class GachaCrawler(
                 raws.add(GachaStore.RawRow(ts, timeRaw, name, rarity, banner))
             }
             if (bad == 0 || attempt >= 1) return@withContext GachaStore.buildRecords(pool, raws, seqMap)
+            if (badTime) {
+                // 时间列识别失败最常见的原因：下拉面板没收起、遮住了时间列
+                // （面板 x1047~1232 与 timeCol x924~1225 重叠）——先点面板外收起再重抓整页
+                onLog("存在时间解析失败：点 (${PANEL_DISMISS.x},${PANEL_DISMISS.y}) 关闭可能未收起的下拉面板，重新识别本页", LogLevel.WRN)
+                tap(PANEL_DISMISS)
+                delay(pts.afterDropdownMs)
+                waitStableRegion(pts)
+            }
             onLog("本页 $bad 行识别异常，重抓一帧重试", LogLevel.WRN)
             attempt++
             delay(500)
@@ -459,12 +469,19 @@ class GachaCrawler(
         tap(opt)
         delay(pts.afterPoolSwitchMs)
         waitStableRegion(pts)
-        val panelAfter = grabStable(pts)?.let { regionHash(it, DROPDOWN_PANEL) }
-        if (panelBefore != null && panelAfter != null && panelBefore == panelAfter) {
-            onLog("下拉面板未自动收起（选中的是当前池子），补一次收起点击", LogLevel.TRACE)
-            tap(pts.dropdown)
+        // 收起复验：哈希仍相同 = 面板还开着（点按钮收不起/点击丢失），点面板外收起并重试
+        var panelAfter = grabStable(pts)?.let { regionHash(it, DROPDOWN_PANEL) }
+        var retries = 0
+        while (panelBefore != null && panelAfter != null && panelBefore == panelAfter && retries < 3) {
+            retries++
+            onLog("下拉面板未自动收起（选中的是当前池子），点面板外收起（第 $retries 次）", LogLevel.INFO)
+            tap(PANEL_DISMISS)
             delay(pts.afterDropdownMs)
             waitStableRegion(pts)
+            panelAfter = grabStable(pts)?.let { regionHash(it, DROPDOWN_PANEL) }
+        }
+        if (panelBefore != null && panelAfter != null && panelBefore == panelAfter) {
+            onLog("下拉面板收起失败（已重试 $retries 次），面板会遮挡时间列导致识别异常", LogLevel.WRN)
         }
         // 兜底点页码 1：有的切池会记住上次页码
         tap(pts.pageOne)
@@ -637,5 +654,12 @@ class GachaCrawler(
 
         /** 下拉展开面板的区域（frame_dropdown.jpg 实测 ≈x1047..1232, y178..362），用于判"面板是否还开着" */
         private val DROPDOWN_PANEL = Points.R(1047, 178, 185, 184)
+
+        /**
+         * 下拉面板的「面板外收起」点击点（面板右上外侧空白，用户实测可关闭面板；
+         * 点下拉按钮本身收不起——游戏把展开态的按钮点击吞掉了）。两处使用：
+         * switchPool 补收起、scanPage 时间解析失败时先关面板再重识别。
+         */
+        private val PANEL_DISMISS = Points.Pt(1209, 155)
     }
 }
