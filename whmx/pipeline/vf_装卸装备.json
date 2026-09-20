@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-20T15:18:26+08:00",
+        "generatedAt": "2026-09-20T16:20:03+08:00",
         "flowFile": "装卸装备.flow.json",
-        "flowHash": "sha256:f66328d2679185c4d89a1e7061726ec3b5b0240f454c05ff8a3fa1c50c64e0f8",
-        "pipelineHash": "sha256:b7ae80818f8d0658835ae229a680238780ac293e697b312b7d634a741f0e3ea5",
+        "flowHash": "sha256:7fe6303abeb6db3805e29c8cb6c6b492b983322fb06f63f76a08eec1c72f281f",
+        "pipelineHash": "sha256:db9bf59e6f8be4dda738b390c14904bd9a74813864087e6539ff345d5ccd69a8",
         "frameW": 1280,
         "frameH": 720
     },
@@ -71,7 +71,7 @@
         "post_delay": 800,
         "order_by": "Score",
         "next": [
-            "VF_装卸装备_09"
+            "VF_装卸装备_13"
         ]
     },
     "VF_装卸装备_16": {
@@ -101,7 +101,7 @@
         "rate_limit": 600,
         "post_delay": 600,
         "next": [
-            "VF_装卸装备_13"
+            "VF_装卸装备_04"
         ]
     },
     "VF_装卸装备_13": {
@@ -111,7 +111,7 @@
             "VF_装卸装备_13_Hit"
         ],
         "on_error": [
-            "VF_装卸装备_04"
+            "VF_装卸装备_17"
         ]
     },
     "VF_装卸装备_13_Hit": {
@@ -127,6 +127,53 @@
         ],
         "next": [
             "VF_装卸装备_09"
+        ]
+    },
+    "VF_装卸装备_17": {
+        "action": "Click",
+        "target": [
+            1173,
+            494
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_装卸装备_19"
+        ]
+    },
+    "VF_装卸装备_19": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_装卸装备_19_Hit"
+        ]
+    },
+    "VF_装卸装备_19_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "genghuan.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_装卸装备_21"
+        ]
+    },
+    "VF_装卸装备_21": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_装卸装备_21_Hit"
+        ]
+    },
+    "VF_装卸装备_21_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "xiexia.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_装卸装备_04"
         ]
     },
     "VF_装卸装备_04": {
