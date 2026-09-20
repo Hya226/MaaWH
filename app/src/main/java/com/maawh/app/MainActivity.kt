@@ -975,7 +975,9 @@ class MainActivity : AppCompatActivity() {
             KeepAliveService.stop(this)
             Thread {
                 runCatching { ShizukuShell.stopVirtual() }
-                runCatching { GameAudioMarker.restoreIfNeeded(applicationContext) }
+                // 游戏进程 dying 期间立即恢复 appops 会放出一瞬间 BGM（2026-09-20 平板实测）；
+                // 改派延迟孤儿：等游戏进程消失后再恢复。sh 清不了静音标记，残留交冷启动自愈。
+                runCatching { ShizukuShell.scheduleGameAudioRestoreAfterExit() }
             }.start()
         } else if (!vdOn) {
             // 退出兜底：appops 静音是持久系统设置，MaaWH 不再管控游戏（队列没跑、虚拟屏已关）

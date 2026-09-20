@@ -287,6 +287,51 @@ object ShizukuShell {
         }
     }
 
+    /**
+     * 派发「延迟退出恢复」孤儿：先 sleep [delaySec] 给游戏 Activity 销毁起步，再等游戏进程
+     * 消失（上限 [maxWaitSec] 秒——VD 拆除后进程 dying 期间立即恢复 appops，会放出一瞬间
+     * BGM，2026-09-20 平板实测），最后 VD 已消失且 deny 还挂着才执行恢复序列。
+     * 与 [scheduleGameAudioRestoreGuard] 同款的孤儿派发模式（fire-and-forget，sh 挂 init 下，
+     * MaaWH 进程被杀也执行完——绝不能在 MaaWH 线程里 sleep，划掉后进程随时被杀）。
+     * sh 清不了 App 的 SharedPreferences 静音标记，标记残留交给冷启动自愈（幂等）。
+     * 用于 MainActivity 退出拆屏后的最终恢复。
+     */
+    fun scheduleGameAudioRestoreAfterExit(delaySec: Long = 3, maxWaitSec: Int = 15): Boolean {
+        val srv = service?.takeIf { it.asBinder().isBinderAlive } ?: return false
+        val pipe = ParcelFileDescriptor.createPipe()
+        return try {
+            val waitLoop = (1..maxWaitSec).joinToString(" ")
+            val cmd = arrayOf(
+                "/system/bin/sh", "-c",
+                "( sleep $delaySec; " +
+                    "for i in $waitLoop; do " +
+                    "pidof ${MaaConst.GAME_PKG} >/dev/null 2>&1 || break; sleep 1; done; " +
+                    "dumpsys display | grep -q MaaWH-VD && exit 0; " +
+                    "appops get ${MaaConst.GAME_PKG} PLAY_AUDIO | grep -q deny || exit 0; " +
+                    "{ appops reset ${MaaConst.GAME_PKG}; " +
+                    "appops set --uid ${MaaConst.GAME_PKG} PLAY_AUDIO default; " +
+                    "appops set --uid ${MaaConst.GAME_PKG} PLAY_AUDIO allow; " +
+                    "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO allow; " +
+                    "appops set ${MaaConst.GAME_PKG} CONTROL_AUDIO_PARTIAL allow; } ) >/dev/null 2>&1 &"
+            )
+            thread(name = "audio-exit-restore-dispatch", isDaemon = true) {
+                try {
+                    srv.exec(cmd, pipe[1])
+                } catch (_: Throwable) {
+                } finally {
+                    runCatching { pipe[0].close() }
+                    runCatching { pipe[1].close() }
+                }
+            }
+            true
+        } catch (e: Throwable) {
+            report(LogLevel.WRN, "派发延迟退出恢复失败: ${e.message}")
+            runCatching { pipe[0].close() }
+            runCatching { pipe[1].close() }
+            false
+        }
+    }
+
     fun requestGameAudioRestore(): Boolean {        val srv = service?.takeIf { it.asBinder().isBinderAlive } ?: return false
         val pipe = ParcelFileDescriptor.createPipe()
         return try {
