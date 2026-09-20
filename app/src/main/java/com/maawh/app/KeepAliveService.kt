@@ -131,7 +131,7 @@ class KeepAliveService : Service() {
         val b = Notification.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
-            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentIntent(open)
             .setOngoing(true)
         // 任务运行中的通知带队列进度条 + 停止按钮（total=0 是虚拟屏保活通知，不加）
