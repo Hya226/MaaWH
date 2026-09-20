@@ -3617,8 +3617,8 @@ class MainActivity : AppCompatActivity() {
                 gestureActive = false
             }
             MotionEvent.ACTION_MOVE -> {
-                // 虚拟屏实时手势：手指移动时逐点注入 MOVE（>20px 视为滑动开始）
-                if (!vdOn) return true
+                // 虚拟屏实时手势：手指移动时逐点注入 MOVE（>20px 视为滑动开始）；开关关掉后不注入
+                if (!vdOn || !binding.switchTap.isChecked) return true
                 val bmp = lastBitmap ?: return true
                 val dist = Math.hypot((ev.x - downX).toDouble(), (ev.y - downY).toDouble())
                 if (!gestureActive) {
@@ -3662,6 +3662,11 @@ class MainActivity : AppCompatActivity() {
                 val x = dev.x.toInt(); val y = dev.y.toInt()
                 if (vdOn) {
                     val nx = x * 2; val ny = y * 2
+                    if (!binding.switchTap.isChecked) {
+                        // 开关关掉：只报坐标（虚拟屏 1280x720 坐标系，与模板/固定坐标同基准），不注入
+                        log("该点坐标 ($nx, $ny)")
+                        return true
+                    }
                     log("虚拟屏点击 ($nx, $ny)")
                     lifecycleScope.launch(Dispatchers.IO) {
                         val r = ShizukuShell.injectTapVD(nx, ny)

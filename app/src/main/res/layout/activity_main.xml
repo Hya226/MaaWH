@@ -17,13 +17,6 @@
         android:padding="8dp">
 
         <!-- 虚拟屏：整页最上方（预览 + 点按注入），启动/全屏/截图收进「快捷选项」 -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/label_preview"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
-
         <ImageView
             android:id="@+id/imageShot"
             android:layout_width="match_parent"
