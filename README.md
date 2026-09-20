@@ -26,7 +26,7 @@ MaaWH 是一个《物华弥新》游戏自动化宿主，架构对标 MAA-Meow�
 
 ## 环境要求
 
-- Android 9.0（API 28）及以上
+- Android 9.0（API 28）及以上；开发与测试环境为 Android 14，9~13 未经充分验证
 - [Shizuku](https://shizuku.rikka.app/)：通过无线调试或 USB 调试启动（虚拟屏与点击注入都经由 Shizuku 授权的 shell 权限完成）
 - 悬浮窗权限（可选）：后台悬浮面板需要「显示在其他应用上层」
 
