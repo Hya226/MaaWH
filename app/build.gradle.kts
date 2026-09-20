@@ -135,7 +135,15 @@ val syncGachaNames = tasks.register<Sync>("syncGachaNames") {
     from(rootProject.file("gacha/names.json"))
     into(file("src/main/assets/gacha"))
 }
-tasks.named("preBuild") { dependsOn(syncWhmxAssets, syncGachaNames) }
+
+// 抽卡 OCR 模型同步进 assets：任何新设备/全新安装都能首装自举
+// （OnnxPpocrOcr 的 ensureAssetFile 会释放到 files/gacha/ocr_models/）。
+// 模型二进制不进 git（.gitignore 掉 assets/gacha/ocr_models/），正本在 gacha/ocr_models/
+val syncGachaOcrModels = tasks.register<Sync>("syncGachaOcrModels") {
+    from(rootProject.file("gacha/ocr_models"))
+    into(file("src/main/assets/gacha/ocr_models"))
+}
+tasks.named("preBuild") { dependsOn(syncWhmxAssets, syncGachaNames, syncGachaOcrModels) }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")

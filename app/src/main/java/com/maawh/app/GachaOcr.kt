@@ -17,7 +17,8 @@ import java.util.Locale
  * 单行小图一般只返回 0~1 行；返回列表是为将来整列识别留余地。
  *
  * 实现路线（2026-09-18 定）：本地 PP-OCR rec 模型转 ONNX + onnxruntime-android，
- * 模型文件放 files/gacha/ocr_models/（adb 推送，不进 APK）。接好后把 StubOcr 换掉。
+ * 模型正本在 gacha/ocr_models/，构建时同步进 APK assets，首装自举释放到
+ * files/gacha/ocr_models/（见 syncGachaOcrModels 与 ensureAssetFile）。
  */
 interface GachaOcr {
     suspend fun requestOCR(base64: String): List<GachaOcr.Line>
@@ -47,8 +48,8 @@ object StubOcr : GachaOcr {
 
 /**
  * 本地 PP-OCR rec 实现（ch_PP-OCRv4_rec_infer.onnx，Apache-2.0）。
- * 模型放 files/gacha/ocr_models/（adb 直推，不进 APK）；字典内嵌在模型
- * metadata "character" 里（6623 字），无需单独文件。
+ * 模型构建时同步进 APK assets、首装自举释放到 files/gacha/ocr_models/；
+ * 字典内嵌在模型 metadata "character" 里（6623 字），无需单独文件。
  *
  * 预处理与 CTC 解码是 PC 端 gacha/_ocr_validate.py「手写通道」的原样移植，
  * 2026-09-18 已在真实帧上与 RapidOCR 引擎对拍一致（时间 10/10，名字 9/10）。

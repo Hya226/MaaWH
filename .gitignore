@@ -59,6 +59,8 @@ _tools/whmx_backup_*/
 
 # 构建时自动生成的 assets 副本（由 whmx/ 同步而来）
 app/src/main/assets/whmx/
+# 抽卡 OCR 模型副本（由 gacha/ocr_models/ 同步而来，10MB 二进制不进 git）
+app/src/main/assets/gacha/ocr_models/
 
 # 预编译库来源目录（内嵌 git 仓库；so 已在 app/src/main/jniLibs）
 MaaFramework/
