@@ -3358,6 +3358,10 @@ class MainActivity : AppCompatActivity() {
             textSize = 14f
             setLineSpacing(dp(3).toFloat(), 1f)
             setPadding(0, dp(8), 0, dp(8))
+            // 公告里的 URL 自动转可点击链接（如项目仓库地址）
+            android.text.util.Linkify.addLinks(this, android.text.util.Linkify.WEB_URLS)
+            movementMethod = android.text.method.LinkMovementMethod.getInstance()
+            highlightColor = 0x334C9AFF.toInt()
         }
         val contentScroll = ScrollView(this).apply { addView(contentView) }
         root.addView(
