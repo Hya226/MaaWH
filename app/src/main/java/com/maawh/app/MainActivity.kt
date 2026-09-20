@@ -1715,22 +1715,28 @@ class MainActivity : AppCompatActivity() {
         dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
         dlg.setContentView(panel)
 
-        // 定位在【快捷选项】按钮正上方（虚拟屏预览之下），而不是盖住底部
-        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        // 底部锚定：面板底边固定钉在【开始任务/快捷选项】按钮行上方 10dp——
+        // 不依赖预测量高度（MaterialButton 两遍测量会让 measuredHeight 偏小，
+        // 按 TOP+y 推算会下坠盖住按钮行）
         val dm = resources.displayMetrics
         val margin = dp(12)
         val w = dm.widthPixels - margin * 2
-        val loc = IntArray(2)
-        binding.btnQuick.getLocationOnScreen(loc)
-        val y = (loc[1] - panel.measuredHeight - dp(10)).coerceAtLeast(dp(48))
-
+        // 底边钉在【就绪】状态行顶部（按钮行就在它下面，永远露在外面）：
+        // gravity=BOTTOM 时 y = 窗口底边到「就绪」行顶边的距离 + 8dp 间隙。
+        // 用活动窗口同框坐标计算，不依赖面板自测高度
+        val winLoc = IntArray(2)
+        window.decorView.getLocationOnScreen(winLoc)
+        val rsLoc = IntArray(2)
+        binding.tvRunState.getLocationOnScreen(rsLoc)
+        val rsTopInWindow = rsLoc[1] - winLoc[1]
+        val gap = window.decorView.height - rsTopInWindow + dp(8).toInt()
         dlg.window?.apply {
             setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
-            setGravity(android.view.Gravity.TOP or android.view.Gravity.START)
+            setGravity(android.view.Gravity.BOTTOM or android.view.Gravity.START)
             setLayout(w, ViewGroup.LayoutParams.WRAP_CONTENT)
             attributes = attributes.apply {
                 x = margin
-                this.y = y
+                y = gap
             }
         }
         dlg.show()
