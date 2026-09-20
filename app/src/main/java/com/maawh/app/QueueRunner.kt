@@ -278,6 +278,12 @@ class QueueRunner(
             // 多半还要继续手动操作游戏/挂机，此时关游戏不符合预期；自然跑完与失败结束才关
             if (closeAfterEnabled && !stopRequested) {
                 runCatching { ShizukuShell.execBlocking("am", "force-stop", MaaConst.GAME_PKG) }
+                // 与【关闭游戏】任务同口径：游戏关了虚拟屏一并关闭，切后台不再弹悬浮窗
+                if (cb.isVdOn()) {
+                    runCatching { ShizukuShell.stopVirtual() }
+                    cb.onVdClosed()
+                    cb.onLog("虚拟屏已同步关闭", LogLevel.INFO)
+                }
             }
             // 收尾体检：Shizuku 掉了要说清"不是 MaaWH 关的"并给出保活办法，
             // 否则用户只会看到下次打开时必须重新启用 Shizuku
