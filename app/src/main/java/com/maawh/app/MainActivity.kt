@@ -113,9 +113,6 @@ class MainActivity : AppCompatActivity() {
     private var gestureActive = false
     private var queuedStart: Runnable? = null
 
-    /** 改「页面缩放」触发的重建：这不是切后台，onStop 别顺手弹悬浮窗（重建后立刻回来） */
-    private var scaleRestarting = false
-
     private val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,11 +125,21 @@ class MainActivity : AppCompatActivity() {
         ShizukuShell.errorHook = { level, msg -> log(msg, level) }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        // 改「页面缩放」触发的重建：重建期间不是切后台/退出，onStop 别顺手弹悬浮窗、
+        // onDestroy 也别走退出收尾（收虚拟屏/恢复游戏声音）——置位在上个实例的 restartForScale，
+        // 在这里复位（销毁先于新建，复位不会漏）
+        scaleRestarting = false
+
         // 静音残留自愈（maameow 的 startAutoRestore 语义：上个会话结束 = 静音标记必是残留）：
         // 上次会话静音了游戏却没恢复成（进程被系统直接杀没有任何回调）→ 凭持久化标记恢复。
-        // 冷启动试一次 + UserService 每次新绑定完成再试一次（首次绑定可能晚于 onCreate）。
+        // **只在真冷启动跑**（每个进程一次）：改页面缩放的 recreate 也会进 onCreate，那不是新会话，
+        // 自愈会把本会话的静音当残留恢复掉——听感上就是"调缩放时游戏冒一下声音"。
+        // 另加 UserService 每次新绑定完成再试一次（首次绑定可能晚于 onCreate）。
         // 只认队列没跑——队列运行中的静音是本会话的合法状态，不能撤销。
-        lifecycleScope.launch(Dispatchers.IO) { runCatching { selfHealGameAudio() } }
+        if (!sessionLive) {
+            sessionLive = true
+            lifecycleScope.launch(Dispatchers.IO) { runCatching { selfHealGameAudio() } }
+        }
         ShizukuShell.onServiceReady = {
             lifecycleScope.launch(Dispatchers.IO) { runCatching { selfHealGameAudio() } }
         }
@@ -1014,6 +1021,9 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         ShizukuShell.onServiceReady = null
+        // 改页面缩放触发的重建：这不是会话结束（新实例马上回来、虚拟屏还活着），
+        // 走了下面的退出收尾会把本会话的静音/虚拟屏一起收掉
+        if (scaleRestarting) return
         if (queueRunner?.running == true) return
         if (isFinishing && vdOn) {
             // 用户主动关闭主界面 = 结束 MaaWH 会话：收虚拟屏、恢复游戏声音、停保活。
@@ -4019,6 +4029,12 @@ class MainActivity : AppCompatActivity() {
         /** 预览高度补算的重试上限（宽度还没量出时）：3 次 × 60ms 覆盖两三帧 */
         private const val ASPECT_RETRY_MAX = 3
         private const val ASPECT_RETRY_MS = 60L
+        /** 本进程是否已经起过一个 Activity 实例：区分「冷启动」与「改缩放触发的 recreate」 */
+        @Volatile
+        private var sessionLive = false
+        /** 正在为「页面缩放」重建（见 restartForScale）：重建期的 onStop/onDestroy 不是切后台/退出 */
+        @Volatile
+        private var scaleRestarting = false
         /** 改缩放触发 recreate 后要回到的页（-1 = 不恢复）；跨实例传递故放静态 */
         private var navRestorePage = -1
     }
