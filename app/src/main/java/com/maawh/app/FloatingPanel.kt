@@ -32,7 +32,7 @@ import android.widget.Toast
 object FloatingPanel {
 
     private const val TOUCH_SLOP = 12          // px，位移小于它算点击而非拖动
-    private const val FRAME_W = 432            // 画面宽（屏宽 40%，1080 屏）
+    private const val FRAME_W = 432            // 画面宽（屏宽 40%，1080 屏 · 100% 缩放时）
     private const val FRAME_H = FRAME_W * 9 / 16   // 虚拟屏 16:9 → 243
     private const val FRAME_TICK_MS = 200L
 
@@ -95,6 +95,11 @@ object FloatingPanel {
         if (added) return
         val wm = ctx.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val density = ctx.resources.displayMetrics.density
+        // 画面尺寸跟随「页面缩放」：DisplayScale 只改 densityDpi，这里的 px 常量不会自己缩，
+        // 不跟着缩会出现「窗口字变小、虚拟屏画面还是那么大」
+        val scale = DisplayScale.percent(ctx) / 100f
+        val frameW = (FRAME_W * scale).toInt()
+        val frameH = (FRAME_H * scale).toInt()
 
         fun chip(label: String, onClick: () -> Unit): TextView = TextView(ctx).apply {
             text = label
@@ -130,7 +135,7 @@ object FloatingPanel {
         }
         box.addView(
             frame,
-            LinearLayout.LayoutParams(FRAME_W, FRAME_H).apply { gravity = Gravity.CENTER }
+            LinearLayout.LayoutParams(frameW, frameH).apply { gravity = Gravity.CENTER }
         )
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL

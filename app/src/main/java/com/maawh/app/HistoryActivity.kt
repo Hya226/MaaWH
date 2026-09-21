@@ -1,5 +1,6 @@
 package com.maawh.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
@@ -17,6 +18,11 @@ class HistoryActivity : AppCompatActivity() {
 
     private lateinit var listContainer: LinearLayout
     private lateinit var emptyHint: TextView
+
+    /** 界面整体缩放（与主界面同一份设置，见 DisplayScale） */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(DisplayScale.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

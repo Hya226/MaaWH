@@ -18,7 +18,10 @@
     <!-- 拉起系统安装器安装下载的新 APK（用户需在系统设置允许「安装未知应用」） -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- 自定义 Application：把界面整体缩放（DisplayScale）挂到 applicationContext，
+         悬浮窗用 applicationContext 建视图，只在 Activity 层包一层管不到它 -->
     <application
+        android:name=".MaaApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"

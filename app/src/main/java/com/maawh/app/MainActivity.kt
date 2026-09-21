@@ -1,5 +1,6 @@
 package com.maawh.app
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -27,6 +28,7 @@ import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -55,6 +57,11 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+
+    /** 界面整体缩放：在 Resources 初始化前包一层带缩放的 Context（见 DisplayScale） */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(DisplayScale.wrap(newBase))
+    }
 
     private val tasks = mutableListOf<TaskItem>()
     private val enabled = mutableListOf<Boolean>()
@@ -105,6 +112,10 @@ class MainActivity : AppCompatActivity() {
     private var downY = 0f
     private var gestureActive = false
     private var queuedStart: Runnable? = null
+
+    /** 改「页面缩放」触发的重建：这不是切后台，onStop 别顺手弹悬浮窗（重建后立刻回来） */
+    private var scaleRestarting = false
+
     private val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -239,6 +250,9 @@ class MainActivity : AppCompatActivity() {
             // 宽度变化（含首次布局）时让预览高度重新贴合图像比例
             if ((r - l) != (orr - ol)) applyPreviewAspect()
         }
+        // 重建（改页面缩放）后新实例的 lastBitmap 是空的：先接住上一实例留下的帧，
+        // 比例才对；否则要等下一次抓帧 + 回主页才补上高度，那一小段预览区是塌的
+        lastBitmap = VdShared.frame
         binding.btnStartQueue.setOnClickListener {
             // 小工具 tab：开始/停止抽卡识别；其他 tab：跑对应队列
             if (homeTab == HomeTab.TOOLBOX) startGachaCrawl() else startQueue()
@@ -264,6 +278,12 @@ class MainActivity : AppCompatActivity() {
         // 清单加载移至任务包释放完成之后（见下方 ensureBundledTaskpack 回调）
 
         setupNav()
+        setupDisplayScale()
+        // 改完缩放重建回来的：回到设置页接着调（页序 = 底部导航：主页/抽卡/日志/设置）
+        if (navRestorePage >= 0) {
+            guideShowPage(navRestorePage)
+            navRestorePage = -1
+        }
 
         refreshStatus()
         updateInfoTexts()
@@ -958,6 +978,10 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
         // 回前台收起悬浮窗（弹出的条件见 onStop）
         FloatingPanel.hide()
+        // 预览高度补一次：重建/切页后回来时高度可能是塌的（宽度没变就不会触发布局监听）
+        binding.imageShot.post { applyPreviewAspect() }
+        // 缩放卡片按存档重刷一次（小球位置/按钮可见性以 prefs 为准，别被视图状态恢复带歪）
+        renderScaleLabel()
         // 从「安装未知应用」授权页回来：自动继续拉起待安装的更新包
         if (pendingInstallApk != null) tryInstallPending()
         // 虚拟屏是服务端权威状态(app 重启/切后台会丢内存标志)，回前台自动同步 UI
@@ -966,6 +990,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+        // 改「页面缩放」触发的重建不是切后台：跳过悬浮窗，免得它闪一下又被 onResume 收起
+        if (scaleRestarting) return
         // 切后台且虚拟屏活着/任务在跑 → 自动弹虚拟屏悬浮窗（设置页可关）
         if (pipEnabled && (vdOn || queueRunner?.running == true || gachaRunning)) {
             if (gachaRunning) FloatingPanel.update("▶ 抽卡记录识别中")
@@ -1958,16 +1984,25 @@ class MainActivity : AppCompatActivity() {
     // M4 虚拟屏：实时预览 + 全屏
     // ==================================================================
 
-    /** 预览容器高度贴合图像宽高比：虚拟屏帧 16:9、物理截图 20:9 都铺满无黑边；比例没变时零开销 */
-    private fun applyPreviewAspect() {
+    /**
+     * 预览容器高度贴合图像宽高比：虚拟屏帧 16:9、物理截图 20:9 都铺满无黑边；比例没变时零开销。
+     * 预览页 GONE（重建后停在设置页）时它不参与布局，宽度一直是 0——那种情况下先按屏幕宽估一个
+     * 高度把位置占住，等真布局出来再按真实宽度校正（重试上限避免空转）。
+     */
+    private fun applyPreviewAspect(retry: Int = 0) {
         val v = binding.imageShot
-        if (v.width <= 0) return
+        val laidOut = v.width > 0
+        // 16dp = panelHome 左右各 8dp 内边距，与布局里的一致
+        val w = if (laidOut) v.width else (resources.displayMetrics.widthPixels - dp(16))
         val b = lastBitmap
         val ratio = if (b != null && b.width > 0) b.height.toFloat() / b.width else 9f / 16f
-        val h = (v.width * ratio + 0.5f).toInt()
+        val h = (w * ratio + 0.5f).toInt()
         if (v.layoutParams.height != h) {
             v.layoutParams.height = h
             v.layoutParams = v.layoutParams
+        }
+        if (!laidOut && retry < ASPECT_RETRY_MAX) {
+            v.postDelayed({ applyPreviewAspect(retry + 1) }, ASPECT_RETRY_MS)
         }
     }
 
@@ -2258,6 +2293,61 @@ class MainActivity : AppCompatActivity() {
             }
             true
         }
+    }
+
+    // ==================================================================
+    // 显示设置：界面整体缩放（对标 MAA-Meow 设置页的「页面缩放」，机制见 DisplayScale）
+    // ==================================================================
+
+    private fun setupDisplayScale() {
+        binding.seekScale.progress = DisplayScale.percent(this)
+        renderScaleLabel()
+        binding.seekScale.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(bar: SeekBar?, value: Int, fromUser: Boolean) {
+                // 拖动中只更新数字；松手才应用（应用 = 重建界面，重建会打断拖动）
+                if (fromUser) binding.tvScaleValue.text = value.toString()
+            }
+
+            override fun onStartTrackingTouch(bar: SeekBar?) {}
+
+            override fun onStopTrackingTouch(bar: SeekBar?) {
+                val p = bar?.progress ?: return
+                DisplayScale.setSaved(this@MainActivity, p)
+                log("页面缩放已设为 $p%")
+                restartForScale()
+            }
+        })
+        binding.btnScaleAuto.setOnClickListener {
+            // 按钮只在手动档显示（自动档隐藏，见 renderScaleLabel）：点它 = 回到自动
+            DisplayScale.setSaved(this, DisplayScale.AUTO)
+            log("页面缩放已切回自动（${DisplayScale.percent(this)}）")
+            restartForScale()
+        }
+    }
+
+    /** 数值标签、滑块位置与「使用自动」按钮可见性：自动档把按钮收起来，手动调整过才再出现 */
+    private fun renderScaleLabel() {
+        val p = DisplayScale.percent(this)
+        val auto = DisplayScale.isAuto(this)
+        // 位置跟着生效值走（点「使用自动」回自动档、或任务运行中只保存不重建时，
+        // 靠这一行让滑块回到 92 之类的自动值上，而不是停在用户手动拖到的位置）
+        if (binding.seekScale.progress != p) binding.seekScale.progress = p
+        binding.tvScaleValue.text =
+            if (auto) getString(R.string.setting_scale_value_auto, p) else p.toString()
+        binding.btnScaleAuto.text = getString(R.string.setting_scale_auto)
+        binding.btnScaleAuto.visibility = if (auto) View.GONE else View.VISIBLE
+    }
+
+    /** 改完缩放：空闲时立即重建界面（并回到设置页）；任务/抓取运行中只落盘，下次启动生效 */
+    private fun restartForScale() {
+        if (isTaskRunning || gachaRunning) {
+            toast("缩放已保存，任务结束后重开 MaaWH 生效")
+            renderScaleLabel()
+            return
+        }
+        scaleRestarting = true
+        navRestorePage = NAV_SETTINGS
+        recreate()
     }
 
     // ==================================================================
@@ -3644,6 +3734,11 @@ class MainActivity : AppCompatActivity() {
         if (panel === binding.panelLog) {
             binding.scrollLog.post { binding.scrollLog.fullScroll(View.FOCUS_DOWN) }
         }
+        // 回主页补一次预览高度：主页曾是 GONE 时它没参与布局（宽度一直 0），只靠
+        // OnLayoutChange 容易漏（比如重建后停在设置页、或虚拟屏没开没有新帧可等）
+        if (panel === binding.panelHome) {
+            binding.imageShot.post { applyPreviewAspect() }
+        }
     }
 
     // ==================================================================
@@ -3919,5 +4014,12 @@ class MainActivity : AppCompatActivity() {
         private const val HOME_MAIN = "main"
         private const val HOME_TOOLS = "tools"
         private const val MATCH_PARENT = -1
+        /** 底部导航「设置」页序号（menu 顺序：主页/抽卡/日志/设置） */
+        private const val NAV_SETTINGS = 3
+        /** 预览高度补算的重试上限（宽度还没量出时）：3 次 × 60ms 覆盖两三帧 */
+        private const val ASPECT_RETRY_MAX = 3
+        private const val ASPECT_RETRY_MS = 60L
+        /** 改缩放触发 recreate 后要回到的页（-1 = 不恢复）；跨实例传递故放静态 */
+        private var navRestorePage = -1
     }
 }

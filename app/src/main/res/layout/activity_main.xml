@@ -706,6 +706,129 @@ app:cornerRadius="8dp"
                     android:textSize="11sp" />
             </LinearLayout>
 
+            <!-- ========== 显示设置：界面整体缩放（对标 MAA-Meow 的「页面缩放」） ==========
+                 改的是 densityDpi（dp 与 sp 同比例缩放），只影响 App 界面，
+                 与虚拟屏/模板坐标无关；生效方式见 DisplayScale + MaaApp/attachBaseContext -->
+            <LinearLayout
+                android:id="@+id/cardDisplay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_display_title"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/setting_scale"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvScaleValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/accent"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setting_scale_desc"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnScaleAuto"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    app:cornerRadius="8dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:minWidth="0dp"
+                    android:text="@string/setting_scale_auto" />
+
+                <!-- 刻度 80/90/100/110 与 DisplayScale.MIN/MAX 同源，改范围时一起改。
+                     saveEnabled=false：这个滑块的位置在 onCreate 里按存档算好，不能被
+                     Activity 的状态恢复用旧实例的 progress 覆盖（否则点「使用自动」后
+                     数字变 92、小球还停在手动位置） -->
+                <SeekBar
+                    android:id="@+id/seekScale"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:max="110"
+                    android:min="80"
+                    android:saveEnabled="false" />
+
+                <!-- 刻度行：标签按内容宽、用等宽 Space 撑开，位置贴合滑块取值 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="80"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="90"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="100"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="110"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

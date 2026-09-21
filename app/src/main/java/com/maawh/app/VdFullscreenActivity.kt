@@ -1,5 +1,6 @@
 package com.maawh.app
 
+import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,6 +20,11 @@ class VdFullscreenActivity : AppCompatActivity() {
     private var appliedAspect = 0f
 
     private val zoom = 0.9f
+
+    /** 界面整体缩放（与主界面同一份设置，见 DisplayScale） */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(DisplayScale.wrap(newBase))
+    }
 
     private val tick = object : Runnable {
         override fun run() {

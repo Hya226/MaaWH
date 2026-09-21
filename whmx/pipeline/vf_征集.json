@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-20T17:40:53+08:00",
+        "generatedAt": "2026-09-21T12:38:43+08:00",
         "flowFile": "征集.flow.json",
-        "flowHash": "sha256:6ee0fef524e63e9776b8052e1dcc968d5211cc34adf1f8c1eacd359ed34428d8",
-        "pipelineHash": "sha256:f960adf0c403a9db32c849b07eef431a5d88af0f5ceaf4584360fcb86022b723",
+        "flowHash": "sha256:31fb770d312f8d63e34cdf604d708218ad1a30d6a9d1ce88a3a353057e576ac7",
+        "pipelineHash": "sha256:d71d27ae763d5c8c2ab05fc86123b7b6cc2e8c2d99594fd8dff6fbf319ea0d40",
         "frameW": 1280,
         "frameH": 720
     },
@@ -33,7 +33,31 @@
         "timeout": 4000,
         "post_delay": 600,
         "next": [
+            "VF_征集_21"
+        ]
+    },
+    "VF_征集_21": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_征集_21_Hit"
+        ],
+        "on_error": [
+            "VF_征集_22"
+        ]
+    },
+    "VF_征集_21_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tiaoguochouka.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
             "VF_征集_17"
+        ]
+    },
+    "VF_征集_22": {
+        "next": [
+            "Common_回主页"
         ]
     },
     "VF_征集_17": {
