@@ -181,6 +181,22 @@
         "刷取次数",
         "关卡名"
       ]
+    },
+    {
+      "name": "博物研学",
+      "label": "博物研学",
+      "entry": "VF_博物研学",
+      "group": [
+        "tools"
+      ],
+      "option": [
+        "器者1",
+        "器者2",
+        "器者3",
+        "器者4",
+        "器者5",
+        "器者6"
+      ]
     }
   ],
   "option": {
@@ -309,7 +325,7 @@
         {
           "name": "器者4",
           "label": "器者4",
-          "default": "金喇叭",
+          "default": "",
           "pipeline_type": "string"
         }
       ],
@@ -512,6 +528,46 @@
         },
         "VF_装卸装备_16_01": {
           "template": "{角色名}.png"
+        }
+      }
+    },
+    "器者5": {
+      "type": "input",
+      "label": "器者5",
+      "inputs": [
+        {
+          "name": "器者5",
+          "label": "器者5",
+          "default": "",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "VF_博物研学_98_Hit": {
+          "template": "{器者5}.png"
+        },
+        "VF_博物研学_101": {
+          "template": "{器者5}.png"
+        }
+      }
+    },
+    "器者6": {
+      "type": "input",
+      "label": "器者6",
+      "inputs": [
+        {
+          "name": "器者6",
+          "label": "器者6",
+          "default": "",
+          "pipeline_type": "string"
+        }
+      ],
+      "pipeline_override": {
+        "VF_博物研学_120_Hit": {
+          "template": "{器者6}.png"
+        },
+        "VF_博物研学_122": {
+          "template": "{器者6}.png"
         }
       }
     }

@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-20T07:53:00+08:00",
+        "generatedAt": "2026-09-22T21:39:24+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:dc5cd1a44a23a0219344b3c55206aa76706242234b7ad5e47776b4491aff43dc",
-        "pipelineHash": "sha256:86ddba8de76b4724cc7c25df1ad1fa1c0fa8730da37721b8c393569bea1c6299",
+        "flowHash": "sha256:b16c87b9845a3b857ca629d60cc4df1d04d9357a0e2673db1a6bb5048489beae",
+        "pipelineHash": "sha256:17c92dc203f811b7426c0c62bcf681f1ab540579e108685fbe5b495ae8a1b2ea",
         "frameW": 1280,
         "frameH": 720
     },
@@ -70,6 +70,8 @@
             95
         ],
         "post_delay": 500,
+        "repeat": 3,
+        "repeat_delay": 350,
         "next": [
             "VF_启动_03"
         ]
