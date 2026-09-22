@@ -128,22 +128,18 @@ val syncWhmxAssets = tasks.register<Sync>("syncWhmxAssets") {
     }
 }
 
-// 抽卡器者名单正本（gacha/names.json）同步进 assets：随包预置，首装释放到
-// files/gacha/names.json（已存在则不动，用户手编不被覆盖）；后台更新名单 =
-// 改仓库正本重编译，或 adb 直推手机 files/gacha/names.json
-val syncGachaNames = tasks.register<Sync>("syncGachaNames") {
-    from(rootProject.file("gacha/names.json"))
+// 抽卡随包资源（assets/gacha/ 整目录交给同一个 Sync 管）：names.json 器者名单、
+// points.json 抓取坐标（GachaCrawler 首次抓取会从 assets 释放它）、ocr_models/ OCR 模型。
+// ★ 必须单任务：Sync 会清掉目标目录里不属于输入的文件——曾拆成两个 Sync 共用
+//   assets/gacha/，名单任务把 points.json 清没了（模型目录靠后者重建才幸免）。
+// 名单/坐标首装释放到 files/gacha/（已存在则不动，用户手编不被覆盖）；更新 =
+// 改仓库正本重编译，或 adb 直推手机。
+val syncGachaAssets = tasks.register<Sync>("syncGachaAssets") {
+    from(rootProject.file("gacha")) { include("names.json", "points.json") }
+    from(rootProject.file("gacha/ocr_models")) { into("ocr_models") }
     into(file("src/main/assets/gacha"))
 }
-
-// 抽卡 OCR 模型同步进 assets：任何新设备/全新安装都能首装自举
-// （OnnxPpocrOcr 的 ensureAssetFile 会释放到 files/gacha/ocr_models/）。
-// 模型二进制不进 git（.gitignore 掉 assets/gacha/ocr_models/），正本在 gacha/ocr_models/
-val syncGachaOcrModels = tasks.register<Sync>("syncGachaOcrModels") {
-    from(rootProject.file("gacha/ocr_models"))
-    into(file("src/main/assets/gacha/ocr_models"))
-}
-tasks.named("preBuild") { dependsOn(syncWhmxAssets, syncGachaNames, syncGachaOcrModels) }
+tasks.named("preBuild") { dependsOn(syncWhmxAssets, syncGachaAssets) }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")

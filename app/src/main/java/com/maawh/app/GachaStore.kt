@@ -325,8 +325,10 @@ object GachaStore {
     // ---------- 器者名单（OCR 纠错字典，账号无关的全局文件） ----------
 
     /**
-     * 名单 = 后台预置（assets/gacha/names.json 随包，首装文件不存在时释放一次）
-     * + 用户手动编辑（编辑面板/adb 直推覆盖），全局共享，与账号和抽卡记录完全解耦。
+     * 名单 = 后台预置（assets/gacha/names.json 随包）+ 用户手动编辑（编辑面板/adb 直推覆盖），
+     * 全局共享，与账号和抽卡记录完全解耦。
+     * 随包名单升级走差集合并：首装整份释放；已有文件只把内置新增的名字补进去，
+     * 用户手加/改名的条目不动（老用户升级后官方新名字自动到位，无需手动维护）。
      */
     fun loadNames(ctx: Context): List<String> = synchronized(this) {
         val f = File(rootDir(ctx), NAMES_FILE)
@@ -337,6 +339,8 @@ object GachaStore {
                     f.outputStream().use { output -> input.copyTo(output) }
                 }
             }
+        } else {
+            mergeBundledNames(ctx, f)
         }
         try {
             val arr = JSONArray(f.takeIf { it.isFile }?.readText() ?: "[]")
@@ -344,6 +348,21 @@ object GachaStore {
         } catch (e: Throwable) {
             emptyList()
         }
+    }
+
+    /** 把随包名单里本地缺的名字追加进本地文件；只做加法，解析失败不动本地文件。 */
+    private fun mergeBundledNames(ctx: Context, f: File) {
+        val bundled = runCatching {
+            val arr = JSONArray(ctx.assets.open("gacha/$NAMES_FILE").use { it.bufferedReader().readText() })
+            (0 until arr.length()).mapNotNull { i -> arr.optString(i).takeIf { it.isNotEmpty() } }
+        }.getOrDefault(emptyList())
+        if (bundled.isEmpty()) return
+        val local = runCatching {
+            val arr = JSONArray(f.readText())
+            (0 until arr.length()).mapNotNull { i -> arr.optString(i).takeIf { it.isNotEmpty() } }
+        }.getOrNull() ?: return
+        val missing = bundled.filter { it !in local }
+        if (missing.isNotEmpty()) saveNames(ctx, local + missing)
     }
 
     fun saveNames(ctx: Context, names: List<String>) = synchronized(this) {
