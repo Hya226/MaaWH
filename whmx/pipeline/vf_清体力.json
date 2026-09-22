@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-19T20:26:30+08:00",
+        "generatedAt": "2026-09-22T22:25:27+08:00",
         "flowFile": "清体力.flow.json",
-        "flowHash": "sha256:d4ebea8f8a3b80c32294685b970e2013520c69c78e3c3d20c0832c35efb302e9",
-        "pipelineHash": "sha256:a5a745ac8b91673d59d2fedc15b7af504802a9a5bbf1b68d6754c430c47d63b2",
+        "flowHash": "sha256:707061678ddb930cb1500b3dbf55b0da8e2604a64ec4c07324213ffa886086c9",
+        "pipelineHash": "sha256:ac6fbca8ee2c5a508594b5241d94cfb5548b2a2885590eb1b863f128c57fa73b",
         "frameW": 1280,
         "frameH": 720
     },
@@ -84,7 +84,7 @@
     "VF_清体力_11": {
         "recognition": "TemplateMatch",
         "template": "duigou.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "Click",
         "timeout": 8000,
         "post_delay": 2000,
