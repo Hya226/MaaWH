@@ -64,6 +64,12 @@
     <string name="tab_toolbox">小工具</string>
     <string name="toolbox_chip_gacha">抽卡识别</string>
     <string name="toolbox_title_gacha">抽卡记录统计</string>
+    <string name="toolbox_chip_waiqin">外勤见闻识别</string>
+    <string name="toolbox_title_waiqin">外勤见闻识别</string>
+    <string name="waiqin_note">自动翻页识别见闻列表，输出名单中未出现的见闻（结果进日志页，并写入 files/waiqin/missing.txt）\n开始前请把虚拟屏里的游戏停在【外勤见闻】列表页</string>
+    <string name="waiqin_run">开始识别</string>
+    <string name="waiqin_stop">停止识别</string>
+    <string name="waiqin_status_default">空闲</string>
     <string name="toolbox_start_hint">点底部「开始任务」开始识别；识别中按钮变为「停止任务」，点它可随时停止。</string>
     <string name="toolbox_state_idle">未在抓取。与抽卡页的「开始抓取」是同一入口，状态两边同步显示。</string>
     <string name="toolbox_desc">把虚拟屏里的游戏停在「招集记录」页后点下方按钮即可抓取（与抽卡页共用同一功能，运行状态在抽卡页也可查看）。</string>

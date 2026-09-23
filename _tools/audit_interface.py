@@ -73,10 +73,14 @@ if iface.get('interface_version') != 2:
 opt_defs = iface.get('option') or {}
 
 # 1 + 2
+# 宿主任务的 entry 由 QueueRunner 的 Kotlin 分支执行，不是引擎节点（对齐 QueueRunner 的分支判断）。
+# 注：「外勤见闻识别」已改为小工具面板功能，不在清单里，入口只有面板与 adb 直达（--es entry 外勤见闻识别）
+HOST_ENTRIES = {"关闭游戏"}
+
 for t in iface.get('task', []):
     name = t.get('name')
     entry = t.get('entry')
-    if entry not in nodes:
+    if entry not in nodes and entry not in HOST_ENTRIES:
         fails.append(f"任务 '{name}' 的 entry '{entry}' 不存在于 pipeline")
     for o in (t.get('option') or []):
         if o not in opt_defs:

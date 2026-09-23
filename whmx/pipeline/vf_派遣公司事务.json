@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-19T14:15:19+08:00",
+        "generatedAt": "2026-09-23T09:49:19+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:26c416ff1563058fa0d2cf56c9ed87397f70e637c8c02582369e7780579c75ea",
-        "pipelineHash": "sha256:e3df7f50b5872afb7d1bc9683aaa912a4bf34677898f4e73320b6de60e1ea2a4",
+        "flowHash": "sha256:a4b06f8e8eb285c5741b8a704f2bc20ab872c489eb8f5d366570a21c4e62de9c",
+        "pipelineHash": "sha256:946ee963bbfd48a9da1d6029d04fdd81836da9867b785d9e42e61ef61a9bef86",
         "frameW": 1280,
         "frameH": 720
     },
@@ -281,7 +281,7 @@
     "VF_派遣公司事务_47_Hit": {
         "recognition": "TemplateMatch",
         "template": "chashi_tuichu.png",
-        "threshold": 0.7,
+        "threshold": 0.6,
         "action": "DoNothing",
         "next": [
             "VF_派遣公司事务_37"
@@ -589,7 +589,7 @@
     "VF_派遣公司事务_37": {
         "recognition": "TemplateMatch",
         "template": "chashi_tuichu.png",
-        "threshold": 0.8,
+        "threshold": 0.6,
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,

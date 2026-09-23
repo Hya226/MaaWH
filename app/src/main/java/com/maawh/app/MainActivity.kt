@@ -261,18 +261,25 @@ class MainActivity : AppCompatActivity() {
         // 比例才对；否则要等下一次抓帧 + 回主页才补上高度，那一小段预览区是塌的
         lastBitmap = VdShared.frame
         binding.btnStartQueue.setOnClickListener {
-            // 小工具 tab：开始/停止抽卡识别；其他 tab：跑对应队列
-            if (homeTab == HomeTab.TOOLBOX) startGachaCrawl() else startQueue()
+            // 小工具 tab：开始/停止当前选中小工具；其他 tab：跑对应队列
+            if (homeTab == HomeTab.TOOLBOX) {
+                if (toolboxSection == ToolboxSection.WAIQIN) startWaiqinScan() else startGachaCrawl()
+            } else startQueue()
         }
         binding.btnQuick.setOnClickListener { showQuickMenu() }
         // tab 切换：一键长草 / 额外队列
         binding.btnTabOneClick.setOnClickListener { switchTab(HomeTab.ONECLICK) }
         binding.btnTabTools.setOnClickListener { switchTab(HomeTab.TOOLS) }
         binding.btnTabToolbox.setOnClickListener { switchTab(HomeTab.TOOLBOX) }
+        // 小工具栏目切换：抽卡识别 / 外勤见闻识别
+        binding.chipToolboxGacha.setOnClickListener { switchToolboxSection(ToolboxSection.GACHA) }
+        binding.chipToolboxWaiqin.setOnClickListener { switchToolboxSection(ToolboxSection.WAIQIN) }
+        switchToolboxSection(ToolboxSection.GACHA)
         // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
         binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
         binding.btnNewProfile.setOnClickListener { createProfile() }
         binding.btnGachaRun.setOnClickListener { startGachaCrawl() }
+        binding.btnWaiqinRun.setOnClickListener { startWaiqinScan() }
         GachaDictionary.names = GachaStore.loadNames(this)
         setupGachaAccounts()
         renderGachaPanel()
@@ -1000,8 +1007,9 @@ class MainActivity : AppCompatActivity() {
         // 改「页面缩放」触发的重建不是切后台：跳过悬浮窗，免得它闪一下又被 onResume 收起
         if (scaleRestarting) return
         // 切后台且虚拟屏活着/任务在跑 → 自动弹虚拟屏悬浮窗（设置页可关）
-        if (pipEnabled && (vdOn || queueRunner?.running == true || gachaRunning)) {
+        if (pipEnabled && (vdOn || queueRunner?.running == true || gachaRunning || waiqinRunning)) {
             if (gachaRunning) FloatingPanel.update("▶ 抽卡记录识别中")
+            if (waiqinRunning) FloatingPanel.update("▶ 外勤见闻识别中")
             if (FloatingPanel.isPermissionGranted(this)) {
                 FloatingPanel.showForBackground(this)
             } else if (!overlayPrompted) {
@@ -1215,6 +1223,25 @@ class MainActivity : AppCompatActivity() {
     /** 主页里的两个分区 */
     private enum class HomeTab { ONECLICK, TOOLS, TOOLBOX }
 
+    /** 小工具 tab 内的栏目：抽卡识别 / 外勤见闻识别 */
+    private enum class ToolboxSection { GACHA, WAIQIN }
+
+    private var toolboxSection = ToolboxSection.GACHA
+
+    /** 栏目 chips 高亮与内容区切换；开始/停止仍由底部「开始任务」按钮按栏目分发 */
+    private fun switchToolboxSection(section: ToolboxSection) {
+        toolboxSection = section
+        val gacha = section == ToolboxSection.GACHA
+        binding.chipToolboxGacha.setBackgroundResource(
+            if (gacha) R.drawable.bg_chip_selected else R.drawable.bg_chip_normal
+        )
+        binding.chipToolboxWaiqin.setBackgroundResource(
+            if (gacha) R.drawable.bg_chip_normal else R.drawable.bg_chip_selected
+        )
+        binding.panelToolGacha.visibility = if (gacha) View.VISIBLE else View.GONE
+        binding.panelToolWaiqin.visibility = if (gacha) View.GONE else View.VISIBLE
+    }
+
     private var homeTab = HomeTab.ONECLICK
 
     /** 一键长草里的「配置管理」子视图是否展开（对标 maameow 的编辑配置/完成） */
@@ -1230,8 +1257,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnTabTools.isChecked = tab == HomeTab.TOOLS
         binding.btnTabToolbox.isChecked = tab == HomeTab.TOOLBOX
         if (tab == HomeTab.TOOLBOX) {
+            val busy = gachaRunning || waiqinRunning
             binding.btnStartQueue.text =
-                getString(if (gachaRunning) R.string.quick_stop else R.string.btn_start_queue)
+                getString(if (busy) R.string.quick_stop else R.string.btn_start_queue)
         } else if (!isTaskRunning) {
             binding.btnStartQueue.text = getString(R.string.btn_start_queue)
         }
@@ -1416,6 +1444,7 @@ class MainActivity : AppCompatActivity() {
             stopNow()
             return
         }
+        if (waiqinRunning) { toast("外勤见闻识别运行中，请先停止"); return }
         // 按当前 tab 决定跑哪个队列：额外队列 tab 跑工具队列，其余（含配置 tab）跑生效配置的主队列
         val onTools = homeTab == HomeTab.TOOLS
         val plan = if (onTools) {
@@ -2350,7 +2379,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 改完缩放：空闲时立即重建界面（并回到设置页）；任务/抓取运行中只落盘，下次启动生效 */
     private fun restartForScale() {
-        if (isTaskRunning || gachaRunning) {
+        if (isTaskRunning || gachaRunning || waiqinRunning) {
             toast("缩放已保存，任务结束后重开 MaaWH 生效")
             renderScaleLabel()
             return
@@ -2367,6 +2396,82 @@ class MainActivity : AppCompatActivity() {
     @Volatile
     private var gachaRunning = false
     private var gachaJob: kotlinx.coroutines.Job? = null
+
+    // ==================================================================
+    // 外勤见闻识别（小工具：WaiQinScan 面板入口；与抽卡/队列互斥）
+    // ==================================================================
+
+    @Volatile
+    private var waiqinRunning = false
+    private var waiqinJob: kotlinx.coroutines.Job? = null
+
+    private fun stopWaiqinScan() {
+        stopWaiqinRequested = true
+        waiqinJob?.cancel()
+        binding.tvWaiqinStatus.text = "停止中…"
+        if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
+    }
+
+    private fun startWaiqinScan() {
+        if (waiqinRunning) {
+            stopWaiqinScan()
+            return
+        }
+        if (isTaskRunning) { toast("任务队列运行中，不能同时识别"); return }
+        if (gachaRunning) { toast("抽卡识别运行中，不能同时识别"); return }
+        if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并把游戏打开到「外勤见闻」列表页"); return }
+        waiqinRunning = true
+        binding.btnWaiqinRun.text = getString(R.string.waiqin_stop)
+        binding.tvWaiqinStatus.text = "准备…"
+        if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
+        setRunState("外勤见闻识别中…", R.color.accent)
+        keepAlive("外勤见闻识别中")
+        FloatingPanel.stopCallback = { stopWaiqinScan() }
+        FloatingPanel.update("▶ 外勤见闻识别中")
+        waiqinJob = lifecycleScope.launch {
+            var runSummary = ""
+            try {
+                RunLogStore.begin(applicationContext, "外勤见闻识别", -1)
+                val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
+                val scanner = WaiQinScan(applicationContext, ocr, { m, lv -> log(m, lv) }) {
+                    stopWaiqinRequested
+                }
+                val ok = scanner.scanSuspend()
+                runSummary = if (ok) "完成" else "已停止"
+                binding.tvWaiqinStatus.text = if (ok) "✓ 完成（结果见日志页）" else "◼ 已停止"
+                setRunState(
+                    if (ok) "✓ 外勤见闻识别完成，结果见日志页" else "◼ 外勤见闻识别已停止",
+                    if (ok) R.color.ok_green else R.color.text_secondary
+                )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                runSummary = "已停止"
+                binding.tvWaiqinStatus.text = "◼ 已停止"
+                setRunState("◼ 外勤见闻识别已停止", R.color.text_secondary)
+                throw e
+            } catch (e: Exception) {
+                runSummary = "失败：${e.message}"
+                log("外勤见闻识别失败：${e.message}", LogLevel.ERR)
+                binding.tvWaiqinStatus.text = "✗ ${e.message}"
+                setRunState("✗ 外勤见闻识别失败：${e.message}", R.color.err_red)
+            } finally {
+                RunLogStore.end(runSummary)
+                waiqinRunning = false
+                stopWaiqinRequested = false
+                waiqinJob = null
+                binding.btnWaiqinRun.text = getString(R.string.waiqin_run)
+                if (homeTab == HomeTab.TOOLBOX) {
+                    binding.btnStartQueue.text = getString(R.string.btn_start_queue)
+                }
+                if (ShizukuShell.isVdAlive()) keepAlive(getString(R.string.keepalive_vd)) else stopKeepAlive()
+                FloatingPanel.stopCallback = { QueueRunner.requestStopCurrent() }
+                FloatingPanel.update(if (runSummary.isEmpty()) "外勤见闻识别结束" else "外勤见闻识别：$runSummary")
+            }
+        }
+    }
+
+    /** scanSuspend 的 isStopped 轮询源：停止走协程 cancel，这里只是立即中止标志 */
+    @Volatile
+    private var stopWaiqinRequested = false
 
     private fun setupGachaAccounts() {
         // 点账号名 = 管理菜单（改名/删除/新建/切换）；点倒三角 = 直接弹账号切换列表
@@ -3135,6 +3240,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (isTaskRunning) { toast("任务队列运行中，不能同时抓取"); return }
+        if (waiqinRunning) { toast("外勤见闻识别运行中，不能同时抓取"); return }
         if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并把游戏打开到「招集记录」页"); return }
         gachaRunning = true
         binding.btnGachaRun.text = getString(R.string.gacha_stop)

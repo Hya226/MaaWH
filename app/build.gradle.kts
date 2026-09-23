@@ -41,8 +41,8 @@ android {
         applicationId = "com.maawh.app"
         minSdk = 28          // Shizuku 与目标设备要求
         targetSdk = 34       // 34 以下不受强制 edge-to-edge 影响，骨架阶段最省心
-        versionCode = 6
-        versionName = "0.2.5"
+        versionCode = 7
+        versionName = "0.2.6"
 
         // 预编译 MaaFramework 仅提供 arm64；限定 ABI 避免 JNA 打包其他平台
         ndk {
@@ -139,7 +139,14 @@ val syncGachaAssets = tasks.register<Sync>("syncGachaAssets") {
     from(rootProject.file("gacha/ocr_models")) { into("ocr_models") }
     into(file("src/main/assets/gacha"))
 }
-tasks.named("preBuild") { dependsOn(syncWhmxAssets, syncGachaAssets) }
+
+// 外勤见闻名单（assets/waiqin/）：运行时直读 assets，随包覆盖升级——
+// 更新名单 = 改仓库正本重编译装机，无本地副本无合并逻辑（用户拍板，与 names.json 的差集合并相反）
+val syncWaiqinAssets = tasks.register<Sync>("syncWaiqinAssets") {
+    from(rootProject.file("waiqin")) { include("roster.json") }
+    into(file("src/main/assets/waiqin"))
+}
+tasks.named("preBuild") { dependsOn(syncWhmxAssets, syncGachaAssets, syncWaiqinAssets) }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")

@@ -227,6 +227,14 @@ class QueueRunner(
                                 cb.onLog("虚拟屏已同步关闭", LogLevel.INFO)
                             }
                             cmdOk && !alive
+                        } else if (item.entry == "外勤见闻识别" || item.name == "外勤见闻识别") {
+                            // 外勤见闻识别：宿主 OCR 扫描（引擎不参与），用户须先手动停在见闻列表页；
+                            // 名单随包 assets/waiqin/roster.json，每次运行从全 0 开始
+                            val ocr = GachaOcrFactory.create(context) { msg ->
+                                cb.onLog(msg, LogLevel.TRACE)
+                            }
+                            WaiQinScan(context, ocr, { msg, lv -> cb.onLog(msg, lv) }) { stopRequested }
+                                .scan()
                         } else {
                             // 其余任务：按清单 option 生成 pipeline_override 后交给引擎
                             // （name 对不上时用 entry 兜底：adb 直达入口的 TaskItem 只有 entry 可用）
