@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-23T22:26:36+08:00",
+        "generatedAt": "2026-09-23T23:40:36+08:00",
         "flowFile": "冬谷竞赛.flow.json",
-        "flowHash": "sha256:cb06a4c445392b8d5945ead12d19388bd6c37fcc88fe79113f270315bd48d9a8",
-        "pipelineHash": "sha256:6cecba64c59a649aa0bc1597e5e61140694191580176a78032d7fcbd18b50452",
+        "flowHash": "sha256:a0916ccbd2e146478f0d7618f84b260efd577b4966d182f3f8dba34844cdc708",
+        "pipelineHash": "sha256:abfc040937c86f54dba533fa9c38ee2ec94e1ad835e03d9eee7a7ecad2a52faa",
         "frameW": 1280,
         "frameH": 720
     },
@@ -1666,7 +1666,7 @@
     },
     "VF_冬谷竞赛_110_Hit": {
         "recognition": "TemplateMatch",
-        "template": "赤壁赋页.png",
+        "template": "天王石刻.png",
         "threshold": 0.8,
         "action": "DoNothing",
         "next": [
@@ -1675,7 +1675,7 @@
     },
     "VF_冬谷竞赛_112": {
         "recognition": "TemplateMatch",
-        "template": "赤壁赋页.png",
+        "template": "天王石刻.png",
         "threshold": 0.8,
         "action": "Click",
         "timeout": 8000,
@@ -1711,7 +1711,108 @@
         "rate_limit": 600,
         "post_delay": 600,
         "next": [
+            "VF_冬谷竞赛_171"
+        ]
+    },
+    "VF_冬谷竞赛_171": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_冬谷竞赛_171_Hit"
+        ]
+    },
+    "VF_冬谷竞赛_171_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "qz_jia.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "roi": [
+            168,
+            204,
+            823,
+            260
+        ],
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_冬谷竞赛_172"
+        ]
+    },
+    "VF_冬谷竞赛_172": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_172_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_173"
+        ]
+    },
+    "VF_冬谷竞赛_172_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "卷云金喇叭.png",
+        "threshold": 0.8,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_174"
+        ]
+    },
+    "VF_冬谷竞赛_174": {
+        "recognition": "TemplateMatch",
+        "template": "卷云金喇叭.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "target_offset": [
+            0,
+            -60,
+            0,
+            0
+        ],
+        "next": [
+            "VF_冬谷竞赛_175"
+        ]
+    },
+    "VF_冬谷竞赛_175": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_冬谷竞赛_175_Hit"
+        ]
+    },
+    "VF_冬谷竞赛_175_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yanxue_juese_duigou.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "roi": [
+            1128,
+            664,
+            125,
+            48
+        ],
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
             "VF_冬谷竞赛_114"
+        ]
+    },
+    "VF_冬谷竞赛_173": {
+        "action": "Swipe",
+        "begin": [
+            1200,
+            353
+        ],
+        "end": [
+            800,
+            358
+        ],
+        "duration": 900,
+        "post_delay": 600,
+        "post_wait_freezes": 1,
+        "next": [
+            "VF_冬谷竞赛_172"
         ]
     },
     "VF_冬谷竞赛_114": {
@@ -1786,18 +1887,238 @@
             86
         ],
         "next": [
-            "VF_冬谷竞赛_118"
+            "VF_冬谷竞赛_119"
         ]
     },
     "VF_冬谷竞赛_118": {
         "action": "Click",
         "target": [
-            944,
-            151
+            884,
+            190
         ],
         "post_delay": 500,
         "next": [
-            "VF_冬谷竞赛_119"
+            "VF_冬谷竞赛_162"
+        ]
+    },
+    "VF_冬谷竞赛_162": {
+        "action": "Click",
+        "target": [
+            1210,
+            457
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_冬谷竞赛_163"
+        ]
+    },
+    "VF_冬谷竞赛_163": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_冬谷竞赛_163_Hit"
+        ]
+    },
+    "VF_冬谷竞赛_163_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_179"
+        ]
+    },
+    "VF_冬谷竞赛_179": {
+        "recognition": "TemplateMatch",
+        "template": "zd_dj.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "timeout": 10000,
+        "roi": [
+            1150,
+            563,
+            105,
+            132
+        ],
+        "next": [
+            "VF_冬谷竞赛_164"
+        ]
+    },
+    "VF_冬谷竞赛_164": {
+        "action": "Click",
+        "target": [
+            960,
+            230
+        ],
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_165"
+        ]
+    },
+    "VF_冬谷竞赛_165": {
+        "action": "Click",
+        "target": [
+            1027,
+            268
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_冬谷竞赛_166"
+        ]
+    },
+    "VF_冬谷竞赛_166": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_冬谷竞赛_166_Hit"
+        ]
+    },
+    "VF_冬谷竞赛_166_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 1000,
+        "next": [
+            "VF_冬谷竞赛_180"
+        ]
+    },
+    "VF_冬谷竞赛_180": {
+        "recognition": "TemplateMatch",
+        "template": "zd_dj.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "timeout": 10000,
+        "roi": [
+            1150,
+            563,
+            105,
+            132
+        ],
+        "next": [
+            "VF_冬谷竞赛_167"
+        ]
+    },
+    "VF_冬谷竞赛_167": {
+        "action": "Click",
+        "target": [
+            567,
+            317
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_冬谷竞赛_168"
+        ]
+    },
+    "VF_冬谷竞赛_168": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_冬谷竞赛_168_Hit"
+        ]
+    },
+    "VF_冬谷竞赛_168_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 1000,
+        "next": [
+            "VF_冬谷竞赛_181"
+        ]
+    },
+    "VF_冬谷竞赛_181": {
+        "recognition": "TemplateMatch",
+        "template": "zd_dj.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "timeout": 10000,
+        "roi": [
+            1150,
+            563,
+            105,
+            132
+        ],
+        "next": [
+            "VF_冬谷竞赛_184"
+        ]
+    },
+    "VF_冬谷竞赛_184": {
+        "action": "Click",
+        "target": [
+            714,
+            524
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_冬谷竞赛_170"
+        ]
+    },
+    "VF_冬谷竞赛_170": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_冬谷竞赛_170_Hit"
+        ]
+    },
+    "VF_冬谷竞赛_170_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 1000,
+        "next": [
+            "VF_冬谷竞赛_182"
+        ]
+    },
+    "VF_冬谷竞赛_182": {
+        "recognition": "TemplateMatch",
+        "template": "zd_dj.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "timeout": 10000,
+        "roi": [
+            1150,
+            563,
+            105,
+            132
+        ],
+        "next": [
+            "VF_冬谷竞赛_185"
+        ]
+    },
+    "VF_冬谷竞赛_185": {
+        "action": "Click",
+        "target": [
+            332,
+            148
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_冬谷竞赛_178"
+        ]
+    },
+    "VF_冬谷竞赛_178": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_冬谷竞赛_178_Hit"
+        ]
+    },
+    "VF_冬谷竞赛_178_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.55,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 1000,
+        "next": [
+            "VF_冬谷竞赛_132"
         ]
     },
     "VF_冬谷竞赛_119": {
@@ -1813,7 +2134,7 @@
             132
         ],
         "next": [
-            "VF_冬谷竞赛_120"
+            "VF_冬谷竞赛_118"
         ]
     },
     "VF_冬谷竞赛_142": {
@@ -1830,339 +2151,6 @@
         ],
         "next": [
             "VF_冬谷竞赛_92"
-        ]
-    },
-    "VF_冬谷竞赛_120": {
-        "action": "Click",
-        "target": [
-            1093,
-            536
-        ],
-        "post_delay": 500,
-        "next": [
-            "VF_冬谷竞赛_121"
-        ]
-    },
-    "VF_冬谷竞赛_121": {
-        "recognition": "TemplateMatch",
-        "template": "zd_qx.png",
-        "threshold": 0.6,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "roi": [
-            940,
-            591,
-            118,
-            101
-        ],
-        "next": [
-            "VF_冬谷竞赛_122"
-        ]
-    },
-    "VF_冬谷竞赛_122": {
-        "action": "Click",
-        "target": [
-            1095,
-            534
-        ],
-        "post_delay": 500,
-        "next": [
-            "VF_冬谷竞赛_123"
-        ]
-    },
-    "VF_冬谷竞赛_123": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_123_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_123_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "zd_qr.png",
-        "threshold": 0.6,
-        "action": "Click",
-        "roi": [
-            1093,
-            541,
-            152,
-            112
-        ],
-        "rate_limit": 600,
-        "post_delay": 2000,
-        "next": [
-            "VF_冬谷竞赛_124"
-        ]
-    },
-    "VF_冬谷竞赛_124": {
-        "recognition": "TemplateMatch",
-        "template": "zd_dj.png",
-        "threshold": 0.6,
-        "action": "DoNothing",
-        "timeout": 40000,
-        "roi": [
-            1150,
-            563,
-            105,
-            132
-        ],
-        "next": [
-            "VF_冬谷竞赛_125"
-        ]
-    },
-    "VF_冬谷竞赛_125": {
-        "action": "Click",
-        "target": [
-            1214,
-            450
-        ],
-        "post_delay": 500,
-        "pre_delay": 200,
-        "next": [
-            "VF_冬谷竞赛_126"
-        ]
-    },
-    "VF_冬谷竞赛_126": {
-        "action": "Click",
-        "target": [
-            831,
-            225
-        ],
-        "post_delay": 500,
-        "pre_delay": 500,
-        "next": [
-            "VF_冬谷竞赛_127"
-        ]
-    },
-    "VF_冬谷竞赛_127": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_127_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_127_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "zd_qr.png",
-        "threshold": 0.6,
-        "action": "Click",
-        "roi": [
-            1099,
-            543,
-            140,
-            108
-        ],
-        "rate_limit": 600,
-        "post_delay": 2000,
-        "next": [
-            "VF_冬谷竞赛_128"
-        ]
-    },
-    "VF_冬谷竞赛_128": {
-        "recognition": "TemplateMatch",
-        "template": "zd_dj.png",
-        "threshold": 0.6,
-        "action": "DoNothing",
-        "timeout": 40000,
-        "roi": [
-            1150,
-            563,
-            105,
-            132
-        ],
-        "next": [
-            "VF_冬谷竞赛_129"
-        ]
-    },
-    "VF_冬谷竞赛_129": {
-        "action": "Click",
-        "target": [
-            1214,
-            450
-        ],
-        "post_delay": 500,
-        "next": [
-            "VF_冬谷竞赛_130"
-        ]
-    },
-    "VF_冬谷竞赛_130": {
-        "action": "Click",
-        "target": [
-            765,
-            268
-        ],
-        "post_delay": 500,
-        "next": [
-            "VF_冬谷竞赛_131"
-        ]
-    },
-    "VF_冬谷竞赛_131": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_131_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_131_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "zd_qr.png",
-        "threshold": 0.6,
-        "action": "Click",
-        "roi": [
-            1099,
-            543,
-            140,
-            108
-        ],
-        "rate_limit": 600,
-        "post_delay": 2000,
-        "next": [
-            "VF_冬谷竞赛_147"
-        ]
-    },
-    "VF_冬谷竞赛_148": {
-        "action": "Click",
-        "target": [
-            1210,
-            454
-        ],
-        "post_delay": 500,
-        "next": [
-            "VF_冬谷竞赛_158"
-        ]
-    },
-    "VF_冬谷竞赛_158": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_冬谷竞赛_158_Hit"
-        ],
-        "on_error": [
-            "VF_冬谷竞赛_159"
-        ]
-    },
-    "VF_冬谷竞赛_158_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "dg_zhybz.png",
-        "threshold": 0.7,
-        "action": "DoNothing",
-        "roi": [
-            434,
-            103,
-            737,
-            352
-        ],
-        "next": [
-            "VF_冬谷竞赛_151"
-        ]
-    },
-    "VF_冬谷竞赛_159": {
-        "recognition": "TemplateMatch",
-        "template": "dg_bylcp.png",
-        "threshold": 0.7,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "roi": [
-            513,
-            114,
-            629,
-            340
-        ],
-        "next": [
-            "VF_冬谷竞赛_150"
-        ]
-    },
-    "VF_冬谷竞赛_151": {
-        "recognition": "TemplateMatch",
-        "template": "dg_zhybz.png",
-        "threshold": 0.7,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "roi": [
-            459,
-            93,
-            621,
-            377
-        ],
-        "next": [
-            "VF_冬谷竞赛_150"
-        ]
-    },
-    "VF_冬谷竞赛_150": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_150_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_150_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "zd_qr.png",
-        "threshold": 0.6,
-        "action": "Click",
-        "roi": [
-            1099,
-            543,
-            140,
-            108
-        ],
-        "rate_limit": 600,
-        "post_delay": 2000,
-        "next": [
-            "VF_冬谷竞赛_160"
-        ]
-    },
-    "VF_冬谷竞赛_160": {
-        "action": "DoNothing",
-        "timeout": 5000,
-        "next": [
-            "VF_冬谷竞赛_160_Hit"
-        ],
-        "on_error": [
-            "VF_冬谷竞赛_132"
-        ]
-    },
-    "VF_冬谷竞赛_160_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "zd_dj.png",
-        "threshold": 0.6,
-        "action": "DoNothing",
-        "roi": [
-            1138,
-            564,
-            129,
-            147
-        ],
-        "next": [
-            "VF_冬谷竞赛_148"
-        ]
-    },
-    "VF_冬谷竞赛_147": {
-        "action": "DoNothing",
-        "timeout": 40000,
-        "next": [
-            "VF_冬谷竞赛_147_Hit"
-        ],
-        "on_error": [
-            "VF_冬谷竞赛_132"
-        ]
-    },
-    "VF_冬谷竞赛_147_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "zd_dj.png",
-        "threshold": 0.6,
-        "action": "DoNothing",
-        "roi": [
-            1161,
-            574,
-            79,
-            122
-        ],
-        "next": [
-            "VF_冬谷竞赛_148"
         ]
     },
     "VF_冬谷竞赛_132": {
@@ -2244,6 +2232,32 @@
         ],
         "rate_limit": 600,
         "post_delay": 1000,
+        "next": [
+            "VF_冬谷竞赛_161"
+        ]
+    },
+    "VF_冬谷竞赛_161": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_161_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_139"
+        ]
+    },
+    "VF_冬谷竞赛_161_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "全部领取"
+        ],
+        "action": "DoNothing",
+        "roi": [
+            647,
+            530,
+            152,
+            38
+        ],
         "next": [
             "VF_冬谷竞赛_137"
         ]
