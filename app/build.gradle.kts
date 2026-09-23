@@ -41,8 +41,8 @@ android {
         applicationId = "com.maawh.app"
         minSdk = 28          // Shizuku 与目标设备要求
         targetSdk = 34       // 34 以下不受强制 edge-to-edge 影响，骨架阶段最省心
-        versionCode = 7
-        versionName = "0.2.6"
+        versionCode = 8
+        versionName = "0.2.7"
 
         // 预编译 MaaFramework 仅提供 arm64；限定 ABI 避免 JNA 打包其他平台
         ndk {
