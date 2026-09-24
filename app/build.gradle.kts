@@ -70,6 +70,13 @@ android {
             // 传统打包：.so 解压到 nativeLibraryDir，
             // 保证 MaaFramework 在运行时能按名字 dlopen 各 control unit
             useLegacyPackaging = true
+            // ★ 禁止 AGP 对 .so 跑 llvm-strip（2026-09-24 实测踩坑）：引入 externalNativeBuild
+            //   + ndkVersion 后 stripReleaseDebugSymbols 任务开始生效，NDK27 的 llvm-strip 会
+            //   重写预编译 so 的 PT_LOAD 文件偏移（如 fastdeploy_ppocr 末段 0x1080000→0x1078890），
+            //   本机 bionic dlopen 直接报 "empty/missing DT_HASH/DT_GNU_HASH (new hash type from
+            //   the future?)"，引擎全挂。MaaFw/JNA/onnxruntime 这批预编译库必须保持原样；
+            //   之前没配 NDK 时 strip 从不运行，所以 v0.2.7 及以前从未暴露。
+            keepDebugSymbols += "**/*.so"
         }
     }
 

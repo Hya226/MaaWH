@@ -84,12 +84,9 @@ object FloatingPanel {
 
     private val frameTick = object : Runnable {
         override fun run() {
-            val native = VdPreview.nativeActive
-            val sv = surfaceView
-            if (sv != null && (sv.visibility == android.view.View.VISIBLE) != native) {
-                sv.visibility = if (native) android.view.View.VISIBLE else android.view.View.GONE
-            }
-            if (!native) {
+            // SurfaceView 常驻可见（可见性死锁坑见 MainActivity.vdUiTick）：直渲画不透明帧
+            // 自然盖住底图；降级时 Surface 透明，位图路径照常可见
+            if (!VdPreview.nativeActive) {
                 frameView?.let { v ->
                     VdShared.frame?.let { v.setImageBitmap(it) }
                 }
@@ -128,7 +125,7 @@ object FloatingPanel {
         frameBox.addView(frame, android.widget.FrameLayout.LayoutParams(
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
-        val sv = VdSurfaceView(ctx).apply { visibility = android.view.View.GONE }
+        val sv = VdSurfaceView(ctx)
         surfaceView = sv
         frameBox.addView(sv, android.widget.FrameLayout.LayoutParams(
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT,

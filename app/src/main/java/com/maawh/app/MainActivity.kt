@@ -2063,15 +2063,17 @@ class MainActivity : AppCompatActivity() {
     /** 主页预览：直渲健康时显示 vdSurface（GPU 零拷贝）；降级时走 VdStreamer 位图路径 */
     private val vdUiTick = object : Runnable {
         override fun run() {
-            val native = VdPreview.nativeActive
+            // ★ SurfaceView 只跟 vdOn 走，绝不按 nativeActive 切 GONE——SurfaceView 一旦
+            // GONE 就没有 surface，没有 surface 就永远无法 claim，nativeActive 永远无法
+            // 变 true（可见性死锁，2026-09-24 首装实测踩中）。常驻可见是安全的：直渲画的
+            // 是不透明帧自然盖住底图；直渲不工作时 Surface 无内容=全透明，底下 ImageView
+            // 的 JPEG 降级画面照常可见。
             val surfaceVisible = binding.vdSurface.visibility == android.view.View.VISIBLE
-            if (surfaceVisible != native) {
+            if (surfaceVisible != vdOn) {
                 binding.vdSurface.visibility =
-                    if (native) android.view.View.VISIBLE else android.view.View.GONE
-                // 直渲接管/交还时给 imageShot 挪一次背景，避免双画面边缘残留
-                binding.imageShot.setBackgroundColor(if (native) 0x00000000 else 0xFF000000.toInt())
+                    if (vdOn) android.view.View.VISIBLE else android.view.View.GONE
             }
-            if (!native) {
+            if (!VdPreview.nativeActive) {
                 val f = VdShared.frame
                 if (f != null) {
                     if (binding.imageShot.tag != System.identityHashCode(f)) {

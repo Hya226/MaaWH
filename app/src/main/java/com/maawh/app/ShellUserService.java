@@ -360,29 +360,68 @@ public class ShellUserService extends IUserService.Stub {
     private volatile boolean mPreviewOn = false;
     private android.os.HandlerThread mPreviewThread;
     private android.os.Handler mPreviewHandler;
-    /** 慢路径转换缓冲（行填充不齐时用；帧尺寸恒定，复用省得每帧分配） */
-    private java.nio.ByteBuffer mCvtBuf;
 
-    /** 每来一帧就同步 GPU 直绘一次（本回调线程即渲染线程，刻意不再单开渲染线程：
-     *  帧的生命周期止于本方法，没有跨线程缓冲所有权问题；acquireLatestImage 天然
-     *  「只画最新帧」，渲染慢于出帧时中间帧自动丢弃，不会积延迟）。 */
+    // ===== 引擎帧缓存（对标 MAA-Meow 的 bridge_frame_buffer） =====
+    // 回调线程是帧池的唯一消费者：每帧把像素搬进 mLastFrame，引擎截图（grabVirtualFrame）
+    // 永远从缓存取、绝不碰 acquireLatestImage。★ 为什么必须这样：预览以 30fps 持续消费
+    // 每一帧之后，画面一旦静止（公告页、挂机主页）帧池就是空的，引擎再 acquire 永远拿
+    // 到 null → 截图失败 → 识别全瘫（2026-09-24 首装实测：收口关不掉公告弹窗就是它）。
+    // 有缓存后，静止画面也能秒出最后一帧。3.7MB 拷贝在回调线程做，约 0.3ms。
+    private final Object mFrameLock = new Object();
+    private byte[] mLastFrame;          // 连续 RGBA（w*h*4），最新帧
+    private int mFrameW, mFrameH;
+    private boolean mFrameHas;
+
+    private void updateFrameCache(android.media.Image img) {
+        android.media.Image.Plane p = img.getPlanes()[0];
+        java.nio.ByteBuffer buf = p.getBuffer();
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int ps = p.getPixelStride();
+        int rs = p.getRowStride();
+        synchronized (mFrameLock) {
+            if (mLastFrame == null || mFrameW != w || mFrameH != h) {
+                mLastFrame = new byte[w * h * 4];
+                mFrameW = w;
+                mFrameH = h;
+                mFrameHas = false;
+            }
+            if (ps == 4 && rs == w * 4) {
+                // 常规：无行填充，整块搬运
+                buf.position(0);
+                buf.get(mLastFrame, 0, w * h * 4);
+            } else {
+                // 有行填充：逐行搬到正确偏移
+                for (int y = 0; y < h; y++) {
+                    buf.position(y * rs);
+                    buf.get(mLastFrame, y * w * 4, w * 4);
+                }
+            }
+            mFrameHas = true;
+        }
+    }
+
+    /** 每来一帧：先更新引擎帧缓存，再 GPU 直绘预览（本回调线程即渲染线程，刻意不再
+     *  单开渲染线程：帧的生命周期止于本方法，没有跨线程缓冲所有权问题；
+     *  acquireLatestImage 天然「只处理最新帧」，渲染慢于出帧时中间帧自动丢弃）。 */
     private final android.media.ImageReader.OnImageAvailableListener mOnFrame =
         new android.media.ImageReader.OnImageAvailableListener() {
             @Override
             public void onImageAvailable(android.media.ImageReader reader) {
-                // 快路径：预览没挂载时完全不 acquire，不影响 grabVirtualFrame 的按需拉帧
-                if (!mPreviewOn) return;
                 android.media.Image img = null;
                 try {
                     img = reader.acquireLatestImage();
                     if (img == null) return;
-                    android.hardware.HardwareBuffer hb =
-                        (android.os.Build.VERSION.SDK_INT >= 26) ? img.getHardwareBuffer() : null;
-                    if (hb == null) return;   // 该设备给不出硬件缓冲 → 预览由 App 端降级
-                    try {
-                        nvDrawFrame(hb);
-                    } finally {
-                        hb.close();           // native 端同步画完才返回，引用已不需要
+                    updateFrameCache(img);   // 引擎截图的数据源，无论预览开没开都要更新
+                    if (mPreviewOn && android.os.Build.VERSION.SDK_INT >= 26) {
+                        android.hardware.HardwareBuffer hb = img.getHardwareBuffer();
+                        if (hb != null) {
+                            try {
+                                nvDrawFrame(hb);
+                            } finally {
+                                hb.close();  // native 端同步画完才返回，引用已不需要
+                            }
+                        }
                     }
                     img.close();
                     img = null;
@@ -665,50 +704,22 @@ public class ShellUserService extends IUserService.Stub {
 
     @Override
     public byte[] grabVirtualFrame() {
-        android.media.ImageReader r = mReader;
-        if (r == null) return new byte[0];
-        android.media.Image img = null;
-        try {
-            img = r.acquireLatestImage();
-            if (img == null) return new byte[0];
-            android.media.Image.Plane p = img.getPlanes()[0];
-            java.nio.ByteBuffer buf = p.getBuffer();
-            int w = img.getWidth();
-            int h = img.getHeight();
-            int ps = p.getPixelStride();
-            int rs = p.getRowStride();
-            // 批量拷贝替代旧的逐像素循环（92 万像素的 get() 调用是引擎每张截图的大头）：
-            // 行无填充（rs==w*4，常规情况）时整块 memcpy；有行填充才逐行搬运拼接
-            android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(w, h,
-                    android.graphics.Bitmap.Config.ARGB_8888);
-            if (ps == 4 && rs == w * 4) {
-                buf.position(0);
-                bmp.copyPixelsFromBuffer(buf);
-            } else {
-                java.nio.ByteBuffer dst = mCvtBuf;
-                if (dst == null || dst.capacity() < w * h * 4) {
-                    dst = java.nio.ByteBuffer.allocateDirect(w * h * 4);
-                    mCvtBuf = dst;
-                }
-                dst.clear();
-                byte[] row = new byte[w * 4];
-                for (int y = 0; y < h; y++) {
-                    buf.position(y * rs);
-                    buf.get(row, 0, w * 4);
-                    dst.put(row);
-                }
-                dst.position(0);
-                dst.limit(w * h * 4);
-                bmp.copyPixelsFromBuffer(dst);
+        // 从帧缓存出图（缓存由预览回调线程维护，见 mOnFrame 注释）——绝不在这里
+        // acquireLatestImage：帧池被预览持续消费后静止画面会拿不到帧（首装实测的教训）
+        synchronized (mFrameLock) {
+            if (!mFrameHas || mLastFrame == null) return new byte[0];
+            try {
+                android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(mFrameW, mFrameH,
+                        android.graphics.Bitmap.Config.ARGB_8888);
+                java.nio.ByteBuffer wrap = java.nio.ByteBuffer.wrap(mLastFrame);
+                bmp.copyPixelsFromBuffer(wrap);
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out);
+                bmp.recycle();
+                return out.toByteArray();
+            } catch (Throwable t) {
+                return new byte[0];
             }
-            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
-            bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out);
-            bmp.recycle();
-            return out.toByteArray();
-        } catch (Throwable t) {
-            return new byte[0];
-        } finally {
-            if (img != null) img.close();
         }
     }
 
@@ -717,6 +728,9 @@ public class ShellUserService extends IUserService.Stub {
         try {
             mPreviewOn = false;
             if (sNativeOk) nvDetachSurface();
+            synchronized (mFrameLock) {
+                mFrameHas = false;   // 虚拟屏没了，旧帧作废（下次 startVirtualGame 重新积累）
+            }
             if (mVd != null) { mVd.release(); mVd = null; }
             if (mReader != null) { mReader.close(); mReader = null; }
             mVdId = -1;

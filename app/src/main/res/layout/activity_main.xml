@@ -36,8 +36,7 @@
             <com.maawh.app.VdSurfaceView
                 android:id="@+id/vdSurface"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone" />
+                android:layout_height="match_parent" />
         </FrameLayout>
 
         <Switch

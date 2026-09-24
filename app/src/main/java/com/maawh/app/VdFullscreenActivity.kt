@@ -39,11 +39,8 @@ class VdFullscreenActivity : AppCompatActivity() {
             val rw = binding.root.width
             val rh = binding.root.height
             if (rw <= 0 || rh <= 0) return@post
+            // SurfaceView 常驻可见（可见性死锁坑见 MainActivity.vdUiTick）
             val native = VdPreview.nativeActive
-            val sv = binding.vdSurface
-            if ((sv.visibility == android.view.View.VISIBLE) != native) {
-                sv.visibility = if (native) android.view.View.VISIBLE else android.view.View.GONE
-            }
             val aspect = if (bmp != null && bmp.width > 0) bmp.width.toFloat() / bmp.height.toFloat()
             else MaaConst.VD_W.toFloat() / MaaConst.VD_H.toFloat()
             // 尺寸/比例变化时才重算布局
@@ -61,7 +58,7 @@ class VdFullscreenActivity : AppCompatActivity() {
                 val lp = android.widget.FrameLayout.LayoutParams(w.toInt(), h.toInt(),
                     android.view.Gravity.CENTER)
                 binding.vdImg.layoutParams = lp
-                sv.layoutParams = android.widget.FrameLayout.LayoutParams(w.toInt(), h.toInt(),
+                binding.vdSurface.layoutParams = android.widget.FrameLayout.LayoutParams(w.toInt(), h.toInt(),
                     android.view.Gravity.CENTER)
             }
             // 新帧每次都更新画面（直渲接管时 vdImg 在底下被盖住，省略位图上传）
