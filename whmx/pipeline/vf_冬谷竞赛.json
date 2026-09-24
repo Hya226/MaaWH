@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-24T15:05:04+08:00",
+        "generatedAt": "2026-09-24T17:36:38+08:00",
         "flowFile": "冬谷竞赛.flow.json",
-        "flowHash": "sha256:c11f44ccffc0fdf3675120376fb9738ba00755c717a99f65889c5c4b5bb56d27",
-        "pipelineHash": "sha256:26c9281ea2ba2e4575dee6055130ebf97055ebe8ac956155cbf2c56622f81b4c",
+        "flowHash": "sha256:765eaad269ace434e8b2b5a78228edf0f31354231bbd3b504da8a11c44339966",
+        "pipelineHash": "sha256:8386ce9155555adfe8a493a7144e2940b6455296f50d4445d72886135a7444ef",
         "frameW": 1280,
         "frameH": 720
     },
@@ -388,7 +388,8 @@
         "post_delay": 800,
         "next": [
             "VF_冬谷竞赛_37"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_37": {
         "action": "Click",
@@ -399,7 +400,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_38"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_38": {
         "action": "Click",
@@ -410,7 +412,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_11"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_11": {
         "recognition": "TemplateMatch",
@@ -629,6 +632,7 @@
             233
         ],
         "post_delay": 200,
+        "pre_delay": 400,
         "repeat": 2,
         "repeat_delay": 100,
         "next": [
@@ -739,7 +743,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_45"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_45": {
         "action": "Click",
@@ -750,7 +755,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_57"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_57": {
         "action": "DoNothing",
@@ -837,7 +843,8 @@
         "post_delay": 800,
         "next": [
             "VF_冬谷竞赛_58"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_58": {
         "recognition": "TemplateMatch",
@@ -1023,6 +1030,7 @@
             227
         ],
         "post_delay": 500,
+        "pre_delay": 400,
         "repeat": 2,
         "repeat_delay": 100,
         "next": [
@@ -1038,7 +1046,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_70"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_70": {
         "action": "Click",
@@ -1051,7 +1060,8 @@
         "repeat_delay": 100,
         "next": [
             "VF_冬谷竞赛_71"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_71": {
         "action": "DoNothing",
@@ -1139,7 +1149,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_78"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_78": {
         "recognition": "TemplateMatch",
@@ -1166,7 +1177,8 @@
         "post_delay": 300,
         "next": [
             "VF_冬谷竞赛_80"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_80": {
         "action": "Click",
@@ -1177,7 +1189,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_81"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_81": {
         "action": "Click",
@@ -1188,7 +1201,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_77"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_77": {
         "recognition": "TemplateMatch",
@@ -1388,7 +1402,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_144"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_144": {
         "action": "Click",
@@ -1425,6 +1440,7 @@
             538
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_冬谷竞赛_96"
         ]
@@ -1438,7 +1454,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_97"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_97": {
         "action": "DoNothing",
@@ -1524,7 +1541,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_102"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_102": {
         "recognition": "TemplateMatch",
@@ -1594,7 +1612,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_107"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_107": {
         "recognition": "TemplateMatch",
@@ -1897,6 +1916,7 @@
             190
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_冬谷竞赛_162"
         ]
@@ -1910,7 +1930,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_163"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_163": {
         "action": "DoNothing",
@@ -1955,7 +1976,8 @@
         "post_delay": 800,
         "next": [
             "VF_冬谷竞赛_165"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_165": {
         "action": "Click",
@@ -1966,7 +1988,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_166"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_166": {
         "action": "DoNothing",
@@ -2011,7 +2034,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_168"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_168": {
         "action": "DoNothing",
@@ -2056,7 +2080,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_170"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_170": {
         "action": "DoNothing",
@@ -2101,7 +2126,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_178"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_178": {
         "action": "DoNothing",
@@ -2289,7 +2315,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_139"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_139": {
         "action": "DoNothing",
@@ -2325,7 +2352,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_186"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_186": {
         "action": "DoNothing",
@@ -2361,7 +2389,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_134"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_111": {
         "action": "Swipe",
@@ -2389,7 +2418,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_104"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_84": {
         "action": "Swipe",
@@ -2417,7 +2447,8 @@
         "post_delay": 500,
         "next": [
             "VF_冬谷竞赛_74"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_61": {
         "action": "Swipe",
@@ -2445,7 +2476,8 @@
         "post_delay": 300,
         "next": [
             "VF_冬谷竞赛_49"
-        ]
+        ],
+        "pre_delay": 200
     },
     "VF_冬谷竞赛_End": {
         "action": "DoNothing",
