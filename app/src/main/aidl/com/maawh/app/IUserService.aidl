@@ -1,6 +1,7 @@
 package com.maawh.app;
 
 import android.os.ParcelFileDescriptor;
+import android.view.Surface;
 
 interface IUserService {
 
@@ -41,4 +42,17 @@ interface IUserService {
     void touchDown(int x, int y) = 11;
     void touchMove(int x, int y) = 12;
     void touchUp(int x, int y) = 13;
+
+    // ===== 虚拟屏预览 GPU 零拷贝直渲（对标 MAA-Meow 的 bridge_preview） =====
+
+    // 挂载预览 Surface（App 进程 SurfaceView 的画面接收端）：服务端每帧 GPU 直绘到它；
+    // 返回 false = 服务端不支持（native 库缺失/拿不到窗口），App 端降级回 JPEG 轮询
+    boolean setPreviewSurface(in Surface surface) = 14;
+
+    // 摘除预览 Surface（幂等；App 端预览窗口销毁/切换时调用）
+    void releasePreviewSurface() = 15;
+
+    // 预览已成功渲染的帧计数：App 端用「挂载后计数是否增长」判定直渲通路健康，
+    // 不健康（旧系统拿不到 HardwareBuffer / EGL 失败）就保持 JPEG 轮询降级
+    long previewFrameCount() = 16;
 }

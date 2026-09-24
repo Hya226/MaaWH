@@ -17,14 +17,28 @@
         android:padding="8dp">
 
         <!-- 虚拟屏：整页最上方（预览 + 点按注入），高度按预览图宽高比贴合（applyPreviewAspect），无黑边 -->
-        <ImageView
-            android:id="@+id/imageShot"
+        <!-- 预览双路径：vdSurface = GPU 零拷贝直渲（60fps，健康时盖在上面）；
+             imageShot = 原 JPEG 轮询位图（降级回退 + 触摸手势的宿主），不可删 -->
+        <FrameLayout
+            android:id="@+id/previewBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:background="#000000"
-            android:contentDescription="屏幕预览"
-            android:scaleType="fitCenter" />
+            android:layout_marginTop="4dp">
+
+            <ImageView
+                android:id="@+id/imageShot"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#000000"
+                android:contentDescription="屏幕预览"
+                android:scaleType="fitCenter" />
+
+            <com.maawh.app.VdSurfaceView
+                android:id="@+id/vdSurface"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <Switch
             android:id="@+id/switchTap"

@@ -122,6 +122,28 @@ object ShizukuShell {
         ByteArray(0)
     }
 
+    // ===== 虚拟屏预览 GPU 零拷贝直渲（服务端 libmaawh_vd） =====
+
+    /** 挂载预览 Surface：返回 false = 服务端不支持/失败（App 端保持 JPEG 轮询降级） */
+    fun setPreviewSurface(surface: android.view.Surface): Boolean = try {
+        ensureService().setPreviewSurface(surface)
+    } catch (e: Throwable) {
+        false
+    }
+
+    /** 摘除预览 Surface（幂等） */
+    fun releasePreviewSurface() = try {
+        ensureService().releasePreviewSurface()
+    } catch (_: Throwable) {
+    }
+
+    /** 预览已渲染帧计数；-1 = 查询失败（视为不健康） */
+    fun previewFrameCount(): Long = try {
+        ensureService().previewFrameCount()
+    } catch (_: Throwable) {
+        -1L
+    }
+
     fun stopVirtual() = try {
         ensureService().stopVirtual()
         vdMode = false
@@ -514,7 +536,9 @@ object ShizukuShell {
             )
                 .processNameSuffix("shizuku")
                 .debuggable(false)
-                .version(1)
+                // ★ 服务端代码/AIDL 变更时必须 bump：Shizuku 按此版本判断是否重启旧服务进程，
+                //   不 bump 的话装机后仍会绑到旧代码服务，新 AIDL 方法直接 Marshalling 崩
+                .version(2)
                 .daemon(false)
             args = a
 

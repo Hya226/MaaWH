@@ -18,6 +18,12 @@ object VdStreamer {
         worker = thread(name = "vd-stream") {
             while (running) {
                 try {
+                    // 直渲通路健康时本线程空转（0.5s 一睁眼）：不抓帧不解码不占 CPU；
+                    // 通路一旦降级立即自动恢复 JPEG 轮询，调用方无需感知切换
+                    if (VdPreview.nativeActive) {
+                        try { Thread.sleep(500) } catch (e: InterruptedException) { break }
+                        continue
+                    }
                     val bytes = ShizukuShell.grabVirtualFrame()
                     if (bytes.isNotEmpty()) {
                         val opts = BitmapFactory.Options().apply { inSampleSize = 2 }

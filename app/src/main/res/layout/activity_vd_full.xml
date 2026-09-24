@@ -11,6 +11,13 @@
         android:scaleType="centerCrop"
         android:contentDescription="虚拟屏全屏画面" />
 
+    <!-- GPU 零拷贝直渲画面（健康时盖在 vdImg 上；vdImg 保留为降级 + 触摸手势宿主） -->
+    <com.maawh.app.VdSurfaceView
+        android:id="@+id/vdSurface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/vdClose"
         android:layout_width="wrap_content"

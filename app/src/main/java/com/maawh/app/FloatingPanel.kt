@@ -42,6 +42,7 @@ object FloatingPanel {
     private var added = false
     private var rootView: LinearLayout? = null
     private var frameView: ImageView? = null
+    private var surfaceView: VdSurfaceView? = null
     private var statusView: TextView? = null
     private var pendingText: String? = null
     private var lp: WindowManager.LayoutParams? = null
@@ -83,8 +84,15 @@ object FloatingPanel {
 
     private val frameTick = object : Runnable {
         override fun run() {
-            frameView?.let { v ->
-                VdShared.frame?.let { v.setImageBitmap(it) }
+            val native = VdPreview.nativeActive
+            val sv = surfaceView
+            if (sv != null && (sv.visibility == android.view.View.VISIBLE) != native) {
+                sv.visibility = if (native) android.view.View.VISIBLE else android.view.View.GONE
+            }
+            if (!native) {
+                frameView?.let { v ->
+                    VdShared.frame?.let { v.setImageBitmap(it) }
+                }
             }
             mainHandler.postDelayed(this, FRAME_TICK_MS)
         }
@@ -115,6 +123,16 @@ object FloatingPanel {
             VdShared.frame?.let { setImageBitmap(it) }
         }
         frameView = frame
+        // 双路径画面：GPU 直渲 Surface 盖在位图 ImageView 上（降级时 Surface 隐藏）
+        val frameBox = android.widget.FrameLayout(ctx)
+        frameBox.addView(frame, android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+        val sv = VdSurfaceView(ctx).apply { visibility = android.view.View.GONE }
+        surfaceView = sv
+        frameBox.addView(sv, android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
 
         val status = TextView(ctx).apply {
             text = pendingText ?: "MaaWH"
@@ -134,7 +152,7 @@ object FloatingPanel {
             setPadding(dp(density, 4), dp(density, 4), dp(density, 4), dp(density, 2))
         }
         box.addView(
-            frame,
+            frameBox,
             LinearLayout.LayoutParams(frameW, frameH).apply { gravity = Gravity.CENTER }
         )
         val row = LinearLayout(ctx).apply {
@@ -226,6 +244,7 @@ object FloatingPanel {
         added = false
         rootView = null
         frameView = null
+        surfaceView = null
         statusView = null
         lp = null
     }

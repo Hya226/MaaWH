@@ -28,17 +28,24 @@ class VdFullscreenActivity : AppCompatActivity() {
 
     private val tick = object : Runnable {
         override fun run() {
-            VdShared.frame?.let { fitFrame(it) }
+            // 帧还没到过（VdShared 空）也照常布局+切换直渲路径，只是没有位图可上
+            fitFrame(VdShared.frame)
             handler.postDelayed(this, 200)
         }
     }
 
-    private fun fitFrame(bmp: android.graphics.Bitmap) {
+    private fun fitFrame(bmp: android.graphics.Bitmap?) {
         binding.root.post {
             val rw = binding.root.width
             val rh = binding.root.height
             if (rw <= 0 || rh <= 0) return@post
-            val aspect = bmp.width.toFloat() / bmp.height.toFloat()
+            val native = VdPreview.nativeActive
+            val sv = binding.vdSurface
+            if ((sv.visibility == android.view.View.VISIBLE) != native) {
+                sv.visibility = if (native) android.view.View.VISIBLE else android.view.View.GONE
+            }
+            val aspect = if (bmp != null && bmp.width > 0) bmp.width.toFloat() / bmp.height.toFloat()
+            else MaaConst.VD_W.toFloat() / MaaConst.VD_H.toFloat()
             // 尺寸/比例变化时才重算布局
             if (appliedW != rw || appliedH != rh || kotlin.math.abs(appliedAspect - aspect) > 0.01f) {
                 appliedW = rw
@@ -50,12 +57,15 @@ class VdFullscreenActivity : AppCompatActivity() {
                     w = rw.toFloat()
                     h = w / aspect
                 }
+                // 直渲 Surface 与位图 ImageView 同一个 90% 居中框，观感一致
                 val lp = android.widget.FrameLayout.LayoutParams(w.toInt(), h.toInt(),
                     android.view.Gravity.CENTER)
                 binding.vdImg.layoutParams = lp
+                sv.layoutParams = android.widget.FrameLayout.LayoutParams(w.toInt(), h.toInt(),
+                    android.view.Gravity.CENTER)
             }
-            // 新帧每次都更新画面
-            binding.vdImg.setImageBitmap(bmp)
+            // 新帧每次都更新画面（直渲接管时 vdImg 在底下被盖住，省略位图上传）
+            if (bmp != null && !native) binding.vdImg.setImageBitmap(bmp)
         }
     }
 

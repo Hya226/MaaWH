@@ -320,6 +320,82 @@ public class ShellUserService extends IUserService.Stub {
     private volatile android.media.ImageReader mReader;
     private volatile int mVdId = -1;
 
+    // ===== 虚拟屏预览 GPU 零拷贝直渲（libmaawh_vd.so，见 src/main/cpp/maawh_vd.cpp） =====
+    // 预览 Surface 由 App 进程经 AIDL 传进来（Surface 可 Parcelable 跨进程），服务端在
+    // ImageReader 的 onImageAvailable 回调线程里把每帧的 HardwareBuffer 用 EGL 直绘上去：
+    // 帧数据不出 GPU，无 JPEG、无跨进程像素传输，帧率上限只受游戏渲染速度限制（≈60fps）。
+    // 任何一环失败（lib 加载失败/旧系统拿不到 HardwareBuffer/EGL 初始化失败）都走
+    // mPreviewOn=false 快路径，App 端凭 previewFrameCount 不增长自动降级回 JPEG 轮询。
+
+    private static volatile boolean sNativeOk = false;
+
+    /** 懒加载 native 库：优先按 App 的 nativeLibraryDir 绝对路径（本进程是 Shizuku 拉起的
+     *  app_process，System.loadLibrary 的搜索路径未必包含 APK 的 lib 目录），loadLibrary 兜底。 */
+    private synchronized boolean ensureNative() {
+        if (sNativeOk) return true;
+        try {
+            if (mContext != null) {
+                String dir = mContext.getApplicationInfo().nativeLibraryDir;
+                if (dir != null) {
+                    System.load(dir + "/libmaawh_vd.so");
+                    sNativeOk = true;
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            System.loadLibrary("maawh_vd");
+            sNativeOk = true;
+        } catch (Throwable ignored) {
+        }
+        return sNativeOk;
+    }
+
+    private static native boolean nvAttachSurface(android.view.Surface surface);
+    private static native void nvDetachSurface();
+    private static native boolean nvDrawFrame(android.hardware.HardwareBuffer hb);
+    private static native long nvFrameCount();
+
+    private volatile boolean mPreviewOn = false;
+    private android.os.HandlerThread mPreviewThread;
+    private android.os.Handler mPreviewHandler;
+    /** 慢路径转换缓冲（行填充不齐时用；帧尺寸恒定，复用省得每帧分配） */
+    private java.nio.ByteBuffer mCvtBuf;
+
+    /** 每来一帧就同步 GPU 直绘一次（本回调线程即渲染线程，刻意不再单开渲染线程：
+     *  帧的生命周期止于本方法，没有跨线程缓冲所有权问题；acquireLatestImage 天然
+     *  「只画最新帧」，渲染慢于出帧时中间帧自动丢弃，不会积延迟）。 */
+    private final android.media.ImageReader.OnImageAvailableListener mOnFrame =
+        new android.media.ImageReader.OnImageAvailableListener() {
+            @Override
+            public void onImageAvailable(android.media.ImageReader reader) {
+                // 快路径：预览没挂载时完全不 acquire，不影响 grabVirtualFrame 的按需拉帧
+                if (!mPreviewOn) return;
+                android.media.Image img = null;
+                try {
+                    img = reader.acquireLatestImage();
+                    if (img == null) return;
+                    android.hardware.HardwareBuffer hb =
+                        (android.os.Build.VERSION.SDK_INT >= 26) ? img.getHardwareBuffer() : null;
+                    if (hb == null) return;   // 该设备给不出硬件缓冲 → 预览由 App 端降级
+                    try {
+                        nvDrawFrame(hb);
+                    } finally {
+                        hb.close();           // native 端同步画完才返回，引用已不需要
+                    }
+                    img.close();
+                    img = null;
+                } catch (Throwable t) {
+                    android.util.Log.w("MaaWH", "preview frame err", t);
+                } finally {
+                    if (img != null) {
+                        try { img.close(); } catch (Throwable ignored) {}
+                    }
+                }
+            }
+        };
+
     // 常量统一收口在 MaaConst（同 APK 同 classloader，Java 可直接引用其静态字段），
     // 别在这里再写一份数值——虚拟屏尺寸改了模板基准就废，游戏包名两份不一致会查半天
     private static final int VD_W = MaaConst.VD_W;
@@ -350,8 +426,26 @@ public class ShellUserService extends IUserService.Stub {
                     }
                 }
                 int w = VD_W, h = VD_H, dpi = VD_DPI; // 1280x720：与 whmx 基准帧同尺寸
-                android.media.ImageReader ir = android.media.ImageReader.newInstance(w, h,
-                        android.graphics.PixelFormat.RGBA_8888, 3);
+                // API 29+：给 ImageReader 显式加 GPU_SAMPLED_IMAGE usage——同一块帧缓冲既可
+                // CPU 读（grabVirtualFrame 引擎截图）也可作 GPU 纹理（预览零拷贝直绘）；
+                // 缓冲池 3→5，预览常驻消费后引擎按需拉帧仍有余量
+                android.media.ImageReader ir;
+                if (android.os.Build.VERSION.SDK_INT >= 29) {
+                    long usage = android.hardware.HardwareBuffer.USAGE_CPU_READ_OFTEN
+                        | android.hardware.HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE;
+                    ir = android.media.ImageReader.newInstance(w, h,
+                            android.graphics.PixelFormat.RGBA_8888, 5, usage);
+                } else {
+                    ir = android.media.ImageReader.newInstance(w, h,
+                            android.graphics.PixelFormat.RGBA_8888, 3);
+                }
+                // 预览回调线程：一帧到达即 GPU 直绘到挂载的预览 Surface（无预览时空转快路径）
+                if (mPreviewThread == null) {
+                    mPreviewThread = new android.os.HandlerThread("maawh-vd-preview");
+                    mPreviewThread.start();
+                    mPreviewHandler = new android.os.Handler(mPreviewThread.getLooper());
+                }
+                ir.setOnImageAvailableListener(mOnFrame, mPreviewHandler);
                 java.lang.reflect.Constructor<android.hardware.display.DisplayManager> ctor =
                     android.hardware.display.DisplayManager.class.getDeclaredConstructor(Context.class);
                 ctor.setAccessible(true);
@@ -583,23 +677,30 @@ public class ShellUserService extends IUserService.Stub {
             int h = img.getHeight();
             int ps = p.getPixelStride();
             int rs = p.getRowStride();
-            int[] px = new int[w * h];
-            byte[] row = new byte[rs];
+            // 批量拷贝替代旧的逐像素循环（92 万像素的 get() 调用是引擎每张截图的大头）：
+            // 行无填充（rs==w*4，常规情况）时整块 memcpy；有行填充才逐行搬运拼接
+            android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(w, h,
+                    android.graphics.Bitmap.Config.ARGB_8888);
+            if (ps == 4 && rs == w * 4) {
+                buf.position(0);
+                bmp.copyPixelsFromBuffer(buf);
+            } else {
+                java.nio.ByteBuffer dst = mCvtBuf;
+                if (dst == null || dst.capacity() < w * h * 4) {
+                    dst = java.nio.ByteBuffer.allocateDirect(w * h * 4);
+                    mCvtBuf = dst;
+                }
+                dst.clear();
+                byte[] row = new byte[w * 4];
                 for (int y = 0; y < h; y++) {
                     buf.position(y * rs);
-                    buf.get(row, 0, rs);
-                    int base = y * w;
-                    for (int x = 0; x < w; x++) {
-                        int o = x * ps;
-                        int red = row[o] & 0xff;
-                        int g = row[o + 1] & 0xff;
-                        int b = row[o + 2] & 0xff;
-                        int a = row[o + 3] & 0xff;
-                        px[base + x] = (a << 24) | (red << 16) | (g << 8) | b;
-                    }
+                    buf.get(row, 0, w * 4);
+                    dst.put(row);
                 }
-            android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(px, w, h,
-                    android.graphics.Bitmap.Config.ARGB_8888);
+                dst.position(0);
+                dst.limit(w * h * 4);
+                bmp.copyPixelsFromBuffer(dst);
+            }
             java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
             bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, out);
             bmp.recycle();
@@ -614,10 +715,50 @@ public class ShellUserService extends IUserService.Stub {
     @Override
     public void stopVirtual() {
         try {
+            mPreviewOn = false;
+            if (sNativeOk) nvDetachSurface();
             if (mVd != null) { mVd.release(); mVd = null; }
             if (mReader != null) { mReader.close(); mReader = null; }
             mVdId = -1;
         } catch (Throwable ignored) {
+        }
+    }
+
+    // ===== 预览直渲 AIDL（见类头「GPU 零拷贝直渲」注释） =====
+
+    @Override
+    public boolean setPreviewSurface(android.view.Surface surface) {
+        if (surface == null || !surface.isValid()) return false;
+        if (!ensureNative()) return false;
+        try {
+            boolean ok = nvAttachSurface(surface);
+            mPreviewOn = ok;
+            return ok;
+        } catch (Throwable t) {
+            android.util.Log.w("MaaWH", "attach preview surface err", t);
+            mPreviewOn = false;
+            return false;
+        }
+    }
+
+    @Override
+    public void releasePreviewSurface() {
+        mPreviewOn = false;
+        if (sNativeOk) {
+            try {
+                nvDetachSurface();
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    @Override
+    public long previewFrameCount() {
+        if (!sNativeOk) return 0;
+        try {
+            return nvFrameCount();
+        } catch (Throwable t) {
+            return 0;
         }
     }
 

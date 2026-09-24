@@ -41,14 +41,29 @@ android {
         applicationId = "com.maawh.app"
         minSdk = 28          // Shizuku 与目标设备要求
         targetSdk = 34       // 34 以下不受强制 edge-to-edge 影响，骨架阶段最省心
-        versionCode = 8
-        versionName = "0.2.7"
+        versionCode = 10
+        versionName = "0.2.8"
 
         // 预编译 MaaFramework 仅提供 arm64；限定 ABI 避免 JNA 打包其他平台
         ndk {
             abiFilters += listOf("arm64-v8a")
         }
+
+        // 虚拟屏预览零拷贝渲染（libmaawh_vd.so）：EGL/GLES2，无第三方依赖
+        externalNativeBuild {
+            cmake {
+                arguments += "-DANDROID_STL=c++_static"
+            }
+        }
     }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+    ndkVersion = "27.2.12479018"
 
     packaging {
         jniLibs {

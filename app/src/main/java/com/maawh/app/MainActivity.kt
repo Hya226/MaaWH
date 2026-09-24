@@ -992,6 +992,9 @@ class MainActivity : AppCompatActivity() {
         refreshStatus()
         // 回前台收起悬浮窗（弹出的条件见 onStop）
         FloatingPanel.hide()
+        // 悬浮窗在后台认领了渲染窗口；回前台主界面预览再认领回来
+        // （悬浮窗 detach 是 posted 的，认领后到者接管，顺序无关）
+        if (vdOn) binding.vdSurface.reclaim()
         // 预览高度补一次：重建/切页后回来时高度可能是塌的（宽度没变就不会触发布局监听）
         binding.imageShot.post { applyPreviewAspect() }
         // 缩放卡片按存档重刷一次（小球位置/按钮可见性以 prefs 为准，别被视图状态恢复带歪）
@@ -1303,7 +1306,18 @@ class MainActivity : AppCompatActivity() {
         val def = m.tasks.firstOrNull { it.name == item.name }
             ?: m.tasks.firstOrNull { it.entry == item.entry }
             ?: return false
-        if (def.options.isEmpty()) return false
+        // 清单 description：任务说明文字（如冬谷竞赛的器者需求），渲染在参数控件上方
+        if (def.description.isNotBlank()) {
+            val tv = TextView(this).apply {
+                text = def.description
+                textSize = 12f
+                setTextColor(getColor(R.color.text_secondary))
+                setLineSpacing(0f, 1.15f)
+                setPadding(0, 0, 0, dp(4))
+            }
+            container.addView(tv)
+        }
+        if (def.options.isEmpty()) return def.description.isNotBlank()
         for (key in def.options) {
             val o = m.option(key) ?: continue
             when (o.type) {
@@ -2029,7 +2043,8 @@ class MainActivity : AppCompatActivity() {
      * 高度把位置占住，等真布局出来再按真实宽度校正（重试上限避免空转）。
      */
     private fun applyPreviewAspect(retry: Int = 0) {
-        val v = binding.imageShot
+        // 高度设在 previewBox（imageShot/vdSurface 都 match_parent 填它）
+        val v = binding.previewBox
         val laidOut = v.width > 0
         // 16dp = panelHome 左右各 8dp 内边距，与布局里的一致
         val w = if (laidOut) v.width else (resources.displayMetrics.widthPixels - dp(16))
@@ -2045,16 +2060,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 主页预览：仅轻量显示 VdStreamer 的最新帧 */
+    /** 主页预览：直渲健康时显示 vdSurface（GPU 零拷贝）；降级时走 VdStreamer 位图路径 */
     private val vdUiTick = object : Runnable {
         override fun run() {
-            val f = VdShared.frame
-            if (f != null) {
-                if (binding.imageShot.tag != System.identityHashCode(f)) {
-                    binding.imageShot.setImageBitmap(f)
-                    binding.imageShot.tag = System.identityHashCode(f)
-                    lastBitmap = f
-                    applyPreviewAspect()
+            val native = VdPreview.nativeActive
+            val surfaceVisible = binding.vdSurface.visibility == android.view.View.VISIBLE
+            if (surfaceVisible != native) {
+                binding.vdSurface.visibility =
+                    if (native) android.view.View.VISIBLE else android.view.View.GONE
+                // 直渲接管/交还时给 imageShot 挪一次背景，避免双画面边缘残留
+                binding.imageShot.setBackgroundColor(if (native) 0x00000000 else 0xFF000000.toInt())
+            }
+            if (!native) {
+                val f = VdShared.frame
+                if (f != null) {
+                    if (binding.imageShot.tag != System.identityHashCode(f)) {
+                        binding.imageShot.setImageBitmap(f)
+                        binding.imageShot.tag = System.identityHashCode(f)
+                        lastBitmap = f
+                        applyPreviewAspect()
+                    }
                 }
             }
             vdHandler.postDelayed(this, 150)
@@ -2064,6 +2089,7 @@ class MainActivity : AppCompatActivity() {
     /** 虚拟屏关闭后清掉预览残帧（VdStreamer 停止后 ImageView 仍持有最后一帧） */
     private fun clearVdPreview() {
         vdHandler.removeCallbacks(vdUiTick)
+        binding.vdSurface.visibility = android.view.View.GONE
         binding.imageShot.setImageDrawable(null)
         binding.imageShot.setBackgroundColor(0xFF000000.toInt())
     }
