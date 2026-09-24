@@ -86,3 +86,6 @@ _tools/*.xml
 gacha/_dump*.json
 gacha/frame_*.jpg
 _tools/*.xml
+
+# CMake/NDK 构建中间目录
+app/.cxx/
