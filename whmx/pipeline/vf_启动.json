@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-22T21:39:24+08:00",
+        "generatedAt": "2026-09-25T07:41:10+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:b16c87b9845a3b857ca629d60cc4df1d04d9357a0e2673db1a6bb5048489beae",
-        "pipelineHash": "sha256:17c92dc203f811b7426c0c62bcf681f1ab540579e108685fbe5b495ae8a1b2ea",
+        "flowHash": "sha256:d81e13903a17ab30ee8e8fa79798e958a0317558e4f515ffaf812895dd14342a",
+        "pipelineHash": "sha256:d7ee4756be9978ae098123151bc39368183a3021a4b338c8e4b6577bcb32ea59",
         "frameW": 1280,
         "frameH": 720
     },
@@ -70,6 +70,7 @@
             95
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "repeat": 3,
         "repeat_delay": 350,
         "next": [
@@ -83,6 +84,7 @@
             361
         ],
         "post_delay": 6000,
+        "pre_delay": 200,
         "next": [
             "VF_启动_05"
         ]
@@ -94,10 +96,72 @@
             "VF_启动_05_Hit"
         ],
         "on_error": [
-            "VF_启动_08"
+            "VF_启动_13"
         ]
     },
     "VF_启动_05_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "wu.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_启动_06"
+        ]
+    },
+    "VF_启动_13": {
+        "action": "Click",
+        "target": [
+            611,
+            361
+        ],
+        "post_delay": 6000,
+        "pre_delay": 200,
+        "next": [
+            "VF_启动_14"
+        ]
+    },
+    "VF_启动_14": {
+        "action": "DoNothing",
+        "timeout": 12000,
+        "next": [
+            "VF_启动_14_Hit"
+        ],
+        "on_error": [
+            "VF_启动_15"
+        ]
+    },
+    "VF_启动_14_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "wu.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_启动_06"
+        ]
+    },
+    "VF_启动_15": {
+        "action": "Click",
+        "target": [
+            611,
+            361
+        ],
+        "post_delay": 6000,
+        "pre_delay": 200,
+        "next": [
+            "VF_启动_16"
+        ]
+    },
+    "VF_启动_16": {
+        "action": "DoNothing",
+        "timeout": 12000,
+        "next": [
+            "VF_启动_16_Hit"
+        ],
+        "on_error": [
+            "VF_启动_08"
+        ]
+    },
+    "VF_启动_16_Hit": {
         "recognition": "TemplateMatch",
         "template": "wu.png",
         "threshold": 0.7,
@@ -113,6 +177,7 @@
             360
         ],
         "post_delay": 600,
+        "pre_delay": 200,
         "next": [
             "VF_启动_07"
         ]
