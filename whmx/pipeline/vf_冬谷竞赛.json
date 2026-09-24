@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-23T23:40:36+08:00",
+        "generatedAt": "2026-09-24T15:05:04+08:00",
         "flowFile": "冬谷竞赛.flow.json",
-        "flowHash": "sha256:a0916ccbd2e146478f0d7618f84b260efd577b4966d182f3f8dba34844cdc708",
-        "pipelineHash": "sha256:abfc040937c86f54dba533fa9c38ee2ec94e1ad835e03d9eee7a7ecad2a52faa",
+        "flowHash": "sha256:c11f44ccffc0fdf3675120376fb9738ba00755c717a99f65889c5c4b5bb56d27",
+        "pipelineHash": "sha256:26c9281ea2ba2e4575dee6055130ebf97055ebe8ac956155cbf2c56622f81b4c",
         "frameW": 1280,
         "frameH": 720
     },
@@ -2303,7 +2303,7 @@
     },
     "VF_冬谷竞赛_139_Hit": {
         "recognition": "TemplateMatch",
-        "template": "zhuye.png",
+        "template": "dg_zy.png",
         "threshold": 0.6,
         "action": "DoNothing",
         "roi": [
@@ -2322,7 +2322,35 @@
             236,
             37
         ],
-        "post_delay": 500
+        "post_delay": 500,
+        "next": [
+            "VF_冬谷竞赛_186"
+        ]
+    },
+    "VF_冬谷竞赛_186": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_186_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_End"
+        ]
+    },
+    "VF_冬谷竞赛_186_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "dg_zy.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "roi": [
+            187,
+            4,
+            115,
+            77
+        ],
+        "next": [
+            "VF_冬谷竞赛_152"
+        ]
     },
     "VF_冬谷竞赛_135": {
         "action": "Click",
