@@ -1016,6 +1016,8 @@ class MainActivity : AppCompatActivity() {
         super.onStop()
         // 改「页面缩放」触发的重建不是切后台：跳过悬浮窗，免得它闪一下又被 onResume 收起
         if (scaleRestarting) return
+        // 全屏画面页在前台时不要画中画（用户看的就是全屏）；从全屏回桌面由全屏页自己弹
+        if (VdFullscreenActivity.isResumed) return
         // 切后台且虚拟屏活着/任务在跑 → 自动弹虚拟屏悬浮窗（设置页可关）
         if (pipEnabled && (vdOn || queueRunner?.running == true || gachaRunning || waiqinRunning)) {
             if (gachaRunning) FloatingPanel.update("▶ 抽卡记录识别中")

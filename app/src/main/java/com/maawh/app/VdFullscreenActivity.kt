@@ -13,6 +13,12 @@ import com.maawh.app.databinding.ActivityVdFullBinding
 /** 虚拟屏全屏页：横屏，画面按中心缩小到约90%并居中，右上角 × 退出 */
 class VdFullscreenActivity : AppCompatActivity() {
 
+    companion object {
+        /** 全屏页是否在前台：MainActivity.onStop 据此抑制悬浮窗（全屏时不需要画中画） */
+        @Volatile
+        var isResumed = false
+    }
+
     private lateinit var binding: ActivityVdFullBinding
     private val handler = Handler(Looper.getMainLooper())
     private var appliedW = 0
@@ -24,6 +30,25 @@ class VdFullscreenActivity : AppCompatActivity() {
     /** 界面整体缩放（与主界面同一份设置，见 DisplayScale） */
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(DisplayScale.wrap(newBase))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        isResumed = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        isResumed = false
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // 从全屏按 HOME 回桌面：主界面不在前台不会弹悬浮窗，这里接手
+        //（× 退出走 isFinishing=true 分支——回主界面，由主界面自己接管预览）
+        if (!isFinishing) {
+            FloatingPanel.showForBackground(this)
+        }
     }
 
     private val tick = object : Runnable {

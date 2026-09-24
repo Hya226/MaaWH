@@ -115,7 +115,9 @@ object VdPreview {
             var confirmed = false
             while (attempt < CONFIRM_ATTEMPTS) {
                 if (!mine() || gen != loopGen.get()) {
-                    fpsText = null
+                    // 只有「当前代」退出才清角标；被新一代淘汰时绝不能清——
+                    // 会把新一代刚写好的 fpsText 抹掉（角标闪烁/消失的根因）
+                    if (gen == loopGen.get()) fpsText = null
                     return
                 }
                 try { Thread.sleep(CONFIRM_STEP_MS) } catch (e: InterruptedException) { return }
@@ -148,7 +150,7 @@ object VdPreview {
             var degraded = false
             while (true) {
                 if (!mine() || gen != loopGen.get()) {
-                    fpsText = null
+                    if (gen == loopGen.get()) fpsText = null   // 同上：被淘汰时不许清角标
                     return
                 }
                 val n = if (claimedOwner !== null) ShizukuShell.previewFrameCount() else -1L
