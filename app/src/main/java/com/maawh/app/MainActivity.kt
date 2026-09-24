@@ -2084,7 +2084,22 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+            updateFpsBadge(binding.fpsText)
             vdHandler.postDelayed(this, 150)
+        }
+    }
+
+    /** 帧率角标：VdPreview 每秒刷新 fpsText，这里做轻量同步（值变化才 setText） */
+    private fun updateFpsBadge(v: android.widget.TextView) {
+        val t = VdPreview.fpsText
+        if (t != v.tag) {
+            v.tag = t
+            if (t == null) {
+                v.visibility = android.view.View.GONE
+            } else {
+                v.text = t
+                v.visibility = android.view.View.VISIBLE
+            }
         }
     }
 
@@ -2094,6 +2109,7 @@ class MainActivity : AppCompatActivity() {
         binding.vdSurface.visibility = android.view.View.GONE
         binding.imageShot.setImageDrawable(null)
         binding.imageShot.setBackgroundColor(0xFF000000.toInt())
+        binding.fpsText.visibility = android.view.View.GONE
     }
 
     private fun toggleVd() {

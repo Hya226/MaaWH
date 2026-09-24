@@ -355,6 +355,7 @@ public class ShellUserService extends IUserService.Stub {
     private static native boolean nvAttachSurface(android.view.Surface surface);
     private static native void nvDetachSurface();
     private static native boolean nvDrawFrame(android.hardware.HardwareBuffer hb);
+    private static native boolean nvDrawBytes(byte[] rgba, int w, int h);
     private static native long nvFrameCount();
 
     private volatile boolean mPreviewOn = false;
@@ -371,6 +372,10 @@ public class ShellUserService extends IUserService.Stub {
     private byte[] mLastFrame;          // 连续 RGBA（w*h*4），最新帧
     private int mFrameW, mFrameH;
     private boolean mFrameHas;
+
+    /** 已从帧池消费的帧计数（看门狗用：consumed 涨而 drawn 停 = 渲染器真挂；
+     *  两者都停 = 游戏画面静止，属正常不该降级） */
+    private volatile long mConsumedCount = 0;
 
     private void updateFrameCache(android.media.Image img) {
         android.media.Image.Plane p = img.getPlanes()[0];
@@ -412,6 +417,7 @@ public class ShellUserService extends IUserService.Stub {
                 try {
                     img = reader.acquireLatestImage();
                     if (img == null) return;
+                    mConsumedCount++;
                     updateFrameCache(img);   // 引擎截图的数据源，无论预览开没开都要更新
                     if (mPreviewOn && android.os.Build.VERSION.SDK_INT >= 26) {
                         android.hardware.HardwareBuffer hb = img.getHardwareBuffer();
@@ -747,11 +753,30 @@ public class ShellUserService extends IUserService.Stub {
         try {
             boolean ok = nvAttachSurface(surface);
             mPreviewOn = ok;
+            if (ok) redrawCacheFrame();   // 静止画面没有新帧事件，挂载后先补画缓存帧占位
             return ok;
         } catch (Throwable t) {
             android.util.Log.w("MaaWH", "attach preview surface err", t);
             mPreviewOn = false;
             return false;
+        }
+    }
+
+    /** 用引擎帧缓存补画一帧（TextureView 刚挂载、游戏画面静止时，预览不至于黑/等到有动画）。
+     *  同时让 drawn 计数 +1，App 端确认逻辑立刻能通过。像素经 native 分配硬件缓冲上屏。 */
+    private void redrawCacheFrame() {
+        try {
+            byte[] frame;
+            int w, h;
+            synchronized (mFrameLock) {
+                if (!mFrameHas || mLastFrame == null) return;
+                frame = mLastFrame;
+                w = mFrameW;
+                h = mFrameH;
+            }
+            nvDrawBytes(frame, w, h);
+        } catch (Throwable t) {
+            android.util.Log.w("MaaWH", "redraw cache frame err", t);
         }
     }
 
@@ -774,6 +799,11 @@ public class ShellUserService extends IUserService.Stub {
         } catch (Throwable t) {
             return 0;
         }
+    }
+
+    @Override
+    public long previewConsumedCount() {
+        return mConsumedCount;
     }
 
     @Override

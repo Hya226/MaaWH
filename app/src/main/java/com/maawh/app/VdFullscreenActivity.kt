@@ -63,6 +63,17 @@ class VdFullscreenActivity : AppCompatActivity() {
             }
             // 新帧每次都更新画面（直渲接管时 vdImg 在底下被盖住，省略位图上传）
             if (bmp != null && !native) binding.vdImg.setImageBitmap(bmp)
+            // 帧率角标（VdPreview 每秒刷新，值变化才 setText）
+            val ft = VdPreview.fpsText
+            if (ft != binding.fpsText.tag) {
+                binding.fpsText.tag = ft
+                if (ft == null) {
+                    binding.fpsText.visibility = android.view.View.GONE
+                } else {
+                    binding.fpsText.text = ft
+                    binding.fpsText.visibility = android.view.View.VISIBLE
+                }
+            }
         }
     }
 

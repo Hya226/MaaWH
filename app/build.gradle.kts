@@ -49,10 +49,12 @@ android {
             abiFilters += listOf("arm64-v8a")
         }
 
-        // 虚拟屏预览零拷贝渲染（libmaawh_vd.so）：EGL/GLES2，无第三方依赖
+        // 虚拟屏预览零拷贝渲染（libmaawh_vd.so）：EGL/GLES2，无第三方依赖。
+        // 平台提至 29：AHardwareBuffer_lockPlanes 需要；API 28 设备本来就没有
+        // GPU_SAMPLED_IMAGE 帧（预览自动降级），此库加载失败也是走降级，无害
         externalNativeBuild {
             cmake {
-                arguments += "-DANDROID_STL=c++_static"
+                arguments += listOf("-DANDROID_STL=c++_static", "-DANDROID_PLATFORM=android-29")
             }
         }
     }

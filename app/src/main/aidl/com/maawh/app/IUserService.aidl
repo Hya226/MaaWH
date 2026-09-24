@@ -55,4 +55,8 @@ interface IUserService {
     // 预览已成功渲染的帧计数：App 端用「挂载后计数是否增长」判定直渲通路健康，
     // 不健康（旧系统拿不到 HardwareBuffer / EGL 失败）就保持 JPEG 轮询降级
     long previewFrameCount() = 16;
+
+    // 已从帧池消费的帧数（看门狗判据：consumed 涨而 drawn 停 = 渲染器真挂需降级；
+    // 两者都停 = 游戏画面静止，正常，不降级）
+    long previewConsumedCount() = 17;
 }

@@ -12,9 +12,21 @@ object VdStreamer {
     private var running = false
     private var worker: Thread? = null
 
+    /** 已解码帧计数（帧率角标的降级路径数据源，VdPreview 每秒差分） */
+    @Volatile
+    var decodedCount: Long = 0
+        private set
+
+    /** 轮询线程是否在跑（区分「降级中」和「没在显示」） */
+    @Volatile
+    var isRunning = false
+        private set
+
     fun start() {
         if (running) return
         running = true
+        isRunning = true
+        VdPreview.onStreamerStarted()
         worker = thread(name = "vd-stream") {
             while (running) {
                 try {
@@ -29,6 +41,7 @@ object VdStreamer {
                         val opts = BitmapFactory.Options().apply { inSampleSize = 2 }
                         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)?.let {
                             VdShared.frame = it
+                            decodedCount++
                         }
                     }
                 } catch (e: Throwable) {
@@ -41,6 +54,7 @@ object VdStreamer {
 
     fun stop() {
         running = false
+        isRunning = false
         worker?.interrupt()
         worker = null
     }

@@ -42,7 +42,8 @@ object FloatingPanel {
     private var added = false
     private var rootView: LinearLayout? = null
     private var frameView: ImageView? = null
-    private var surfaceView: VdSurfaceView? = null
+    private var surfaceView: VdPreviewView? = null
+    private var fpsView: TextView? = null
     private var statusView: TextView? = null
     private var pendingText: String? = null
     private var lp: WindowManager.LayoutParams? = null
@@ -91,6 +92,19 @@ object FloatingPanel {
                     VdShared.frame?.let { v.setImageBitmap(it) }
                 }
             }
+            // 帧率角标（VdPreview 每秒刷新，值变化才 setText）
+            fpsView?.let { v ->
+                val t = VdPreview.fpsText
+                if (t != v.tag) {
+                    v.tag = t
+                    if (t == null) {
+                        v.visibility = android.view.View.GONE
+                    } else {
+                        v.text = t
+                        v.visibility = android.view.View.VISIBLE
+                    }
+                }
+            }
             mainHandler.postDelayed(this, FRAME_TICK_MS)
         }
     }
@@ -125,11 +139,24 @@ object FloatingPanel {
         frameBox.addView(frame, android.widget.FrameLayout.LayoutParams(
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
-        val sv = VdSurfaceView(ctx)
+        val sv = VdPreviewView(ctx)
         surfaceView = sv
         frameBox.addView(sv, android.widget.FrameLayout.LayoutParams(
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
             android.widget.FrameLayout.LayoutParams.MATCH_PARENT))
+        // 帧率角标（左上角小白字）
+        val fps = TextView(ctx).apply {
+            textSize = 9f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(0x66000000)
+            setPadding(dp(density, 3), dp(density, 1), dp(density, 3), dp(density, 1))
+            visibility = android.view.View.GONE
+        }
+        fpsView = fps
+        frameBox.addView(fps, android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+            Gravity.TOP or Gravity.START).apply { setMargins(dp(density, 2), dp(density, 2), 0, 0) })
 
         val status = TextView(ctx).apply {
             text = pendingText ?: "MaaWH"
@@ -242,6 +269,7 @@ object FloatingPanel {
         rootView = null
         frameView = null
         surfaceView = null
+        fpsView = null
         statusView = null
         lp = null
     }

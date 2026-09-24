@@ -144,6 +144,13 @@ object ShizukuShell {
         -1L
     }
 
+    /** 已从帧池消费的帧数（看门狗区分「游戏静止」与「渲染器挂了」）；-1 = 查询失败 */
+    fun previewConsumedCount(): Long = try {
+        ensureService().previewConsumedCount()
+    } catch (_: Throwable) {
+        -1L
+    }
+
     fun stopVirtual() = try {
         ensureService().stopVirtual()
         vdMode = false
@@ -538,7 +545,7 @@ object ShizukuShell {
                 .debuggable(false)
                 // ★ 服务端代码/AIDL 变更时必须 bump：Shizuku 按此版本判断是否重启旧服务进程，
                 //   不 bump 的话装机后仍会绑到旧代码服务，新 AIDL 方法直接 Marshalling 崩
-                .version(2)
+                .version(3)
                 .daemon(false)
             args = a
 

@@ -52,6 +52,7 @@ GLint g_uUV = -1;
 int g_vpW = 0, g_vpH = 0;            // viewport 已按此窗口尺寸设置
 
 std::atomic<long> g_drawn{0};
+std::mutex g_renderMtx;              // 串行化实际渲染（attach 补画在 Binder 线程，与回调线程互斥）
 
 const char* kVertSrc =
     "attribute vec2 aPos;\n"
@@ -190,6 +191,8 @@ bool ensureGlObjects() {
 
 extern "C" {
 
+jboolean renderHb(AHardwareBuffer* hb);   // 前置声明：渲染核心（定义在 nvDrawFrame 之后）
+
 /** 挂载预览窗口（App 进程 SurfaceView 的 Surface 经 Binder 传来）。返回 false = 拿不到窗口。 */
 JNIEXPORT jboolean JNICALL
 Java_com_maawh_app_ShellUserService_nvAttachSurface(JNIEnv* env, jclass, jobject jsurface) {
@@ -229,7 +232,12 @@ Java_com_maawh_app_ShellUserService_nvDrawFrame(JNIEnv* env, jclass, jobject jhb
     if (!jhb) return JNI_FALSE;
     AHardwareBuffer* hb = AHardwareBuffer_fromHardwareBuffer(env, jhb);
     if (!hb) return JNI_FALSE;
+    return renderHb(hb);
+}
 
+/** 渲染核心：从窗口状态应用到上屏。调用方负责持有 hb 引用。 */
+jboolean renderHb(AHardwareBuffer* hb) {
+    std::lock_guard<std::mutex> renderLock(g_renderMtx);
     ANativeWindow* win;
     {
         std::lock_guard<std::mutex> lk(g_mtx);
@@ -250,6 +258,13 @@ Java_com_maawh_app_ShellUserService_nvDrawFrame(JNIEnv* env, jclass, jobject jhb
     if (bw <= 0 || bh <= 0) return JNI_FALSE;
 
     if (!ensureGlObjects()) return JNI_FALSE;
+
+    // 每帧显式绑定：补画可能来自 Binder 线程，上下文会被临时抢过去，回回调线程
+    // 后必须重新 makeCurrent（同线程同 surface 重复绑定开销可忽略）
+    if (eglGetCurrentContext() != g_ctx ||
+        eglGetCurrentSurface(EGL_DRAW) != g_esurf) {
+        eglMakeCurrent(g_dpy, g_esurf, g_esurf, g_ctx);
+    }
 
     const int ww = ANativeWindow_getWidth(win);
     const int wh = ANativeWindow_getHeight(win);
@@ -297,6 +312,59 @@ Java_com_maawh_app_ShellUserService_nvDrawFrame(JNIEnv* env, jclass, jobject jhb
     eglDestroyImageKHR(g_dpy, eimg);
     g_drawn.fetch_add(1, std::memory_order_relaxed);
     return JNI_TRUE;
+}
+
+/**
+ * 直接渲染一段 RGBA 像素（挂载补画用）：把引擎帧缓存的内容分配成硬件缓冲画出去。
+ * 与 nvDrawFrame 不同，本函数可在 Binder 线程调用（g_renderMtx 保证与回调线程互斥）。
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_maawh_app_ShellUserService_nvDrawBytes(JNIEnv* env, jclass, jbyteArray jbuf,
+                                                jint bw, jint bh) {
+    if (!jbuf || bw <= 0 || bh <= 0) return JNI_FALSE;
+    const jsize len = env->GetArrayLength(jbuf);
+    const jsize need = bw * bh * 4;
+    if (len < need) return JNI_FALSE;
+
+    AHardwareBuffer_Desc desc{};
+    desc.width = (unsigned long)bw;
+    desc.height = (unsigned long)bh;
+    desc.layers = 1;
+    desc.format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+    desc.usage = AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE | AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY;
+    AHardwareBuffer* hb = nullptr;
+    if (AHardwareBuffer_allocate(&desc, &hb) != 0 || !hb) return JNI_FALSE;
+
+    jboolean ok = JNI_FALSE;
+    AHardwareBuffer_Planes planes;
+    if (AHardwareBuffer_lockPlanes(hb, AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY, -1,
+                                   nullptr, &planes) == 0 && planes.planeCount > 0) {
+        jbyte* src = env->GetByteArrayElements(jbuf, nullptr);
+        if (src) {
+            const uint8_t* s = reinterpret_cast<const uint8_t*>(src);
+            uint8_t* dstBase = reinterpret_cast<uint8_t*>(planes.planes[0].data);
+            const int dstStride = (int)planes.planes[0].rowStride;
+            if (dstStride == bw * 4) {
+                memcpy(dstBase, s, (size_t)need);
+            } else {
+                for (int y = 0; y < bh; y++) {
+                    memcpy(dstBase + (size_t)y * dstStride, s + (size_t)y * bw * 4,
+                           (size_t)bw * 4);
+                }
+            }
+            ok = JNI_TRUE;
+        }
+        env->ReleaseByteArrayElements(jbuf, src, JNI_ABORT);
+        AHardwareBuffer_unlock(hb, nullptr);
+    }
+    if (!ok) {
+        AHardwareBuffer_release(hb);
+        return JNI_FALSE;
+    }
+
+    ok = renderHb(hb);
+    AHardwareBuffer_release(hb);
+    return ok;
 }
 
 /** 已成功渲染的帧计数（App 端确认直渲通路健康，不健康就降级回 JPEG 轮询）。 */
