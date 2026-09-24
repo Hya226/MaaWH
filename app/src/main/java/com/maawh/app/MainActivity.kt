@@ -868,6 +868,13 @@ class MainActivity : AppCompatActivity() {
      */
     private fun handleLaunchIntent(intent: Intent?) {
         val entry = intent?.getStringExtra("entry") ?: return
+        // 入口 intent 一次性消费：改页面缩放等配置变更会 recreate() 并重投原始 intent，
+        // 不清掉的话当初的 --es entry X（adb 直达/编辑器▶同步并运行）会在重建后的主页
+        // 被重复自动执行（2026-09-24 实测：设置里调缩放后主页自己跑起了【启动】）。
+        // pendingLaunchIntent 持有的是对象引用，不受 setIntent 影响。
+        if (intent.getStringExtra("entry") != null) {
+            setIntent(Intent(this, MainActivity::class.java))
+        }
         // FrameSave：只抓一帧虚拟屏画面存盘（不重启游戏/不变虚拟屏状态），供排查模板位置
         if (entry == "FrameSave") {
             log("FrameSave 开始…")
