@@ -1,17 +1,18 @@
 // MaaWH 虚拟屏预览：GPU 零拷贝直渲（对标 MAA-Meow 的 bridge_preview.cpp）
 //
-// 数据流：ShellUserService 的 ImageReader 收到虚拟屏帧 → onImageAvailable 回调线程
-// 把帧的 HardwareBuffer 交给 nvDrawFrame → AHardwareBuffer 转 EGLImage 挂成
-// GL_TEXTURE_EXTERNAL_OES → 着色器画到 App 经 Binder 传来的预览 Surface 上。
+// 数据流：ShellUserService 的 ImageReader 收到虚拟屏帧 → onImageAvailable 回调把帧的
+// HardwareBuffer 投递给渲染线程 → AHardwareBuffer 转 EGLImage 挂成 GL_TEXTURE_EXTERNAL_OES
+// → 着色器画到 App 经 Binder 传来的预览 Surface 上。
 // 全程帧数据不出 GPU 内存，无 JPEG 编解码、无跨进程像素传输、无轮询；
 // 游戏出多少帧就画多少帧（帧率上限即游戏帧率）。
 //
-// 线程模型（刻意无渲染线程）：
-//   - nvDrawFrame 只在 ImageReader 回调线程（服务端专用 HandlerThread）被调，
-//     EGL 上下文始终绑定在该线程；
-//   - 窗口挂载/摘除来自 Binder 线程，只改 pending 状态，由下一次 nvDrawFrame
-//     开头统一 apply（换窗口的 EGLSurface 销毁顺序照抄 MAA-Meow 的教训：
-//     先切到新 surface 再销毁旧的，销毁 current surface 是未定义行为）。
+// ★ 线程模型（2026-09-24 教训，勿改回同步渲染）：
+//   EGL 上下文只允许同时属于一个线程；跨线程 eglMakeCurrent 会报 EGL_BAD_ACCESS
+//   （0x3002），"在 Binder 线程补画/切窗口"会静默失败并吞掉 pending 窗口切换，
+//   渲染目标从此卡死在已销毁的旧窗口上（实测：进全屏后画面冻结 + 永久降级）。
+//   因此所有 EGL 操作都收敛到唯一的渲染线程：帧经无锁队列投递（只保留最新一帧，
+//   retained 引用防生产者复用），窗口切换/补画只是渲染线程的唤醒信号；
+//   切完窗口会重画队列里留存的最后一帧——静止画面挂载预览也能立刻出图。
 // 任何失败路径都返回 false，由 Java 层/App 端降级回 JPEG 轮询预览。
 
 #include <jni.h>
@@ -20,7 +21,7 @@
 #include <android/native_window_jni.h>
 #include <android/hardware_buffer.h>
 #include <android/hardware_buffer_jni.h>
-// EGLImage / HardwareBuffer 相关扩展函数需要显式开原型宏，否则只有类型没有函数声明
+#include <EGL/egl.h>
 #define EGL_EGLEXT_PROTOTYPES
 #define GL_GLEXT_PROTOTYPES
 #include <EGL/egl.h>
@@ -29,7 +30,9 @@
 #include <GLES2/gl2ext.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <mutex>
+#include <thread>
 
 #define LOG_TAG "maawh_vd"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -37,22 +40,28 @@
 
 namespace {
 
-std::mutex g_mtx;                    // 保护下面四个窗口状态（渲染线程读、Binder 线程写）
-ANativeWindow* g_window = nullptr;   // 当前渲染窗口
-ANativeWindow* g_pending = nullptr;  // 待挂载窗口
+std::mutex g_qmtx;                    // 队列/窗口状态锁（生产者与渲染线程）
+std::condition_variable g_qcv;
+
+ANativeWindow* g_pending = nullptr;   // 待挂载窗口
 bool g_pendingDetach = false;
+bool g_windowDirty = false;           // 窗口待应用/上次应用失败（每帧重试直到成功）
+AHardwareBuffer* g_frame = nullptr;   // 最新一帧（retained；渲染线程读，生产者替换）
+bool g_frameDirty = false;            // 有未渲染的新帧
+bool g_exit = false;
+
+std::atomic<long> g_drawn{0};
+std::atomic<bool> g_threadStarted{false};
 
 EGLDisplay g_dpy = EGL_NO_DISPLAY;
 EGLContext g_ctx = EGL_NO_CONTEXT;
 EGLConfig g_cfg = nullptr;
 EGLSurface g_esurf = EGL_NO_SURFACE;
+ANativeWindow* g_window = nullptr;    // 当前渲染窗口（仅渲染线程触碰）
 GLuint g_prog = 0;
 GLuint g_tex = 0;
 GLint g_uUV = -1;
-int g_vpW = 0, g_vpH = 0;            // viewport 已按此窗口尺寸设置
-
-std::atomic<long> g_drawn{0};
-std::mutex g_renderMtx;              // 串行化实际渲染（attach 补画在 Binder 线程，与回调线程互斥）
+int g_vpW = 0, g_vpH = 0;
 
 const char* kVertSrc =
     "attribute vec2 aPos;\n"
@@ -119,8 +128,9 @@ bool ensureDisplay() {
     return true;
 }
 
-/** 切换当前窗口（win=null = 摘除）。成功后旧 EGLSurface 已销毁、旧窗口已 release。 */
-bool setCurrent_l(ANativeWindow* win) {
+/** 切换当前窗口（win=null = 摘除）。仅渲染线程调用。
+ *  成功后旧 EGLSurface 已销毁、旧窗口已 release；失败返回 false（旧状态保持）。 */
+bool setCurrent(ANativeWindow* win) {
     if (!ensureDisplay()) return false;
     EGLSurface newSurf = EGL_NO_SURFACE;
     if (win) {
@@ -130,7 +140,7 @@ bool setCurrent_l(ANativeWindow* win) {
             return false;
         }
     }
-    // 先切到新 surface 再销毁旧的
+    // 先切到新 surface 再销毁旧的（销毁 current surface 是未定义行为）
     if (!eglMakeCurrent(g_dpy,
                         newSurf != EGL_NO_SURFACE ? newSurf : EGL_NO_SURFACE,
                         newSurf != EGL_NO_SURFACE ? newSurf : EGL_NO_SURFACE,
@@ -187,88 +197,18 @@ bool ensureGlObjects() {
     return true;
 }
 
-} // namespace
-
-extern "C" {
-
-jboolean renderHb(AHardwareBuffer* hb);   // 前置声明：渲染核心（定义在 nvDrawFrame 之后）
-
-/** 挂载预览窗口（App 进程 SurfaceView 的 Surface 经 Binder 传来）。返回 false = 拿不到窗口。 */
-JNIEXPORT jboolean JNICALL
-Java_com_maawh_app_ShellUserService_nvAttachSurface(JNIEnv* env, jclass, jobject jsurface) {
-    if (!jsurface) return JNI_FALSE;
-    ANativeWindow* win = ANativeWindow_fromSurface(env, jsurface);
-    if (!win) {
-        LOGW("ANativeWindow_fromSurface failed");
-        return JNI_FALSE;
-    }
-    {
-        std::lock_guard<std::mutex> lk(g_mtx);
-        if (g_pending) ANativeWindow_release(g_pending);
-        g_pending = win;
-        g_pendingDetach = false;
-    }
-    LOGI("preview surface pending attach");
-    return JNI_TRUE;
-}
-
-/** 摘除预览窗口（幂等；实际销毁在下一次 nvDrawFrame 开头执行——那里才碰 EGL）。 */
-JNIEXPORT void JNICALL
-Java_com_maawh_app_ShellUserService_nvDetachSurface(JNIEnv*, jclass) {
-    std::lock_guard<std::mutex> lk(g_mtx);
-    if (g_pending) {
-        ANativeWindow_release(g_pending);
-        g_pending = nullptr;
-    }
-    g_pendingDetach = true;
-}
-
-/**
- * 渲染一帧（ImageReader 回调线程同步调用）。
- * 返回 false：当前无预览窗口或渲染链路失败，调用方直接 close 帧即可。
- */
-JNIEXPORT jboolean JNICALL
-Java_com_maawh_app_ShellUserService_nvDrawFrame(JNIEnv* env, jclass, jobject jhb) {
-    if (!jhb) return JNI_FALSE;
-    AHardwareBuffer* hb = AHardwareBuffer_fromHardwareBuffer(env, jhb);
-    if (!hb) return JNI_FALSE;
-    return renderHb(hb);
-}
-
-/** 渲染核心：从窗口状态应用到上屏。调用方负责持有 hb 引用。 */
-jboolean renderHb(AHardwareBuffer* hb) {
-    std::lock_guard<std::mutex> renderLock(g_renderMtx);
-    ANativeWindow* win;
-    {
-        std::lock_guard<std::mutex> lk(g_mtx);
-        if (g_pending || g_pendingDetach) {
-            ANativeWindow* want = g_pending;
-            bool detach = g_pendingDetach;
-            g_pending = nullptr;
-            g_pendingDetach = false;
-            setCurrent_l(want);   // want=null → 摘除
-        }
-        win = g_window;
-        if (!win) return JNI_FALSE;
-    }
-
+/** 渲染一帧硬件缓冲到当前窗口（仅渲染线程调用；调用方持有 hb 引用）。 */
+bool drawHb(AHardwareBuffer* hb) {
     AHardwareBuffer_Desc desc{};
     AHardwareBuffer_describe(hb, &desc);
     const int bw = (int)desc.width, bh = (int)desc.height;
-    if (bw <= 0 || bh <= 0) return JNI_FALSE;
+    if (bw <= 0 || bh <= 0 || !g_window) return false;
 
-    if (!ensureGlObjects()) return JNI_FALSE;
+    if (!ensureGlObjects()) return false;
 
-    // 每帧显式绑定：补画可能来自 Binder 线程，上下文会被临时抢过去，回回调线程
-    // 后必须重新 makeCurrent（同线程同 surface 重复绑定开销可忽略）
-    if (eglGetCurrentContext() != g_ctx ||
-        eglGetCurrentSurface(EGL_DRAW) != g_esurf) {
-        eglMakeCurrent(g_dpy, g_esurf, g_esurf, g_ctx);
-    }
-
-    const int ww = ANativeWindow_getWidth(win);
-    const int wh = ANativeWindow_getHeight(win);
-    if (ww <= 0 || wh <= 0) return JNI_FALSE;
+    const int ww = ANativeWindow_getWidth(g_window);
+    const int wh = ANativeWindow_getHeight(g_window);
+    if (ww <= 0 || wh <= 0) return false;
     if (ww != g_vpW || wh != g_vpH) {
         glViewport(0, 0, ww, wh);
         g_vpW = ww;
@@ -276,7 +216,7 @@ jboolean renderHb(AHardwareBuffer* hb) {
     }
 
     EGLClientBuffer cb = eglGetNativeClientBufferANDROID(hb);
-    if (!cb) return JNI_FALSE;
+    if (!cb) return false;
     const EGLint imgAttrs[] = { EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE };
     EGLImageKHR eimg = eglCreateImageKHR(g_dpy, EGL_NO_CONTEXT,
                                          EGL_NATIVE_BUFFER_ANDROID, cb, imgAttrs);
@@ -286,7 +226,7 @@ jboolean renderHb(AHardwareBuffer* hb) {
             LOGW("eglCreateImageKHR failed 0x%x (buf usage=0x%llx)", eglGetError(),
                  (unsigned long long)desc.usage);
         }
-        return JNI_FALSE;
+        return false;
     }
 
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, g_tex);
@@ -308,63 +248,119 @@ jboolean renderHb(AHardwareBuffer* hb) {
     glUseProgram(g_prog);
     glUniform4f(g_uUV, x0, y0, x1, y1);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    eglSwapBuffers(g_dpy, g_esurf);
+    const EGLBoolean swapped = eglSwapBuffers(g_dpy, g_esurf);
     eglDestroyImageKHR(g_dpy, eimg);
+    if (swapped != EGL_TRUE) return false;
     g_drawn.fetch_add(1, std::memory_order_relaxed);
+    return true;
+}
+
+/** 渲染线程主体：唯一的 EGL 使用者。事件 = 换窗口 / 新帧 / 退出。 */
+void renderLoop() {
+    std::unique_lock<std::mutex> lk(g_qmtx);
+    for (;;) {
+        g_qcv.wait(lk, [] {
+            return g_exit || g_windowDirty || (g_frameDirty && g_frame);
+        });
+        if (g_exit) return;
+
+        // 应用窗口切换（失败保留 dirty，下一帧到达时自动重试——App 刚启动时
+        // eglCreateWindowSurface 可能瞬时 EGL_BAD_ALLOC，重试即可恢复）
+        bool windowApplied = false;
+        if (g_windowDirty) {
+            ANativeWindow* want = g_pending;
+            const bool detach = g_pendingDetach && !want;
+            g_pending = nullptr;
+            g_pendingDetach = false;
+            if (setCurrent(detach ? nullptr : want)) {
+                g_windowDirty = false;
+                windowApplied = true;
+            }
+        }
+        const bool newFrame = g_frameDirty;
+        g_frameDirty = false;
+        AHardwareBuffer* hb = g_frame;   // retained；渲染期间锁外使用
+        lk.unlock();
+
+        // 新帧，或窗口刚切换/恢复（重画留存的最后一帧——静止画面挂载预览也能立刻出图）
+        bool drawn = false;
+        if ((newFrame || windowApplied) && hb) {
+            drawn = drawHb(hb);
+        }
+
+        lk.lock();
+        if (!drawn && hb) g_frameDirty = true;   // 没画成（如切窗失败）保留待重试
+    }
+}
+
+void ensureRenderThread() {
+    bool expected = false;
+    if (g_threadStarted.compare_exchange_strong(expected, true)) {
+        std::thread(renderLoop).detach();
+    }
+}
+
+} // namespace
+
+extern "C" {
+
+/** 挂载预览窗口（App 进程 SurfaceView 的 Surface 经 Binder 传来）。返回 false = 拿不到窗口。 */
+JNIEXPORT jboolean JNICALL
+Java_com_maawh_app_ShellUserService_nvAttachSurface(JNIEnv* env, jclass, jobject jsurface) {
+    if (!jsurface) return JNI_FALSE;
+    ANativeWindow* win = ANativeWindow_fromSurface(env, jsurface);
+    if (!win) {
+        LOGW("ANativeWindow_fromSurface failed");
+        return JNI_FALSE;
+    }
+    ensureRenderThread();
+    {
+        std::lock_guard<std::mutex> lk(g_qmtx);
+        if (g_pending) ANativeWindow_release(g_pending);
+        g_pending = win;
+        g_pendingDetach = false;
+        g_windowDirty = true;
+    }
+    g_qcv.notify_all();
+    LOGI("preview surface pending attach");
     return JNI_TRUE;
 }
 
+/** 摘除预览窗口（幂等）。 */
+JNIEXPORT void JNICALL
+Java_com_maawh_app_ShellUserService_nvDetachSurface(JNIEnv*, jclass) {
+    ensureRenderThread();
+    {
+        std::lock_guard<std::mutex> lk(g_qmtx);
+        if (g_pending) {
+            ANativeWindow_release(g_pending);
+            g_pending = nullptr;
+        }
+        g_pendingDetach = true;
+        g_windowDirty = true;
+    }
+    g_qcv.notify_all();
+}
+
 /**
- * 直接渲染一段 RGBA 像素（挂载补画用）：把引擎帧缓存的内容分配成硬件缓冲画出去。
- * 与 nvDrawFrame 不同，本函数可在 Binder 线程调用（g_renderMtx 保证与回调线程互斥）。
+ * 投递一帧（ImageReader 回调线程调用，异步——native 端 retain 后立刻返回，
+ * 真正的渲染由专职渲染线程完成）。返回 false：渲染线程没起来（罕见）。
  */
 JNIEXPORT jboolean JNICALL
-Java_com_maawh_app_ShellUserService_nvDrawBytes(JNIEnv* env, jclass, jbyteArray jbuf,
-                                                jint bw, jint bh) {
-    if (!jbuf || bw <= 0 || bh <= 0) return JNI_FALSE;
-    const jsize len = env->GetArrayLength(jbuf);
-    const jsize need = bw * bh * 4;
-    if (len < need) return JNI_FALSE;
-
-    AHardwareBuffer_Desc desc{};
-    desc.width = (unsigned long)bw;
-    desc.height = (unsigned long)bh;
-    desc.layers = 1;
-    desc.format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
-    desc.usage = AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE | AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY;
-    AHardwareBuffer* hb = nullptr;
-    if (AHardwareBuffer_allocate(&desc, &hb) != 0 || !hb) return JNI_FALSE;
-
-    jboolean ok = JNI_FALSE;
-    AHardwareBuffer_Planes planes;
-    if (AHardwareBuffer_lockPlanes(hb, AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY, -1,
-                                   nullptr, &planes) == 0 && planes.planeCount > 0) {
-        jbyte* src = env->GetByteArrayElements(jbuf, nullptr);
-        if (src) {
-            const uint8_t* s = reinterpret_cast<const uint8_t*>(src);
-            uint8_t* dstBase = reinterpret_cast<uint8_t*>(planes.planes[0].data);
-            const int dstStride = (int)planes.planes[0].rowStride;
-            if (dstStride == bw * 4) {
-                memcpy(dstBase, s, (size_t)need);
-            } else {
-                for (int y = 0; y < bh; y++) {
-                    memcpy(dstBase + (size_t)y * dstStride, s + (size_t)y * bw * 4,
-                           (size_t)bw * 4);
-                }
-            }
-            ok = JNI_TRUE;
-        }
-        env->ReleaseByteArrayElements(jbuf, src, JNI_ABORT);
-        AHardwareBuffer_unlock(hb, nullptr);
+Java_com_maawh_app_ShellUserService_nvDrawFrame(JNIEnv* env, jclass, jobject jhb) {
+    if (!jhb) return JNI_FALSE;
+    AHardwareBuffer* hb = AHardwareBuffer_fromHardwareBuffer(env, jhb);
+    if (!hb) return JNI_FALSE;
+    ensureRenderThread();
+    {
+        std::lock_guard<std::mutex> lk(g_qmtx);
+        if (g_frame) AHardwareBuffer_release(g_frame);
+        AHardwareBuffer_acquire(hb);        // 渲染线程用完前 Java 侧的 close 不影响
+        g_frame = hb;
+        g_frameDirty = true;
     }
-    if (!ok) {
-        AHardwareBuffer_release(hb);
-        return JNI_FALSE;
-    }
-
-    ok = renderHb(hb);
-    AHardwareBuffer_release(hb);
-    return ok;
+    g_qcv.notify_all();
+    return JNI_TRUE;
 }
 
 /** 已成功渲染的帧计数（App 端确认直渲通路健康，不健康就降级回 JPEG 轮询）。 */
