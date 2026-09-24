@@ -2082,6 +2082,10 @@ class MainActivity : AppCompatActivity() {
                 binding.vdSurface.visibility =
                     if (vdOn) android.view.View.VISIBLE else android.view.View.GONE
             }
+            // 认领被 clearVdPreview 释放后（关游戏→再【启动】），TextureView 不会重新回调
+            // onSurfaceTextureAvailable——见到「虚拟屏活着却没人认领」就补认领，直渲才能
+            // 在虚拟屏重建后自动接上（悬浮窗/全屏页认领时 hasClaimer=true，此处不抢）
+            if (vdOn && !VdPreview.hasClaimer) binding.vdSurface.reclaim()
             // ★ TextureView 丢渲染权后会保留最后一帧不透明内容，把底下降级位图挡死
             //（表现为预览冻结在几秒前的画面）。非直渲时置透明，让 imageShot 顶上。
             val wantAlpha = if (VdPreview.nativeActive) 1f else 0f
@@ -2119,6 +2123,12 @@ class MainActivity : AppCompatActivity() {
     /** 虚拟屏关闭后清掉预览残帧（VdStreamer 停止后 ImageView 仍持有最后一帧） */
     private fun clearVdPreview() {
         vdHandler.removeCallbacks(vdUiTick)
+        // 停收帧 + 释放直渲认领：TextureView 设 GONE 不销毁 SurfaceTexture，两个 surface
+        // 回调都不会再触发——不在这里释放的话，下次【启动】重建虚拟屏后没人重新
+        // setPreviewSurface，服务端已被 stopVirtual detach → 新帧只被消费不绘制，
+        // 看门狗判死 → 角标消失 + 永久 JPEG 降级（2026-09-25 关游戏→再启动实测踩中）
+        VdStreamer.stop()
+        VdPreview.release(binding.vdSurface)
         binding.vdSurface.visibility = android.view.View.GONE
         binding.imageShot.setImageDrawable(null)
         binding.imageShot.setBackgroundColor(0xFF000000.toInt())

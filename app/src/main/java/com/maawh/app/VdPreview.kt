@@ -42,8 +42,13 @@ object VdPreview {
 
     @Volatile
     private var claimedOwner: Any? = null
+    @Volatile
     private var claimedSurface: android.view.Surface? = null
     private var reclaimRun: Runnable? = null
+
+    /** 当前是否有渲染窗口认领者（主页 vdUiTick 据此在虚拟屏重建后补认领——TextureView
+     *  设 GONE 不销毁 SurfaceTexture，再次可见时 onSurfaceTextureAvailable 不会重新回调） */
+    val hasClaimer: Boolean get() = claimedOwner != null
 
     /** 认领渲染窗口（后到者接管；主线程调用）。 */
     fun claim(owner: Any, surface: android.view.Surface) {
@@ -66,6 +71,7 @@ object VdPreview {
         claimedSurface = null
         cancelTimers()
         nativeActive = false
+        android.util.Log.i("MaaWH", "预览直渲认领释放")
         thread(name = "vd-preview-detach") {
             ShizukuShell.releasePreviewSurface()
         }
@@ -135,8 +141,16 @@ object VdPreview {
                 android.util.Log.i("MaaWH", "preview confirm OK n=$lastCount")
             } else {
                 nativeActive = false
-                fpsText = if (VdStreamer.isRunning) null else null   // 降级文案由采样分支给出
+                fpsText = null   // 确认失败期间角标隐藏，帧率文案由采样阶段给出
                 android.util.Log.i("MaaWH", "preview confirm FAIL，5s 后重试")
+                // 兜底自愈：虚拟屏可能在认领之后被整个重建（关闭游戏→再【启动】），
+                // 服务端已把预览面 detach，而 TextureView 不会重新回调 available——
+                // 这种情况下光等帧计数永远等不来。重试前把仍有效的认领 Surface 重新
+                // 挂一次（重复 attach 安全：native 只置 pending 窗口标志，由渲染线程应用）
+                val s = claimedSurface
+                if (mine() && s != null && s.isValid) {
+                    thread(name = "vd-preview-attach") { ShizukuShell.setPreviewSurface(s) }
+                }
                 try { Thread.sleep(CONFIRM_RETRY_MS) } catch (e: InterruptedException) { return }
                 continue
             }
