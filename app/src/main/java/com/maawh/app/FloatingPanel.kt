@@ -86,7 +86,9 @@ object FloatingPanel {
     private val frameTick = object : Runnable {
         override fun run() {
             // SurfaceView 常驻可见（可见性死锁坑见 MainActivity.vdUiTick）：直渲画不透明帧
-            // 自然盖住底图；降级时 Surface 透明，位图路径照常可见
+            // 自然盖住底图；降级时 Surface 透明，位图路径照常可见。
+            // TextureView 丢渲染权会残留最后一帧 → 非 native 时置透明（同 MainActivity）
+            surfaceView?.alpha = if (VdPreview.nativeActive) 1f else 0f
             if (!VdPreview.nativeActive) {
                 frameView?.let { v ->
                     VdShared.frame?.let { v.setImageBitmap(it) }

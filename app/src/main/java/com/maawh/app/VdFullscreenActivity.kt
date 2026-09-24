@@ -41,6 +41,10 @@ class VdFullscreenActivity : AppCompatActivity() {
             if (rw <= 0 || rh <= 0) return@post
             // SurfaceView 常驻可见（可见性死锁坑见 MainActivity.vdUiTick）
             val native = VdPreview.nativeActive
+            // 非直渲时 TextureView 置透明（残留最后一帧会挡住降级位图，同 MainActivity）
+            val sv = binding.vdSurface
+            val wantAlpha = if (native) 1f else 0f
+            if (sv.alpha != wantAlpha) sv.alpha = wantAlpha
             val aspect = if (bmp != null && bmp.width > 0) bmp.width.toFloat() / bmp.height.toFloat()
             else MaaConst.VD_W.toFloat() / MaaConst.VD_H.toFloat()
             // 尺寸/比例变化时才重算布局

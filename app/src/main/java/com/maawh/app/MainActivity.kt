@@ -2073,6 +2073,10 @@ class MainActivity : AppCompatActivity() {
                 binding.vdSurface.visibility =
                     if (vdOn) android.view.View.VISIBLE else android.view.View.GONE
             }
+            // ★ TextureView 丢渲染权后会保留最后一帧不透明内容，把底下降级位图挡死
+            //（表现为预览冻结在几秒前的画面）。非直渲时置透明，让 imageShot 顶上。
+            val wantAlpha = if (VdPreview.nativeActive) 1f else 0f
+            if (binding.vdSurface.alpha != wantAlpha) binding.vdSurface.alpha = wantAlpha
             if (!VdPreview.nativeActive) {
                 val f = VdShared.frame
                 if (f != null) {

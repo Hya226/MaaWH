@@ -754,6 +754,7 @@ public class ShellUserService extends IUserService.Stub {
             boolean ok = nvAttachSurface(surface);
             mPreviewOn = ok;
             if (ok) redrawCacheFrame();   // 静止画面没有新帧事件，挂载后先补画缓存帧占位
+            android.util.Log.i("MaaWH", "setPreviewSurface ok=" + ok);
             return ok;
         } catch (Throwable t) {
             android.util.Log.w("MaaWH", "attach preview surface err", t);
