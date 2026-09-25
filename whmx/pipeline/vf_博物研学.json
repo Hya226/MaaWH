@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-22T21:00:51+08:00",
+        "generatedAt": "2026-09-24T20:48:07+08:00",
         "flowFile": "博物研学.flow.json",
-        "flowHash": "sha256:62e6f33a9982e49940ab4cd4f2c37434d04e591f32f7ca17fa6a8ec846d48f43",
-        "pipelineHash": "sha256:37d198f1c7896b5652a29b507897658632efe2fcd0d19c0c72b63ffe2c540158",
+        "flowHash": "sha256:d5ad72ee5d5396ca022715f5aa766b5e3e3d28381ec3822141f43af5f87d18ac",
+        "pipelineHash": "sha256:069aee0e79235918142e8fbfc427f8f2393fb197db4cb2761cc7ea9a029ebc77",
         "frameW": 1280,
         "frameH": 720
     },
@@ -57,6 +57,7 @@
             630
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_博物研学_58"
         ]
@@ -297,7 +298,7 @@
     "VF_博物研学_05": {
         "recognition": "TemplateMatch",
         "template": "yanxueboss_2.png",
-        "threshold": 0.8,
+        "threshold": 0.6,
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,
@@ -935,6 +936,7 @@
             156
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_博物研学_77"
         ]
@@ -1033,6 +1035,7 @@
             362
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_博物研学_84"
         ]
@@ -1504,6 +1507,7 @@
             355
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_博物研学_114"
         ]
@@ -1837,6 +1841,7 @@
             355
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_博物研学_135"
         ]
@@ -2059,6 +2064,7 @@
             355
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_博物研学_146"
         ]
@@ -2163,6 +2169,7 @@
             355
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_博物研学_152"
         ]
@@ -2486,6 +2493,7 @@
             334
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "post_wait_freezes": 1,
         "next": [
             "VF_博物研学_170"
