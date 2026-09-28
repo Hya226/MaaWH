@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-21T12:38:43+08:00",
+        "generatedAt": "2026-09-28T07:06:21+08:00",
         "flowFile": "征集.flow.json",
-        "flowHash": "sha256:31fb770d312f8d63e34cdf604d708218ad1a30d6a9d1ce88a3a353057e576ac7",
-        "pipelineHash": "sha256:d71d27ae763d5c8c2ab05fc86123b7b6cc2e8c2d99594fd8dff6fbf319ea0d40",
+        "flowHash": "sha256:e9a58175a5d49c973dacf33ba302dd3b3e4df965ca76ed10f66cf64510e37432",
+        "pipelineHash": "sha256:763a4b3ed8288014bd51a47be4c6950bf5a6b28ff0060a5e9e45e8d54bd31c53",
         "frameW": 1280,
         "frameH": 720
     },
@@ -33,8 +33,29 @@
         "timeout": 4000,
         "post_delay": 600,
         "next": [
+            "VF_征集_17"
+        ]
+    },
+    "VF_征集_17": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_征集_17_Hit"
+        ],
+        "on_error": [
             "VF_征集_21"
         ]
+    },
+    "VF_征集_17_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tiaoguochouka.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "next": [
+            "VF_征集_17"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_征集_21": {
         "action": "DoNothing",
@@ -43,55 +64,33 @@
             "VF_征集_21_Hit"
         ],
         "on_error": [
-            "VF_征集_22"
+            "VF_征集_19_W"
         ]
     },
     "VF_征集_21_Hit": {
         "recognition": "TemplateMatch",
-        "template": "tiaoguochouka.png",
+        "template": "duigou.png",
         "threshold": 0.7,
         "action": "DoNothing",
+        "rate_limit": 200,
         "next": [
-            "VF_征集_17"
+            "VF_征集_22"
         ]
     },
     "VF_征集_22": {
-        "next": [
-            "Common_回主页"
-        ]
-    },
-    "VF_征集_17": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_征集_17_Hit"
-        ]
-    },
-    "VF_征集_17_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "tiaoguochouka.png",
-        "threshold": 0.75,
-        "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
-        "next": [
-            "VF_征集_18"
-        ]
-    },
-    "VF_征集_18": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_征集_18_Hit"
-        ]
-    },
-    "VF_征集_18_Hit": {
         "recognition": "TemplateMatch",
         "template": "duigou.png",
         "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
+        "timeout": 8000,
         "post_delay": 600,
+        "next": [
+            "VF_征集_19_W"
+        ]
+    },
+    "VF_征集_19_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
         "next": [
             "VF_征集_19"
         ]
@@ -113,8 +112,9 @@
             402
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
-            "VF_征集_12"
+            "VF_征集_06"
         ]
     },
     "VF_征集_06": {
@@ -124,7 +124,7 @@
             "VF_征集_06_Hit"
         ],
         "on_error": [
-            "VF_征集_End"
+            "VF_征集_13_J1"
         ]
     },
     "VF_征集_06_Hit": {
@@ -163,6 +163,40 @@
             "征集队列已满",
             "队列已满",
             "已满"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ],
         "action": "DoNothing",
         "next": [

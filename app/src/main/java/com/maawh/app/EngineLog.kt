@@ -151,6 +151,16 @@ object EngineLog {
     private var index: Map<String, JSONObject>? = null
     private var indexDir: String = ""
 
+    /**
+     * 当前任务的 pipeline_override（QueueRunner 每任务开始时更新，「不走参数的」
+     * 分支任务置 null）。hint 要显示的是引擎**此刻**真正的识别参数——pipeline
+     * 文件里只是默认值，【输入】/【选择】的参数运行时才 override 上去；不合并
+     * 进来日志就会显示成"在找默认值"（博物研学日志期望「蛙锣」、引擎实际在找
+     * 用户填的「洛神赋图」，2026-09-27 实锤，排障时差点被带偏）。
+     */
+    @Volatile
+    var liveOverride: JSONObject? = null
+
     /** 节点名 → 生成物里的定义索引（按需构建一次；任务包的 pipeline 就几百个节点） */
     private fun nodes(bundleDir: File?): Map<String, JSONObject> {
         if (bundleDir == null) return emptyMap()
@@ -177,10 +187,16 @@ object EngineLog {
     private fun JSONArray.toStringList(): List<String> =
         (0 until length()).mapNotNull { optString(it)?.takeIf { s -> s.isNotBlank() } }
 
-    /** 这个节点在生成物里是"怎么认"的：模板/期望文字/阈值/ROI/等待上限 */
+    /** 这个节点在生成物里是"怎么认"的：模板/期望文字/阈值/ROI/等待上限。
+     *  节点有运行时 override 时以其为准（见 [liveOverride]）。 */
     fun hintFor(bundleDir: File?, node: String): String {
         if (node.isBlank()) return ""
-        val nd = nodes(bundleDir)[node] ?: return ""
+        val base = nodes(bundleDir)[node] ?: return ""
+        val nd = liveOverride?.optJSONObject(node)?.let { ov ->
+            val merged = JSONObject(base.toString())
+            for (k in ov.keys()) merged.put(k, ov.get(k))
+            merged
+        } ?: base
         val parts = ArrayList<String>()
         nd.optString("template").takeIf { it.isNotBlank() }?.let { parts += "模板 $it" }
         nd.optJSONArray("expected")?.toStringList()?.takeIf { it.isNotEmpty() }

@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-25T07:41:10+08:00",
+        "generatedAt": "2026-09-27T21:28:14+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:d81e13903a17ab30ee8e8fa79798e958a0317558e4f515ffaf812895dd14342a",
-        "pipelineHash": "sha256:d7ee4756be9978ae098123151bc39368183a3021a4b338c8e4b6577bcb32ea59",
+        "flowHash": "sha256:3eebeeee80660789091e541695d1fcf9822b76ecbc785c86ccd6bbd1833d3836",
+        "pipelineHash": "sha256:9d84e4fefc165429c757489cffa55a1f956a1cbc5fe058cf0c7d678d62cfe89b",
         "frameW": 1280,
         "frameH": 720
     },
@@ -17,7 +17,14 @@
     "VF_启动_01": {
         "action": "StartApp",
         "package": "com.cipaishe.wuhua.bilibili",
-        "post_delay": 25000,
+        "post_delay": 15000,
+        "next": [
+            "VF_启动_12_W"
+        ]
+    },
+    "VF_启动_12_W": {
+        "action": "DoNothing",
+        "timeout": 60000,
         "next": [
             "VF_启动_12"
         ]
@@ -27,7 +34,7 @@
         "template": "ks_cha.png",
         "threshold": 0.8,
         "action": "DoNothing",
-        "timeout": 40000,
+        "timeout": 60000,
         "roi": [
             1108,
             59,
@@ -45,7 +52,7 @@
             "VF_启动_10_Hit"
         ],
         "on_error": [
-            "VF_启动_12"
+            "VF_启动_12_W"
         ]
     },
     "VF_启动_10_Hit": {
@@ -83,7 +90,7 @@
             611,
             361
         ],
-        "post_delay": 6000,
+        "post_delay": 3000,
         "pre_delay": 200,
         "next": [
             "VF_启动_05"
@@ -91,7 +98,7 @@
     },
     "VF_启动_05": {
         "action": "DoNothing",
-        "timeout": 20000,
+        "timeout": 5000,
         "next": [
             "VF_启动_05_Hit"
         ],
@@ -117,43 +124,12 @@
         "post_delay": 6000,
         "pre_delay": 200,
         "next": [
-            "VF_启动_14"
-        ]
-    },
-    "VF_启动_14": {
-        "action": "DoNothing",
-        "timeout": 12000,
-        "next": [
-            "VF_启动_14_Hit"
-        ],
-        "on_error": [
-            "VF_启动_15"
-        ]
-    },
-    "VF_启动_14_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "wu.png",
-        "threshold": 0.7,
-        "action": "DoNothing",
-        "next": [
-            "VF_启动_06"
-        ]
-    },
-    "VF_启动_15": {
-        "action": "Click",
-        "target": [
-            611,
-            361
-        ],
-        "post_delay": 6000,
-        "pre_delay": 200,
-        "next": [
             "VF_启动_16"
         ]
     },
     "VF_启动_16": {
         "action": "DoNothing",
-        "timeout": 12000,
+        "timeout": 5000,
         "next": [
             "VF_启动_16_Hit"
         ],
@@ -185,10 +161,16 @@
     "VF_启动_07": {
         "recognition": "TemplateMatch",
         "template": "qd_cha.png",
-        "threshold": 0.85,
+        "threshold": 0.8,
         "action": "Click",
-        "timeout": 8000,
+        "timeout": 3000,
         "post_delay": 6000,
+        "roi": [
+            714,
+            6,
+            561,
+            380
+        ],
         "post_wait_freezes": 100,
         "next": [
             "VF_启动_08"

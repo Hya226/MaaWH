@@ -99,7 +99,31 @@ object ShizukuShell {
         }
         // 服务端权威状态：返回含 vd_ok/vd_exist 即虚拟屏已存活
         vdMode = r.contains("vd_ok") || r.contains("vd_exist")
+        reportWindowLayout(r)
         return r
+    }
+
+    /**
+     * 窗口布局诊断（win= 行由服务端 startVirtualGame 探测，正常 "1280x720" 不打扰）。
+     * 部分 ROM 对游戏触发 size-compat：画面放大裁切/黑边，固定 ROI 全错位——
+     * 必须醒目提示，别让用户只看到莫名其妙的识别失败。
+     */
+    private fun reportWindowLayout(r: String) {
+        val win = Regex("win=([^\\n]+)").find(r)?.groupValues?.get(1)?.trim() ?: return
+        when {
+            win.contains("fix=failed") -> report(
+                LogLevel.WRN,
+                "【虚拟屏】游戏窗口布局异常（$win）：系统对游戏做了兼容缩放，画面可能被放大或留黑边，识别/点击会错位，任务可能失败。请把此日志连同手机机型反馈给开发者。"
+            )
+            win.contains("COMPAT") -> report(
+                LogLevel.WRN,
+                "【虚拟屏】检测到游戏窗口未铺满 1280x720（$win），已尝试自动纠正；若画面仍异常请反馈日志与机型。"
+            )
+            win.startsWith("unknown") -> report(
+                LogLevel.INFO,
+                "【虚拟屏】窗口布局未能确认（$win）——若预览画面异常或任务识别失败，请反馈日志与机型。"
+            )
+        }
     }
 
     /** 与 UserService 重新同步虚拟屏存活状态（服务端权威），并返回是否存活 */
@@ -545,7 +569,8 @@ object ShizukuShell {
                 .debuggable(false)
                 // ★ 服务端代码/AIDL 变更时必须 bump：Shizuku 按此版本判断是否重启旧服务进程，
                 //   不 bump 的话装机后仍会绑到旧代码服务，新 AIDL 方法直接 Marshalling 崩
-                .version(3)
+                // v4: startVirtualGame 增加 win= 窗口布局探测（size-compat 检测）
+                .version(4)
                 .daemon(false)
             args = a
 

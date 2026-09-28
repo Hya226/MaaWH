@@ -1,0 +1,88 @@
+{
+    "VF_示例流程": {
+        "next": [
+            "VF_示例流程_01"
+        ]
+    },
+    "VF_示例流程_01": {
+        "action": "StartApp",
+        "package": "com.cipaishe.wuhua.bilibili",
+        "post_delay": 1000,
+        "next": [
+            "VF_示例流程_02"
+        ]
+    },
+    "VF_示例流程_02": {
+        "recognition": "TemplateMatch",
+        "template": "home_icon.png",
+        "threshold": 0.8,
+        "action": "DoNothing",
+        "timeout": 15000,
+        "roi": [
+            0,
+            0,
+            200,
+            120
+        ],
+        "next": [
+            "VF_示例流程_03"
+        ]
+    },
+    "VF_示例流程_03": {
+        "recognition": "TemplateMatch",
+        "template": "qizhe.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_示例流程_04"
+        ]
+    },
+    "VF_示例流程_04": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_示例流程_04_Hit"
+        ],
+        "on_error": [
+            "VF_示例流程_06"
+        ]
+    },
+    "VF_示例流程_04_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "cha_x.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "roi": [
+            600,
+            20,
+            120,
+            110
+        ],
+        "next": [
+            "VF_示例流程_05"
+        ]
+    },
+    "VF_示例流程_05": {
+        "action": "Swipe",
+        "begin": [
+            360,
+            1000
+        ],
+        "end": [
+            360,
+            400
+        ],
+        "duration": 900,
+        "post_delay": 600,
+        "next": [
+            "VF_示例流程_06"
+        ]
+    },
+    "VF_示例流程_06": {
+        "next": [
+            "Common_回主页"
+        ]
+    }
+}

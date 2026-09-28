@@ -3,6 +3,7 @@ package com.maawh.app
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -166,6 +167,9 @@ class QueueRunner(
                     }
                     currentLabel = item.label
                     lastNode = null
+                    // 日志 hint 的 override 感知每任务重置：「启动/关闭游戏」这类
+                    // 不带参数的分支不残留上一个任务的参数（EngineLog.hintFor 用）
+                    EngineLog.liveOverride = null
                     cb.onLog("开始任务：${item.label}", LogLevel.TRACE)
                     val taskStart = android.os.SystemClock.elapsedRealtime()
                     val r = try {
@@ -238,10 +242,16 @@ class QueueRunner(
                         } else {
                             // 其余任务：按清单 option 生成 pipeline_override 后交给引擎
                             // （name 对不上时用 entry 兜底：adb 直达入口的 TaskItem 只有 entry 可用）
-                            val override = manifest?.let { m ->
+                            // ★ 每次执行现读清单：构造传入的 manifest 是 App 启动时的旧版，
+                            //   编辑器「同步到手机」改了 interface.json（参数定义/注入键）后
+                            //   不重启也生效。读取失败/文件缺失回退内存版，别让任务没参数跑。
+                            val manifestNow = runCatching { TaskPack.load(whmxDir) }.getOrNull() ?: manifest
+                            val override = manifestNow?.let { m ->
                                 m.tasks.firstOrNull { it.name == item.name || it.entry == item.entry }
                                     ?.let { TaskPack.buildOverride(m, it, item.selection) }
                             } ?: "{}"
+                            EngineLog.liveOverride =
+                                runCatching { JSONObject(override) }.getOrNull()
                             cb.onLog("pipeline_override: $override", LogLevel.INFO)
                             MaaBridge.runTask(whmxDir, item.entry, logDir, override) { msg ->
                                 notify { cb.onLog(msg, LogLevel.TRACE) }

@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-20T15:18:00+08:00",
+        "generatedAt": "2026-09-27T11:49:12+08:00",
         "flowFile": "升好感度.flow.json",
-        "flowHash": "sha256:2e08a252fe4eb1e5b25ca5bc7b87d043a3b5a77741f1af2438576e55322008ef",
-        "pipelineHash": "sha256:fd7b42b12c392db32c47ab68e40ff472fbaa0fddeb8ac899fc258b910a2e37b1",
+        "flowHash": "sha256:29efbbbbae994400ebfe9ea06fadd84feadaf6379977350201ab305cbaf62d96",
+        "pipelineHash": "sha256:5b503132dffdba5b0ca33999b67390974a36c7bce87d95f5a004583756ce2b36",
         "frameW": 1280,
         "frameH": 720
     },
@@ -38,12 +38,93 @@
         ]
     },
     "VF_升好感度_37_03_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.75,
+        "recognition": "OCR",
+        "expected": [
+            "蛙锣"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
         "action": "DoNothing",
         "next": [
-            "VF_升好感度_37_01"
+            "VF_升好感度_37_06"
+        ]
+    },
+    "VF_升好感度_37_06": {
+        "recognition": "OCR",
+        "expected": [
+            "蛙锣"
+        ],
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "next": [
+            "VF_升好感度_03"
         ]
     },
     "VF_升好感度_37_02": {
@@ -62,18 +143,6 @@
             "VF_升好感度_37_03"
         ]
     },
-    "VF_升好感度_37_01": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.75,
-        "action": "Click",
-        "timeout": 5000,
-        "post_delay": 800,
-        "order_by": "Score",
-        "next": [
-            "VF_升好感度_03"
-        ]
-    },
     "VF_升好感度_37": {
         "action": "DoNothing",
         "next": [
@@ -87,6 +156,7 @@
             200
         ],
         "post_delay": 800,
+        "pre_delay": 200,
         "timeout": 3000,
         "next": [
             "VF_升好感度_04"
@@ -99,19 +169,20 @@
             425
         ],
         "post_delay": 800,
+        "pre_delay": 200,
         "timeout": 3000,
         "next": [
-            "VF_升好感度_36"
+            "VF_升好感度_38"
         ]
     },
-    "VF_升好感度_36": {
+    "VF_升好感度_38": {
         "action": "DoNothing",
         "timeout": 30000,
         "next": [
-            "VF_升好感度_36_Hit"
+            "VF_升好感度_38_Hit"
         ]
     },
-    "VF_升好感度_36_Hit": {
+    "VF_升好感度_38_Hit": {
         "recognition": "TemplateMatch",
         "template": "tongxiang.png",
         "threshold": 0.7,

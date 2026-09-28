@@ -27,13 +27,14 @@ data class TaskItem(
         get() = if (summary.isBlank()) label else "$label · $summary"
 }
 
-/** 任务列表：勾选=参与运行；右侧 ✕ 删除；单击行=编辑参数 */
+/** 任务列表：勾选=参与运行；右侧 ✕ 删除；单击行=编辑参数；长按行名字/空白=拖动排序 */
 class TaskQueueAdapter(
     private val items: MutableList<TaskItem>,
     private val enabled: List<Boolean>,
     private val onToggle: (Int, Boolean) -> Unit,
     private val onDelete: (Int) -> Unit,
-    private val onSelect: (Int) -> Unit
+    private val onSelect: (Int) -> Unit,
+    private val onStartDrag: (VH) -> Unit = {}
 ) : RecyclerView.Adapter<TaskQueueAdapter.VH>() {
 
     class VH(v: View) : RecyclerView.ViewHolder(v) {
@@ -53,13 +54,32 @@ class TaskQueueAdapter(
         val item = items[position]
         holder.name.text = item.label
         holder.count.text = item.summary
+        // 回调里必须用 bindingAdapterPosition：notifyItemRemoved/Moved 不会让未复用的行
+        // 重新 bind，闭包里的 bind position 是旧值，删错任务/勾错行
+        fun curPos(): Int = holder.bindingAdapterPosition
         // 先按数据写入勾选状态（摘掉监听避免 setChecked 误触发回调），
         // 否则 RecyclerView 复用 ViewHolder 时勾选显示与 enabled 数据脱节
         holder.check.setOnCheckedChangeListener(null)
         holder.check.isChecked = enabled.getOrElse(position) { false }
-        holder.check.setOnCheckedChangeListener { _, checked -> onToggle(position, checked) }
-        holder.del.setOnClickListener { onDelete(position) }
-        holder.itemView.setOnClickListener { onSelect(position) }
+        holder.check.setOnCheckedChangeListener { _, checked ->
+            val pos = curPos()
+            if (pos != RecyclerView.NO_POSITION) onToggle(pos, checked)
+        }
+        holder.del.setOnClickListener {
+            val pos = curPos()
+            if (pos != RecyclerView.NO_POSITION) onDelete(pos)
+        }
+        holder.itemView.setOnClickListener {
+            val pos = curPos()
+            if (pos != RecyclerView.NO_POSITION) onSelect(pos)
+        }
+        // 长按排序挂在行根上。✕/勾选框是 clickable child，长按不会冒泡到这里，长按它们
+        // 不触发拖动（配合 MainActivity 关掉 ItemTouchHelper 的全局长按拖动——否则长按
+        // ✕ 400ms 就进了拖动态，点击被 ACTION_CANCEL 吞掉，表现为「点删除没反应」）
+        holder.itemView.setOnLongClickListener {
+            if (curPos() != RecyclerView.NO_POSITION) onStartDrag(holder)
+            true
+        }
     }
 
     override fun getItemCount() = items.size

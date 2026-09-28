@@ -1,0 +1,363 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-27T14:23:09+08:00",
+        "flowFile": "实验室.flow.json",
+        "flowHash": "sha256:220fb92d2968d9ecbe119315113e168921716a60326668c5b50d25ee807e0ff2",
+        "pipelineHash": "sha256:4ec35aa15a1fe41cf84527ca47bbe745a383bb8ee349f81c3d8fc0c31731bfdf",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_实验室": {
+        "next": [
+            "VF_实验室_01"
+        ]
+    },
+    "VF_实验室_01": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_实验室_01_Hit"
+        ],
+        "on_error": [
+            "VF_实验室_02"
+        ]
+    },
+    "VF_实验室_01_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhixing.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "roi": [
+            1075,
+            65,
+            185,
+            198
+        ],
+        "next": [
+            "VF_实验室_01"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_实验室_02": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_实验室_02_Hit"
+        ],
+        "on_error": [
+            "VF_实验室_06"
+        ]
+    },
+    "VF_实验室_02_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "daditu.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "roi": [
+            1,
+            485,
+            250,
+            235
+        ],
+        "next": [
+            "VF_实验室_02"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_实验室_06": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_实验室_06_Hit"
+        ]
+    },
+    "VF_实验室_06_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "塞北"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            698,
+            594,
+            48,
+            88
+        ],
+        "rate_limit": 200,
+        "post_delay": 600,
+        "next": [
+            "VF_实验室_04"
+        ]
+    },
+    "VF_实验室_04": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_实验室_04_Hit"
+        ]
+    },
+    "VF_实验室_04_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "ziyuan.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "roi": [
+            528,
+            236,
+            598,
+            247
+        ],
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_实验室_05"
+        ]
+    },
+    "VF_实验室_05": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_实验室_05_Hit"
+        ],
+        "on_error": [
+            "VF_实验室_07"
+        ]
+    },
+    "VF_实验室_05_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "实验室"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            995,
+            392,
+            104,
+            46
+        ],
+        "next": [
+            "VF_实验室_05"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_实验室_07": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_实验室_07_Hit"
+        ]
+    },
+    "VF_实验室_07_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "速通"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            998,
+            635,
+            67,
+            40
+        ],
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_实验室_08"
+        ]
+    },
+    "VF_实验室_08": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_实验室_08_Hit"
+        ]
+    },
+    "VF_实验室_08_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "jiahao.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "roi": [
+            828,
+            296,
+            135,
+            80
+        ],
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_实验室_10"
+        ]
+    },
+    "VF_实验室_10": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_实验室_10_Hit"
+        ],
+        "on_error": [
+            "VF_实验室_11"
+        ]
+    },
+    "VF_实验室_10_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "next": [
+            "VF_实验室_10"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_实验室_11": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_实验室_11_Hit"
+        ]
+    },
+    "VF_实验室_11_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "wancheng.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_实验室_12"
+        ]
+    },
+    "VF_实验室_12": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_实验室_12_Hit"
+        ],
+        "on_error": [
+            "VF_实验室_End"
+        ]
+    },
+    "VF_实验室_12_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye1.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "next": [
+            "VF_实验室_12"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_实验室_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-14T23:18:52+08:00",
+        "generatedAt": "2026-09-27T11:49:18+08:00",
         "flowFile": "易物所购买.flow.json",
-        "flowHash": "sha256:9e0e8aee922101ca994e0073f5bb06832240b672610c15c29e947b4a497a4edb",
-        "pipelineHash": "sha256:f268f28b9eb67108d964ac6f24fe6913cfcb9e2f65f5756d91b6a12d0047a504",
+        "flowHash": "sha256:040d1363bdd59eaf00e9ef823c6611ab0c0734ccb16341613981abbd113ae55f",
+        "pipelineHash": "sha256:17aa0f107d5f5722815b1cbf91b5c831764ac07860572bcbb7efce31cea21b1e",
         "frameW": 1280,
         "frameH": 720
     },
@@ -24,6 +24,40 @@
         "post_delay": 600,
         "next": [
             "VF_易物所购买_02_J1"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_易物所购买_02_J1": {
@@ -83,6 +117,17 @@
             "VF_易物所购买_05"
         ]
     },
+    "VF_易物所购买_05": {
+        "recognition": "TemplateMatch",
+        "template": "zhaojiyishi.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_易物所购买_07"
+        ]
+    },
     "VF_易物所购买_04": {
         "action": "DoNothing",
         "timeout": 3000,
@@ -116,17 +161,6 @@
     "VF_易物所购买_08": {
         "next": [
             "Common_回主页"
-        ]
-    },
-    "VF_易物所购买_05": {
-        "recognition": "TemplateMatch",
-        "template": "zhaojiyishi.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "next": [
-            "VF_易物所购买_07"
         ]
     },
     "VF_易物所购买_07": {

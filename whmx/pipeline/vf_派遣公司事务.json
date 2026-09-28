@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-23T09:49:19+08:00",
+        "generatedAt": "2026-09-27T11:49:20+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:a4b06f8e8eb285c5741b8a704f2bc20ab872c489eb8f5d366570a21c4e62de9c",
-        "pipelineHash": "sha256:946ee963bbfd48a9da1d6029d04fdd81836da9867b785d9e42e61ef61a9bef86",
+        "flowHash": "sha256:4feb5693ea234813318079fb9bbdb2b49381b0657b98b86c157f91e945aa1408",
+        "pipelineHash": "sha256:7a272687b52f5c6a35fa887ff5821fb62c979056a9ddc1deec66602542f170f9",
         "frameW": 1280,
         "frameH": 720
     },
@@ -43,6 +43,7 @@
             400
         ],
         "post_delay": 2000,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_41"
         ]
@@ -54,7 +55,7 @@
         ],
         "action": "Click",
         "timeout": 8000,
-        "post_delay": 600,
+        "post_delay": 1000,
         "roi": [
             959,
             611,
@@ -63,6 +64,40 @@
         ],
         "next": [
             "VF_派遣公司事务_05"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_派遣公司事务_05": {
@@ -72,8 +107,9 @@
             400
         ],
         "post_delay": 1000,
+        "pre_delay": 200,
         "next": [
-            "VF_派遣公司事务_06"
+            "VF_派遣公司事务_48"
         ]
     },
     "VF_派遣公司事务_06": {
@@ -83,7 +119,7 @@
             "VF_派遣公司事务_06_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_14"
+            "VF_派遣公司事务_49"
         ]
     },
     "VF_派遣公司事务_06_Hit": {
@@ -155,6 +191,7 @@
             360
         ],
         "post_delay": 800,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_12"
         ]
@@ -177,7 +214,7 @@
             "VF_派遣公司事务_13_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_14"
+            "VF_派遣公司事务_49"
         ]
     },
     "VF_派遣公司事务_13_Hit": {
@@ -209,7 +246,7 @@
             "VF_派遣公司事务_43_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_47"
+            "VF_派遣公司事务_52"
         ]
     },
     "VF_派遣公司事务_43_Hit": {
@@ -245,6 +282,7 @@
             400
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_44"
         ]
@@ -256,7 +294,7 @@
             "VF_派遣公司事务_44_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_47"
+            "VF_派遣公司事务_52"
         ]
     },
     "VF_派遣公司事务_44_Hit": {
@@ -266,25 +304,6 @@
         "action": "DoNothing",
         "next": [
             "VF_派遣公司事务_17"
-        ]
-    },
-    "VF_派遣公司事务_47": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_派遣公司事务_47_Hit"
-        ],
-        "on_error": [
-            "VF_派遣公司事务_38"
-        ]
-    },
-    "VF_派遣公司事务_47_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "chashi_tuichu.png",
-        "threshold": 0.6,
-        "action": "DoNothing",
-        "next": [
-            "VF_派遣公司事务_37"
         ]
     },
     "VF_派遣公司事务_17": {
@@ -369,6 +388,7 @@
             284
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_24"
         ]
@@ -399,6 +419,7 @@
             376
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "repeat": 2,
         "repeat_delay": 350,
         "next": [
@@ -445,6 +466,7 @@
             376
         ],
         "post_delay": 1500,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_29"
         ]
@@ -456,6 +478,7 @@
             284
         ],
         "post_delay": 2000,
+        "pre_delay": 200,
         "repeat": 2,
         "repeat_delay": 200,
         "next": [
@@ -488,6 +511,7 @@
             266
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_32"
         ]
@@ -499,6 +523,7 @@
             284
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_33"
         ]
@@ -529,6 +554,7 @@
             266
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_35"
         ]
@@ -540,6 +566,7 @@
             263
         ],
         "post_delay": 1500,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_36"
         ]
@@ -551,81 +578,253 @@
             449
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
-            "VF_派遣公司事务_46"
+            "VF_派遣公司事务_51"
         ]
     },
-    "VF_派遣公司事务_46": {
+    "VF_派遣公司事务_51": {
+        "action": "DoNothing",
+        "timeout": 8000,
+        "next": [
+            "VF_派遣公司事务_51_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_52"
+        ]
+    },
+    "VF_派遣公司事务_51_Hit": {
         "recognition": "TemplateMatch",
         "template": "pinming_tuichu.png",
         "threshold": 0.7,
         "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "pre_delay": 1000,
         "next": [
-            "VF_派遣公司事务_45"
-        ]
+            "VF_派遣公司事务_51"
+        ],
+        "rate_limit": 400,
+        "post_delay": 600
     },
-    "VF_派遣公司事务_45": {
+    "VF_派遣公司事务_52": {
         "action": "DoNothing",
         "timeout": 3000,
         "next": [
-            "VF_派遣公司事务_45_Hit"
+            "VF_派遣公司事务_52_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_47"
+            "VF_派遣公司事务_59"
         ]
     },
-    "VF_派遣公司事务_45_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "pinming_tuichu.png",
-        "threshold": 0.7,
-        "action": "DoNothing",
-        "next": [
-            "VF_派遣公司事务_46"
-        ]
-    },
-    "VF_派遣公司事务_37": {
+    "VF_派遣公司事务_52_Hit": {
         "recognition": "TemplateMatch",
         "template": "chashi_tuichu.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
         "next": [
-            "VF_派遣公司事务_38"
-        ]
+            "VF_派遣公司事务_52"
+        ],
+        "rate_limit": 500,
+        "post_delay": 600
     },
-    "VF_派遣公司事务_38": {
-        "recognition": "TemplateMatch",
-        "template": "tuichupaiqiangongsi.png",
-        "threshold": 0.5,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "next": [
-            "VF_派遣公司事务_39"
-        ]
-    },
-    "VF_派遣公司事务_39": {
+    "VF_派遣公司事务_54": {
         "action": "DoNothing",
-        "timeout": 1500,
+        "timeout": 30000,
         "next": [
-            "VF_派遣公司事务_39_Hit"
+            "VF_派遣公司事务_54_Hit"
+        ]
+    },
+    "VF_派遣公司事务_54_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "dunshe.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "roi": [
+            421,
+            443,
+            248,
+            209
+        ],
+        "rate_limit": 600,
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务_55"
+        ]
+    },
+    "VF_派遣公司事务_55": {
+        "recognition": "OCR",
+        "expected": [
+            "领取"
+        ],
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "roi": [
+            243,
+            654,
+            52,
+            25
+        ],
+        "next": [
+            "VF_派遣公司事务_56"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ]
+    },
+    "VF_派遣公司事务_56": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_56_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_58"
+        ]
+    },
+    "VF_派遣公司事务_56_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.65,
+        "action": "DoNothing",
+        "roi": [
+            653,
+            380,
+            214,
+            101
+        ],
+        "next": [
+            "VF_派遣公司事务_57"
+        ]
+    },
+    "VF_派遣公司事务_57": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_57_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_58"
+        ]
+    },
+    "VF_派遣公司事务_57_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "roi": [
+            668,
+            382,
+            199,
+            84
+        ],
+        "next": [
+            "VF_派遣公司事务_57"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_派遣公司事务_58": {
+        "recognition": "OCR",
+        "expected": [
+            "顿舍"
+        ],
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "roi": [
+            74,
+            12,
+            60,
+            38
+        ],
+        "next": [
+            "VF_派遣公司事务_53"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ]
+    },
+    "VF_派遣公司事务_53": {
+        "action": "DoNothing",
+        "timeout": 5000,
+        "next": [
+            "VF_派遣公司事务_53_Hit"
         ],
         "on_error": [
             "VF_派遣公司事务_End"
         ]
     },
-    "VF_派遣公司事务_39_Hit": {
+    "VF_派遣公司事务_53_Hit": {
         "recognition": "TemplateMatch",
         "template": "tuichupaiqiangongsi.png",
-        "threshold": 0.5,
-        "action": "DoNothing",
+        "threshold": 0.6,
+        "action": "Click",
         "next": [
-            "VF_派遣公司事务_38"
-        ]
+            "VF_派遣公司事务_53"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_派遣公司事务_40": {
         "action": "Click",
@@ -634,8 +833,27 @@
             89
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_派遣公司事务_10"
+        ]
+    },
+    "VF_派遣公司事务_48": {
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_06"
+        ]
+    },
+    "VF_派遣公司事务_49": {
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_14"
+        ]
+    },
+    "VF_派遣公司事务_59": {
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务_54"
         ]
     },
     "VF_派遣公司事务_End": {

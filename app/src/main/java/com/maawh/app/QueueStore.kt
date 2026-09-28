@@ -31,8 +31,18 @@ object QueueStore {
         val inputOf: Map<String, String>
     )
 
-    /** 一套配置（命名 + 主队列内容）；main 为空 = 空存档，恢复时全部任务取清单默认值 */
-    class Profile(val name: String, val main: List<SavedTask>)
+    /**
+     * 一套配置（命名 + 主队列内容）；main 为空 = 空存档，恢复时全部任务取清单默认值。
+     * dismissed 是用户从该配置队列里显式删掉的任务名：存档只记「还在队列里的」，
+     * 没有删除痕迹的话，恢复时无法区分「清单新增」和「用户删除」，删除会被当新增追加回来。
+     * 可选字段（老存档缺省 = 空名单，行为回到修复前）；同名任务将来重新上架清单时也会被它挡住，
+     * 想找回用「新建配置」（全默认、无删除记录）。
+     */
+    class Profile(
+        val name: String,
+        val main: List<SavedTask>,
+        val dismissed: Set<String> = emptySet()
+    )
 
     /** 整份存档 */
     class State(
@@ -104,7 +114,13 @@ object QueueStore {
                 val o = arr.optJSONObject(i) ?: continue
                 val name = o.optString("name", "")
                 if (name.isBlank()) continue
-                profiles.add(Profile(name, parseList(o.optJSONArray("main"))))
+                profiles.add(
+                    Profile(
+                        name,
+                        parseList(o.optJSONArray("main")),
+                        toStringSet(o.optJSONArray("dismissed"))
+                    )
+                )
             }
         }
         return State(
@@ -161,6 +177,20 @@ object QueueStore {
         return out
     }
 
+    private fun toStringSet(arr: JSONArray?): Set<String> {
+        if (arr == null) return emptySet()
+        val out = LinkedHashSet<String>(arr.length())
+        for (i in 0 until arr.length()) {
+            val s = arr.optString(i, "")
+            if (s.isNotEmpty()) out.add(s)
+        }
+        return out
+    }
+
+    private fun setJson(m: Set<String>) = JSONArray().apply {
+        m.forEach { put(it) }
+    }
+
     private fun toJson(state: State) = JSONObject().apply {
         put("schema", SCHEMA)
         put("pack", state.pack)
@@ -176,6 +206,7 @@ object QueueStore {
                 put(JSONObject().apply {
                     put("name", p.name)
                     put("main", listJson(p.main))
+                    if (p.dismissed.isNotEmpty()) put("dismissed", setJson(p.dismissed))
                 })
             }
         })

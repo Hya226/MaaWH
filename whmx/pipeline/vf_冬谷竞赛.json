@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-24T17:55:46+08:00",
+        "generatedAt": "2026-09-28T10:48:48+08:00",
         "flowFile": "冬谷竞赛.flow.json",
-        "flowHash": "sha256:d9a1125d77a040891375bce809db0e880c59e726f23095e418d2837bd550e3d4",
-        "pipelineHash": "sha256:f370191fa7a143f51fdab8df2fefe5d4487211dfda98b7c66a5ac34104c39176",
+        "flowHash": "sha256:ec621981628b68a53a26599661b6b7937babb5aaec241153795a6ac720acd284",
+        "pipelineHash": "sha256:dcd315fdf8c5420ddec46973e361d908d5d01d9a20b24603db3e9ea4bb5db826",
         "frameW": 1280,
         "frameH": 720
     },
@@ -33,9 +33,12 @@
     },
     "VF_冬谷竞赛_02": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_02_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_03_J1"
         ]
     },
     "VF_冬谷竞赛_02_Hit": {
@@ -49,11 +52,11 @@
             233,
             235
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_03_J1"
-        ]
+            "VF_冬谷竞赛_02"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_03_J1": {
         "action": "DoNothing",
@@ -66,15 +69,50 @@
         ]
     },
     "VF_冬谷竞赛_03_J1_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "dgjs_xx.png",
-        "threshold": 0.7,
+        "recognition": "OCR",
+        "expected": [
+            "象戏"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
         "action": "DoNothing",
         "roi": [
-            1097,
-            49,
-            173,
-            96
+            1110,
+            63,
+            142,
+            70
         ],
         "next": [
             "VF_冬谷竞赛_04"
@@ -91,15 +129,50 @@
         ]
     },
     "VF_冬谷竞赛_03_J2_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "dgjs_cj.png",
-        "threshold": 0.7,
+        "recognition": "OCR",
+        "expected": [
+            "蹴鞠"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
         "action": "DoNothing",
         "roi": [
-            1095,
-            52,
-            172,
-            96
+            1106,
+            62,
+            145,
+            73
         ],
         "next": [
             "VF_冬谷竞赛_05"
@@ -107,24 +180,59 @@
     },
     "VF_冬谷竞赛_05": {
         "action": "DoNothing",
-        "timeout": 3000,
+        "timeout": 4000,
         "next": [
             "VF_冬谷竞赛_05_Hit"
         ],
         "on_error": [
-            "VF_冬谷竞赛_End"
+            "VF_冬谷竞赛_153"
         ]
     },
     "VF_冬谷竞赛_05_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "dgjs_cj.png",
-        "threshold": 0.7,
+        "recognition": "OCR",
+        "expected": [
+            "蹴鞠"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
         "action": "DoNothing",
         "roi": [
-            1095,
-            52,
-            172,
-            96
+            1106,
+            62,
+            145,
+            73
         ],
         "next": [
             "VF_冬谷竞赛_153"
@@ -144,6 +252,40 @@
         "recognition": "OCR",
         "expected": [
             "开启"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ],
         "action": "DoNothing",
         "roi": [
@@ -170,6 +312,47 @@
             142,
             52
         ],
+        "next": [
+            "VF_冬谷竞赛_155_W"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ]
+    },
+    "VF_冬谷竞赛_155_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
         "next": [
             "VF_冬谷竞赛_155"
         ]
@@ -206,6 +389,40 @@
         ],
         "next": [
             "VF_冬谷竞赛_157"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_冬谷竞赛_157": {
@@ -220,6 +437,9 @@
             370,
             219,
             110
+        ],
+        "next": [
+            "VF_冬谷竞赛_09"
         ]
     },
     "VF_冬谷竞赛_07": {
@@ -237,29 +457,98 @@
             60
         ],
         "next": [
-            "VF_冬谷竞赛_155"
+            "VF_冬谷竞赛_155_W"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_冬谷竞赛_04": {
         "action": "DoNothing",
-        "timeout": 3000,
+        "timeout": 4000,
         "next": [
             "VF_冬谷竞赛_04_Hit"
         ],
         "on_error": [
-            "VF_冬谷竞赛_End"
+            "VF_冬谷竞赛_52"
         ]
     },
     "VF_冬谷竞赛_04_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "dgjs_xx.png",
-        "threshold": 0.7,
+        "recognition": "OCR",
+        "expected": [
+            "象戏"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
         "action": "DoNothing",
         "roi": [
-            1097,
-            49,
-            173,
-            96
+            1110,
+            63,
+            142,
+            70
         ],
         "next": [
             "VF_冬谷竞赛_52"
@@ -281,7 +570,41 @@
             60
         ],
         "next": [
-            "VF_冬谷竞赛_141"
+            "VF_冬谷竞赛_141_W"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_冬谷竞赛_53": {
@@ -298,6 +621,47 @@
             142,
             52
         ],
+        "next": [
+            "VF_冬谷竞赛_141_W"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ]
+    },
+    "VF_冬谷竞赛_141_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
         "next": [
             "VF_冬谷竞赛_141"
         ]
@@ -333,6 +697,40 @@
         "expected": [
             "开启"
         ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
         "action": "DoNothing",
         "roi": [
             1065,
@@ -360,6 +758,40 @@
         ],
         "next": [
             "VF_冬谷竞赛_55"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_冬谷竞赛_55": {
@@ -435,9 +867,12 @@
     },
     "VF_冬谷竞赛_12": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_12_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_16"
         ]
     },
     "VF_冬谷竞赛_12_Hit": {
@@ -451,12 +886,12 @@
             130,
             184
         ],
-        "rate_limit": 600,
-        "pre_delay": 100,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_16"
-        ]
+            "VF_冬谷竞赛_12"
+        ],
+        "rate_limit": 200,
+        "pre_delay": 100,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_16": {
         "action": "DoNothing",
@@ -513,15 +948,18 @@
     },
     "VF_冬谷竞赛_17": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_17_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_18"
         ]
     },
     "VF_冬谷竞赛_17_Hit": {
         "recognition": "TemplateMatch",
         "template": "yanxue_juese_duigou.png",
-        "threshold": 0.65,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             1128,
@@ -529,11 +967,11 @@
             125,
             48
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_18"
-        ]
+            "VF_冬谷竞赛_17"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_18": {
         "recognition": "OCR",
@@ -550,29 +988,82 @@
             34
         ],
         "next": [
-            "VF_冬谷竞赛_19"
+            "VF_冬谷竞赛_187"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
-    "VF_冬谷竞赛_19": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_19_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_19_Hit": {
+    "VF_冬谷竞赛_187": {
         "recognition": "TemplateMatch",
         "template": "duigou1.png",
         "threshold": 0.6,
         "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
         "roi": [
             679,
             386,
             186,
             89
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
+        "next": [
+            "VF_冬谷竞赛_188"
+        ]
+    },
+    "VF_冬谷竞赛_188": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_188_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_20_W"
+        ]
+    },
+    "VF_冬谷竞赛_188_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_187"
+        ]
+    },
+    "VF_冬谷竞赛_20_W": {
+        "action": "DoNothing",
+        "timeout": 25000,
         "next": [
             "VF_冬谷竞赛_20"
         ]
@@ -582,7 +1073,7 @@
         "template": "kszd.png",
         "threshold": 0.65,
         "action": "DoNothing",
-        "timeout": 20000,
+        "timeout": 25000,
         "roi": [
             1051,
             620,
@@ -636,6 +1127,13 @@
         "pre_delay": 400,
         "repeat": 2,
         "repeat_delay": 100,
+        "next": [
+            "VF_冬谷竞赛_34_W"
+        ]
+    },
+    "VF_冬谷竞赛_34_W": {
+        "action": "DoNothing",
+        "timeout": 60000,
         "next": [
             "VF_冬谷竞赛_34"
         ]
@@ -698,23 +1196,42 @@
             152
         ],
         "next": [
-            "VF_冬谷竞赛_56"
+            "VF_冬谷竞赛_195"
         ]
     },
-    "VF_冬谷竞赛_56": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_56_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_56_Hit": {
+    "VF_冬谷竞赛_195": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_196"
+        ]
+    },
+    "VF_冬谷竞赛_196": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_196_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_42_W"
+        ]
+    },
+    "VF_冬谷竞赛_196_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_195"
+        ]
+    },
+    "VF_冬谷竞赛_42_W": {
+        "action": "DoNothing",
+        "timeout": 60000,
         "next": [
             "VF_冬谷竞赛_42"
         ]
@@ -756,23 +1273,42 @@
         "post_delay": 500,
         "pre_delay": 200,
         "next": [
-            "VF_冬谷竞赛_57"
+            "VF_冬谷竞赛_197"
         ]
     },
-    "VF_冬谷竞赛_57": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_57_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_57_Hit": {
+    "VF_冬谷竞赛_197": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_198"
+        ]
+    },
+    "VF_冬谷竞赛_198": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_198_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_46_W"
+        ]
+    },
+    "VF_冬谷竞赛_198_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_197"
+        ]
+    },
+    "VF_冬谷竞赛_46_W": {
+        "action": "DoNothing",
+        "timeout": 40000,
         "next": [
             "VF_冬谷竞赛_46"
         ]
@@ -867,9 +1403,12 @@
     },
     "VF_冬谷竞赛_59": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_59_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_60"
         ]
     },
     "VF_冬谷竞赛_59_Hit": {
@@ -883,12 +1422,12 @@
             130,
             184
         ],
-        "rate_limit": 600,
-        "pre_delay": 100,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_60"
-        ]
+            "VF_冬谷竞赛_59"
+        ],
+        "rate_limit": 200,
+        "pre_delay": 100,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_60": {
         "action": "DoNothing",
@@ -928,15 +1467,18 @@
     },
     "VF_冬谷竞赛_63": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_63_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_64"
         ]
     },
     "VF_冬谷竞赛_63_Hit": {
         "recognition": "TemplateMatch",
         "template": "yanxue_juese_duigou.png",
-        "threshold": 0.65,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             1128,
@@ -944,11 +1486,11 @@
             125,
             48
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_64"
-        ]
+            "VF_冬谷竞赛_63"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_64": {
         "recognition": "OCR",
@@ -965,29 +1507,82 @@
             34
         ],
         "next": [
-            "VF_冬谷竞赛_65"
+            "VF_冬谷竞赛_189"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
-    "VF_冬谷竞赛_65": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_65_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_65_Hit": {
+    "VF_冬谷竞赛_189": {
         "recognition": "TemplateMatch",
         "template": "duigou1.png",
         "threshold": 0.6,
         "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
         "roi": [
             679,
             386,
             186,
             89
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
+        "next": [
+            "VF_冬谷竞赛_190"
+        ]
+    },
+    "VF_冬谷竞赛_190": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_190_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_66_W"
+        ]
+    },
+    "VF_冬谷竞赛_190_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_189"
+        ]
+    },
+    "VF_冬谷竞赛_66_W": {
+        "action": "DoNothing",
+        "timeout": 25000,
         "next": [
             "VF_冬谷竞赛_66"
         ]
@@ -997,7 +1592,7 @@
         "template": "kszd.png",
         "threshold": 0.65,
         "action": "DoNothing",
-        "timeout": 20000,
+        "timeout": 25000,
         "roi": [
             1051,
             620,
@@ -1062,23 +1657,42 @@
         "repeat": 2,
         "repeat_delay": 100,
         "next": [
-            "VF_冬谷竞赛_71"
+            "VF_冬谷竞赛_199"
         ]
     },
-    "VF_冬谷竞赛_71": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_71_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_71_Hit": {
+    "VF_冬谷竞赛_199": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_200"
+        ]
+    },
+    "VF_冬谷竞赛_200": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_200_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_72_W"
+        ]
+    },
+    "VF_冬谷竞赛_200_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_199"
+        ]
+    },
+    "VF_冬谷竞赛_72_W": {
+        "action": "DoNothing",
+        "timeout": 40000,
         "next": [
             "VF_冬谷竞赛_72"
         ]
@@ -1150,6 +1764,13 @@
         ],
         "post_delay": 500,
         "pre_delay": 200,
+        "next": [
+            "VF_冬谷竞赛_78_W"
+        ]
+    },
+    "VF_冬谷竞赛_78_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
         "next": [
             "VF_冬谷竞赛_78"
         ]
@@ -1226,9 +1847,12 @@
     },
     "VF_冬谷竞赛_82": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_82_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_83"
         ]
     },
     "VF_冬谷竞赛_82_Hit": {
@@ -1242,12 +1866,12 @@
             130,
             184
         ],
-        "rate_limit": 600,
-        "pre_delay": 100,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_83"
-        ]
+            "VF_冬谷竞赛_82"
+        ],
+        "rate_limit": 200,
+        "pre_delay": 100,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_83": {
         "action": "DoNothing",
@@ -1287,15 +1911,18 @@
     },
     "VF_冬谷竞赛_86": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_86_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_87"
         ]
     },
     "VF_冬谷竞赛_86_Hit": {
         "recognition": "TemplateMatch",
         "template": "yanxue_juese_duigou.png",
-        "threshold": 0.65,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             1128,
@@ -1303,11 +1930,11 @@
             125,
             48
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_87"
-        ]
+            "VF_冬谷竞赛_86"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_87": {
         "recognition": "OCR",
@@ -1324,29 +1951,82 @@
             34
         ],
         "next": [
-            "VF_冬谷竞赛_88"
+            "VF_冬谷竞赛_191"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
-    "VF_冬谷竞赛_88": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_88_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_88_Hit": {
+    "VF_冬谷竞赛_191": {
         "recognition": "TemplateMatch",
         "template": "duigou1.png",
         "threshold": 0.6,
         "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
         "roi": [
             679,
             386,
             186,
             89
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
+        "next": [
+            "VF_冬谷竞赛_192"
+        ]
+    },
+    "VF_冬谷竞赛_192": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_192_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_89_W"
+        ]
+    },
+    "VF_冬谷竞赛_192_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_191"
+        ]
+    },
+    "VF_冬谷竞赛_89_W": {
+        "action": "DoNothing",
+        "timeout": 25000,
         "next": [
             "VF_冬谷竞赛_89"
         ]
@@ -1356,7 +2036,7 @@
         "template": "kszd.png",
         "threshold": 0.65,
         "action": "DoNothing",
-        "timeout": 20000,
+        "timeout": 25000,
         "roi": [
             1051,
             620,
@@ -1381,7 +2061,7 @@
             86
         ],
         "next": [
-            "VF_冬谷竞赛_142"
+            "VF_冬谷竞赛_142_W"
         ]
     },
     "VF_冬谷竞赛_92": {
@@ -1416,6 +2096,13 @@
         ],
         "post_delay": 500,
         "pre_delay": 600,
+        "next": [
+            "VF_冬谷竞赛_145_W"
+        ]
+    },
+    "VF_冬谷竞赛_145_W": {
+        "action": "DoNothing",
+        "timeout": 30000,
         "next": [
             "VF_冬谷竞赛_145"
         ]
@@ -1462,15 +2149,18 @@
     },
     "VF_冬谷竞赛_97": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_97_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_98"
         ]
     },
     "VF_冬谷竞赛_97_Hit": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             1093,
@@ -1478,11 +2168,11 @@
             152,
             112
         ],
-        "rate_limit": 600,
-        "post_delay": 2000,
         "next": [
-            "VF_冬谷竞赛_98"
-        ]
+            "VF_冬谷竞赛_97"
+        ],
+        "rate_limit": 200,
+        "post_delay": 2000
     },
     "VF_冬谷竞赛_98": {
         "recognition": "TemplateMatch",
@@ -1492,29 +2182,42 @@
         "timeout": 8000,
         "post_delay": 800,
         "next": [
-            "VF_冬谷竞赛_99"
+            "VF_冬谷竞赛_201"
         ]
     },
-    "VF_冬谷竞赛_99": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_99_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_99_Hit": {
+    "VF_冬谷竞赛_201": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
-        "roi": [
-            1099,
-            543,
-            140,
-            108
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_202"
+        ]
+    },
+    "VF_冬谷竞赛_202": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_202_Hit"
         ],
-        "rate_limit": 600,
-        "post_delay": 2000,
+        "on_error": [
+            "VF_冬谷竞赛_143_W"
+        ]
+    },
+    "VF_冬谷竞赛_202_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_201"
+        ]
+    },
+    "VF_冬谷竞赛_143_W": {
+        "action": "DoNothing",
+        "timeout": 30000,
         "next": [
             "VF_冬谷竞赛_143"
         ]
@@ -1543,6 +2246,13 @@
         ],
         "post_delay": 500,
         "pre_delay": 200,
+        "next": [
+            "VF_冬谷竞赛_102_W"
+        ]
+    },
+    "VF_冬谷竞赛_102_W": {
+        "action": "DoNothing",
+        "timeout": 40000,
         "next": [
             "VF_冬谷竞赛_102"
         ]
@@ -1615,6 +2325,13 @@
         "post_delay": 500,
         "pre_delay": 200,
         "next": [
+            "VF_冬谷竞赛_107_W"
+        ]
+    },
+    "VF_冬谷竞赛_107_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
             "VF_冬谷竞赛_107"
         ]
     },
@@ -1654,9 +2371,12 @@
     },
     "VF_冬谷竞赛_109": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_109_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_110"
         ]
     },
     "VF_冬谷竞赛_109_Hit": {
@@ -1670,12 +2390,12 @@
             130,
             184
         ],
-        "rate_limit": 600,
-        "pre_delay": 100,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_110"
-        ]
+            "VF_冬谷竞赛_109"
+        ],
+        "rate_limit": 200,
+        "pre_delay": 100,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_110": {
         "action": "DoNothing",
@@ -1715,15 +2435,18 @@
     },
     "VF_冬谷竞赛_113": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_113_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_171"
         ]
     },
     "VF_冬谷竞赛_113_Hit": {
         "recognition": "TemplateMatch",
         "template": "yanxue_juese_duigou.png",
-        "threshold": 0.65,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             1128,
@@ -1731,17 +2454,20 @@
             125,
             48
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_171"
-        ]
+            "VF_冬谷竞赛_113"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_171": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_171_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_172"
         ]
     },
     "VF_冬谷竞赛_171_Hit": {
@@ -1755,12 +2481,12 @@
             823,
             260
         ],
-        "rate_limit": 600,
-        "pre_delay": 100,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_172"
-        ]
+            "VF_冬谷竞赛_171"
+        ],
+        "rate_limit": 200,
+        "pre_delay": 100,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_172": {
         "action": "DoNothing",
@@ -1800,15 +2526,18 @@
     },
     "VF_冬谷竞赛_175": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_175_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_114"
         ]
     },
     "VF_冬谷竞赛_175_Hit": {
         "recognition": "TemplateMatch",
         "template": "yanxue_juese_duigou.png",
-        "threshold": 0.65,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             1128,
@@ -1816,11 +2545,11 @@
             125,
             48
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_冬谷竞赛_114"
-        ]
+            "VF_冬谷竞赛_175"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_冬谷竞赛_173": {
         "action": "Swipe",
@@ -1854,29 +2583,82 @@
             34
         ],
         "next": [
-            "VF_冬谷竞赛_115"
+            "VF_冬谷竞赛_193"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
-    "VF_冬谷竞赛_115": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_115_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_115_Hit": {
+    "VF_冬谷竞赛_193": {
         "recognition": "TemplateMatch",
         "template": "duigou1.png",
         "threshold": 0.6,
         "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
         "roi": [
             679,
             386,
             186,
             89
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
+        "next": [
+            "VF_冬谷竞赛_194"
+        ]
+    },
+    "VF_冬谷竞赛_194": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_194_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_116_W"
+        ]
+    },
+    "VF_冬谷竞赛_194_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou1.png",
+        "threshold": 0.6,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_193"
+        ]
+    },
+    "VF_冬谷竞赛_116_W": {
+        "action": "DoNothing",
+        "timeout": 25000,
         "next": [
             "VF_冬谷竞赛_116"
         ]
@@ -1886,7 +2668,7 @@
         "template": "kszd.png",
         "threshold": 0.65,
         "action": "DoNothing",
-        "timeout": 20000,
+        "timeout": 25000,
         "roi": [
             1051,
             620,
@@ -1911,7 +2693,7 @@
             86
         ],
         "next": [
-            "VF_冬谷竞赛_119"
+            "VF_冬谷竞赛_119_W"
         ]
     },
     "VF_冬谷竞赛_118": {
@@ -1935,23 +2717,42 @@
         "post_delay": 500,
         "pre_delay": 200,
         "next": [
-            "VF_冬谷竞赛_163"
+            "VF_冬谷竞赛_203"
         ]
     },
-    "VF_冬谷竞赛_163": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_163_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_163_Hit": {
+    "VF_冬谷竞赛_203": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
+        "timeout": 8000,
         "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_204"
+        ]
+    },
+    "VF_冬谷竞赛_204": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_204_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_179_W"
+        ]
+    },
+    "VF_冬谷竞赛_204_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_203"
+        ]
+    },
+    "VF_冬谷竞赛_179_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
         "next": [
             "VF_冬谷竞赛_179"
         ]
@@ -1993,23 +2794,42 @@
         "post_delay": 500,
         "pre_delay": 200,
         "next": [
-            "VF_冬谷竞赛_166"
+            "VF_冬谷竞赛_205"
         ]
     },
-    "VF_冬谷竞赛_166": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_166_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_166_Hit": {
+    "VF_冬谷竞赛_205": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 1000,
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_206"
+        ]
+    },
+    "VF_冬谷竞赛_206": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_206_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_180_W"
+        ]
+    },
+    "VF_冬谷竞赛_206_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_205"
+        ]
+    },
+    "VF_冬谷竞赛_180_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
         "next": [
             "VF_冬谷竞赛_180"
         ]
@@ -2039,23 +2859,42 @@
         "post_delay": 500,
         "pre_delay": 200,
         "next": [
-            "VF_冬谷竞赛_168"
+            "VF_冬谷竞赛_208"
         ]
     },
-    "VF_冬谷竞赛_168": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_168_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_168_Hit": {
+    "VF_冬谷竞赛_208": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.55,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 1000,
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_207"
+        ]
+    },
+    "VF_冬谷竞赛_207": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_207_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_181_W"
+        ]
+    },
+    "VF_冬谷竞赛_207_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_208"
+        ]
+    },
+    "VF_冬谷竞赛_181_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
         "next": [
             "VF_冬谷竞赛_181"
         ]
@@ -2085,23 +2924,42 @@
         "post_delay": 500,
         "pre_delay": 200,
         "next": [
-            "VF_冬谷竞赛_170"
+            "VF_冬谷竞赛_209"
         ]
     },
-    "VF_冬谷竞赛_170": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_170_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_170_Hit": {
+    "VF_冬谷竞赛_209": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.55,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 1000,
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_冬谷竞赛_210"
+        ]
+    },
+    "VF_冬谷竞赛_210": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_210_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_182_W"
+        ]
+    },
+    "VF_冬谷竞赛_210_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_209"
+        ]
+    },
+    "VF_冬谷竞赛_182_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
         "next": [
             "VF_冬谷竞赛_182"
         ]
@@ -2131,25 +2989,44 @@
         "post_delay": 500,
         "pre_delay": 200,
         "next": [
-            "VF_冬谷竞赛_178"
+            "VF_冬谷竞赛_211"
         ]
     },
-    "VF_冬谷竞赛_178": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_冬谷竞赛_178_Hit"
-        ]
-    },
-    "VF_冬谷竞赛_178_Hit": {
+    "VF_冬谷竞赛_211": {
         "recognition": "TemplateMatch",
         "template": "zd_qr.png",
-        "threshold": 0.55,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 1000,
+        "timeout": 8000,
+        "post_delay": 800,
         "next": [
-            "VF_冬谷竞赛_132"
+            "VF_冬谷竞赛_212"
+        ]
+    },
+    "VF_冬谷竞赛_212": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_冬谷竞赛_212_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_132_W"
+        ]
+    },
+    "VF_冬谷竞赛_212_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zd_qr.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_冬谷竞赛_211"
+        ]
+    },
+    "VF_冬谷竞赛_119_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_冬谷竞赛_119"
         ]
     },
     "VF_冬谷竞赛_119": {
@@ -2168,6 +3045,13 @@
             "VF_冬谷竞赛_118"
         ]
     },
+    "VF_冬谷竞赛_142_W": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_冬谷竞赛_142"
+        ]
+    },
     "VF_冬谷竞赛_142": {
         "recognition": "TemplateMatch",
         "template": "zd_dj.png",
@@ -2182,6 +3066,13 @@
         ],
         "next": [
             "VF_冬谷竞赛_92"
+        ]
+    },
+    "VF_冬谷竞赛_132_W": {
+        "action": "DoNothing",
+        "timeout": 40000,
+        "next": [
+            "VF_冬谷竞赛_132"
         ]
     },
     "VF_冬谷竞赛_132": {
@@ -2245,15 +3136,18 @@
     },
     "VF_冬谷竞赛_136": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_冬谷竞赛_136_Hit"
+        ],
+        "on_error": [
+            "VF_冬谷竞赛_161"
         ]
     },
     "VF_冬谷竞赛_136_Hit": {
         "recognition": "TemplateMatch",
         "template": "jsjl.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             919,
@@ -2261,11 +3155,11 @@
             128,
             131
         ],
-        "rate_limit": 600,
-        "post_delay": 1000,
         "next": [
-            "VF_冬谷竞赛_161"
-        ]
+            "VF_冬谷竞赛_136"
+        ],
+        "rate_limit": 200,
+        "post_delay": 1000
     },
     "VF_冬谷竞赛_161": {
         "action": "DoNothing",
@@ -2281,6 +3175,40 @@
         "recognition": "OCR",
         "expected": [
             "全部领取"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ],
         "action": "DoNothing",
         "roi": [
@@ -2309,6 +3237,40 @@
         ],
         "next": [
             "VF_冬谷竞赛_138"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_冬谷竞赛_138": {

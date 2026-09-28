@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-19T14:10:23+08:00",
+        "generatedAt": "2026-09-27T11:49:20+08:00",
         "flowFile": "每日免费礼包.flow.json",
-        "flowHash": "sha256:78123700083ac6d09768b612035049dc9244d592879aad1113fcfcc46a6d0a2f",
-        "pipelineHash": "sha256:a56c7ace35bbcaaeab07a75f2598df7ee8cd54785ba9cf32a0bce2a3337cee19",
+        "flowHash": "sha256:fa286d8a6534b3b3dfb2fa732c6720ca14d5af6ddb55844d2151648d837a1af5",
+        "pipelineHash": "sha256:35079ca2977968f4172ce73c26e2605036413f92e266220313361dccad88b712",
         "frameW": 1280,
         "frameH": 720
     },
@@ -62,6 +62,40 @@
         "expected": [
             "免费"
         ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
         "action": "DoNothing",
         "roi": [
             307,
@@ -89,6 +123,40 @@
         ],
         "next": [
             "VF_每日免费礼包_05"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_每日免费礼包_05": {
@@ -109,21 +177,25 @@
             377
         ],
         "post_delay": 800,
+        "pre_delay": 200,
         "next": [
             "VF_每日免费礼包_11"
         ]
     },
     "VF_每日免费礼包_11": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_每日免费礼包_11_Hit"
+        ],
+        "on_error": [
+            "VF_每日免费礼包_12"
         ]
     },
     "VF_每日免费礼包_11_Hit": {
         "recognition": "TemplateMatch",
         "template": "zhuye.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             203,
@@ -131,25 +203,35 @@
             74,
             49
         ],
-        "rate_limit": 200,
-        "post_delay": 600,
         "next": [
-            "VF_每日免费礼包_12"
-        ]
+            "VF_每日免费礼包_11"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_每日免费礼包_12": {
         "action": "DoNothing",
         "timeout": 3000,
         "next": [
             "VF_每日免费礼包_12_Hit"
+        ],
+        "on_error": [
+            "VF_每日免费礼包_End"
         ]
     },
     "VF_每日免费礼包_12_Hit": {
         "recognition": "TemplateMatch",
         "template": "zhuye.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
+        "next": [
+            "VF_每日免费礼包_12"
+        ],
+        "rate_limit": 200,
         "post_delay": 600
+    },
+    "VF_每日免费礼包_End": {
+        "action": "DoNothing",
+        "next": []
     }
 }

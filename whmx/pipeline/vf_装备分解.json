@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-19T14:45:15+08:00",
+        "generatedAt": "2026-09-27T11:49:24+08:00",
         "flowFile": "装备分解.flow.json",
-        "flowHash": "sha256:b3d492b615c004b29641d94348bb078dfe42301ab455843147e424eb7ffc6b4c",
-        "pipelineHash": "sha256:87f3e40f7a1b415b08057e91f864f942cffdbef6bb5907d829465ad9f8e23342",
+        "flowHash": "sha256:b30b5bc86cccbb8f9fb6dc6d5f0be67d37f9c3dff2bf3d1b69e87df453ccd442",
+        "pipelineHash": "sha256:c3f9176f5e5e9b847bc658231cda8bed127766d224343a9d32ef011fe0e7e107",
         "frameW": 1280,
         "frameH": 720
     },
@@ -66,6 +66,7 @@
             173
         ],
         "post_delay": 800,
+        "pre_delay": 200,
         "timeout": 3000,
         "next": [
             "VF_装备分解_09"
@@ -104,6 +105,7 @@
             573
         ],
         "post_delay": 800,
+        "pre_delay": 200,
         "timeout": 3000,
         "next": [
             "VF_装备分解_07"

@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
     private val tasks = mutableListOf<TaskItem>()
     private val enabled = mutableListOf<Boolean>()
     private lateinit var adapter: TaskQueueAdapter
+    private lateinit var itemTouchHelper: ItemTouchHelper
 
     // 额外队列：adb 入口触发的测试任务，独立于一键长草主队列（不互相清空）
     private val toolsTasks = mutableListOf<TaskItem>()
@@ -378,8 +379,8 @@ class MainActivity : AppCompatActivity() {
         }
         // 配置列表 + 各配置内容（下面 restore 要用），并决定当前生效的配置
         profileData.clear()
-        saved?.profiles?.forEach { profileData[it.name] = it.main }
-        if (profileData.isEmpty()) profileData[DEFAULT_PROFILE] = emptyList()
+        saved?.profiles?.forEach { profileData[it.name] = it }
+        if (profileData.isEmpty()) profileData[DEFAULT_PROFILE] = QueueStore.Profile(DEFAULT_PROFILE, emptyList())
         activeProfile = if (usable && profileData.containsKey(saved!!.active)) saved.active
                         else profileData.keys.first()
         // 按当前配置覆盖默认队列（勾选/参数/顺序/删除 + 快捷选项 + 所在 tab）
@@ -497,7 +498,8 @@ class MainActivity : AppCompatActivity() {
     private fun restoreSavedEdits(saved: QueueStore.State?) {
         val m = manifest
         if (saved == null || m == null || saved.pack != m.name) return
-        restoreMainQueue(profileData[activeProfile] ?: emptyList())
+        val cur = profileData[activeProfile]
+        restoreMainQueue(cur?.main ?: emptyList(), cur?.dismissed ?: emptySet())
         restoreToolsQueue(saved.tools)
         muteEnabled = saved.mute
         autoMuteEnabled = saved.autoMute
@@ -511,8 +513,12 @@ class MainActivity : AppCompatActivity() {
         log("已载入配置「$activeProfile」（队列 ${tasks.size} 项 · 额外队列 ${toolsTasks.size} 项）")
     }
 
-    /** 主队列：存档顺序即配置里的顺序，清单删掉的任务丢弃，清单新增的按默认追加到末尾 */
-    private fun restoreMainQueue(saved: List<QueueStore.SavedTask>) {
+    /**
+     * 主队列：存档顺序即配置里的顺序，清单删掉的任务丢弃，清单新增的按默认追加到末尾。
+     * dismissed = 用户显式删过的任务名——存档里没有的任务分不清「清单新增」还是「用户删除」，
+     * 全部追加的话每次重建（切配置/冷启动）都会把删除撤销掉，所以删除时记入 dismissed 挡回来。
+     */
+    private fun restoreMainQueue(saved: List<QueueStore.SavedTask>, dismissed: Set<String>) {
         val newTasks = ArrayList<TaskItem>()
         val newEnabled = ArrayList<Boolean>()
         val seen = HashSet<String>()
@@ -526,7 +532,7 @@ class MainActivity : AppCompatActivity() {
             newEnabled.add(s.enabled)
         }
         tasks.forEachIndexed { i, item ->
-            if (seen.contains(item.name)) return@forEachIndexed
+            if (seen.contains(item.name) || dismissed.contains(item.name)) return@forEachIndexed
             newTasks.add(item)
             newEnabled.add(enabled.getOrElse(i) { true })
         }
@@ -610,13 +616,19 @@ class MainActivity : AppCompatActivity() {
      */
     private fun persist(flushLive: Boolean) {
         val m = manifest ?: return   // 清单还没加载完，别把空队列写进存档
-        if (flushLive) profileData[activeProfile] = liveMainSaved()
+        if (flushLive) {
+            val old = profileData[activeProfile]
+            // 生效配置的 main 以内存队列为准刷新；dismissed 是删除痕迹，只在 deleteTask 时增长，原样保留
+            profileData[activeProfile] = QueueStore.Profile(
+                activeProfile, liveMainSaved(), old?.dismissed ?: emptySet()
+            )
+        }
         try {
             QueueStore.save(this, QueueStore.State(
                 pack = m.name,
                 manifestVersion = m.version,
                 active = activeProfile,
-                profiles = profileData.map { (name, main) -> QueueStore.Profile(name, main) },
+                profiles = profileData.values.toList(),
                 tools = toolsTasks.mapIndexed { i, it -> savedTaskOf(it, toolsEnabled.getOrElse(i) { true }) },
                 tab = when (homeTab) {
                     HomeTab.TOOLS -> "tools"
@@ -655,8 +667,8 @@ class MainActivity : AppCompatActivity() {
     // 配置管理（新建 / 改名 / 复制 / 删除 / 切换生效）
     // ==================================================================
 
-    /** 已生成的配置名：名字 → 该配置的主队列内容（生效配置的内容可能滞后，以 tasks 为准） */
-    private val profileData = LinkedHashMap<String, List<QueueStore.SavedTask>>()
+    /** 已生成的配置名：名字 → 该配置内容（生效配置的 main 可能滞后，以 tasks 为准；dismissed 实时） */
+    private val profileData = LinkedHashMap<String, QueueStore.Profile>()
     private var activeProfile = ""
 
     /**
@@ -691,7 +703,7 @@ class MainActivity : AppCompatActivity() {
     private fun createProfile() {
         val name = uniqueProfileName("配置")
         applyProfileTableChange {
-            profileData[name] = emptyList()
+            profileData[name] = QueueStore.Profile(name, emptyList())
             activeProfile = name
         }
         log("已新建配置「$name」（全默认队列）")
@@ -703,10 +715,11 @@ class MainActivity : AppCompatActivity() {
         if (!profileData.containsKey(src)) return
         val name = uniqueProfileName(src)
         applyProfileTableChange {
-            val rebuilt = LinkedHashMap<String, List<QueueStore.SavedTask>>()
+            val rebuilt = LinkedHashMap<String, QueueStore.Profile>()
             profileData.forEach { (k, v) ->
                 rebuilt[k] = v
-                if (k == src) rebuilt[name] = v
+                // Profile.name 要与 key 一致（写盘按它落 name），复制体换成新名字
+                if (k == src) rebuilt[name] = QueueStore.Profile(name, v.main, v.dismissed)
             }
             profileData.clear()
             profileData.putAll(rebuilt)
@@ -735,8 +748,12 @@ class MainActivity : AppCompatActivity() {
                     profileData.containsKey(nn) -> toast("已有同名配置：$nn")
                     else -> {
                         saveNow()
-                        val rebuilt = LinkedHashMap<String, List<QueueStore.SavedTask>>()
-                        profileData.forEach { (k, v) -> rebuilt[if (k == name) nn else k] = v }
+                        val rebuilt = LinkedHashMap<String, QueueStore.Profile>()
+                        profileData.forEach { (k, v) ->
+                            // Profile.name 要与 key 一致（写盘按它落 name），改名条目重建
+                            rebuilt[if (k == name) nn else k] =
+                                if (k == name) QueueStore.Profile(nn, v.main, v.dismissed) else v
+                        }
                         profileData.clear()
                         profileData.putAll(rebuilt)
                         if (activeProfile == name) activeProfile = nn
@@ -780,7 +797,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         box.addView(hintText(getString(R.string.config_hint)))
-        for ((name, main) in profileData) {
+        for ((name, p) in profileData) {
             val active = name == activeProfile
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -793,8 +810,8 @@ class MainActivity : AppCompatActivity() {
             }
             val label = TextView(this).apply {
                 // 生效配置以内存里的队列为准（正编辑的那个），其余显示存档里的勾选数
-                val on = if (active) enabled.count { it } else main.count { it.enabled }
-                val total = if (active) tasks.size else main.size
+                val on = if (active) enabled.count { it } else p.main.count { it.enabled }
+                val total = if (active) tasks.size else p.main.size
                 text = "${if (active) "◉" else "○"}  $name"
                 append("\n$on/$total 项勾选${if (active) " · 生效中" else ""}")
                 textSize = 13f
@@ -1010,6 +1027,10 @@ class MainActivity : AppCompatActivity() {
         if (pendingInstallApk != null) tryInstallPending()
         // 虚拟屏是服务端权威状态(app 重启/切后台会丢内存标志)，回前台自动同步 UI
         syncVdUi()
+        // 清单可能在切后台期间被编辑器「同步到手机」更新：回前台现读一次，
+        // 参数编辑面板才能渲染出新定义（读失败/未就绪保持原样；队列铺排仍以
+        // 冷启动的 loadManifestIntoQueue 为准，这里不重建队列）
+        resolveBundleDir()?.let { dir -> TaskPack.load(dir)?.let { manifest = it } }
     }
 
     override fun onStop() {
@@ -1105,13 +1126,19 @@ class MainActivity : AppCompatActivity() {
                 }
             },
             { i -> deleteTask(i) },
-            { i -> selectTask(i) }
+            { i -> selectTask(i) },
+            { vh -> itemTouchHelper.startDrag(vh) }
         )
         binding.rvTaskList.layoutManager = LinearLayoutManager(this)
         binding.rvTaskList.adapter = adapter
-        val helper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+        // 全局长按拖动必须关：ItemTouchHelper 的长按不区分按下位置，长按 ✕ 400ms 会把整行
+        // 拉进拖动态，✕ 随后收到 ACTION_CANCEL，删除点击被吞（实测「点删除没反应」）。
+        // 拖动改由 TaskQueueAdapter 里行根 view 的长按手动 startDrag（✕/勾选框不触发）。
+        itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
         ) {
+            override fun isLongPressDragEnabled() = false
+
             override fun onMove(
                 rv: RecyclerView,
                 vh: RecyclerView.ViewHolder,
@@ -1129,9 +1156,9 @@ class MainActivity : AppCompatActivity() {
 
             override fun onSwiped(vh: RecyclerView.ViewHolder, direction: Int) {}
         })
-        helper.attachToRecyclerView(binding.rvTaskList)
+        itemTouchHelper.attachToRecyclerView(binding.rvTaskList)
 
-        // 额外队列：同一适配器，仅绑到额外队列 tab 的列表
+        // 额外队列：同一适配器，仅绑到额外队列 tab 的列表（无拖动排序，onStartDrag 留空）
         toolsAdapter = TaskQueueAdapter(
             toolsTasks,
             toolsEnabled,
@@ -1158,6 +1185,11 @@ class MainActivity : AppCompatActivity() {
         if (i < 0 || i >= tasks.size) return
         val removed = tasks.removeAt(i)
         if (i < enabled.size) enabled.removeAt(i)
+        // 记入当前生效配置的删除名单：restoreMainQueue 靠它区分「用户删除」和「清单新增」，
+        // 否则每次队列重建都会把删除撤销掉（实测：删 3 个 → 切走再切回，3 个全回来）
+        profileData[activeProfile]?.let {
+            profileData[activeProfile] = QueueStore.Profile(activeProfile, it.main, it.dismissed + removed.name)
+        }
         adapter.notifyItemRemoved(i)
         log("已删除: ${removed.label}")
         scheduleSave()
@@ -1392,16 +1424,20 @@ class MainActivity : AppCompatActivity() {
         parent.addView(spinner, LinearLayout.LayoutParams(match(), wrap()))
     }
 
-    /** switch：勾选框（子任务开关，Yes/No） */
+    /** switch：勾选框（子任务开关，Yes/No；★ 方框放文字右边，2026-09-26 用户定的版式） */
     private fun renderSwitchOption(parent: LinearLayout, item: TaskItem, o: TaskPack.OptionDef) {
         val ctx = this
         val cur = item.selection.get(o.key, o.defaultCase)
-        val cb = CheckBox(ctx).apply {
+        // CheckBox 控件的方框固定画在文字左边；要「方框在右」只能让文字独立成
+        // TextView、勾选框留空文本贴右。点整行都能切换（不只是点方框）
+        val label = TextView(ctx).apply {
             text = o.label
             setTextColor(getColorCompat(R.color.text_primary))
             textSize = 13f
+        }
+        val cb = CheckBox(ctx).apply {
+            text = ""
             isChecked = cur.equals("Yes", true) || cur.equals("Y", true)
-            setPadding(0, dp(8), 0, 0)
             setOnCheckedChangeListener { _, checked ->
                 item.selection.caseOf[o.key] = if (checked) "Yes" else "No"
                 item.summary = summarize(item)
@@ -1409,7 +1445,15 @@ class MainActivity : AppCompatActivity() {
                 scheduleSave()
             }
         }
-        parent.addView(cb)
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(8), 0, 0)
+            addView(label, LinearLayout.LayoutParams(0, wrap(), 1f))
+            addView(cb, LinearLayout.LayoutParams(wrap(), wrap()))
+            setOnClickListener { cb.toggle() }
+        }
+        parent.addView(row, LinearLayout.LayoutParams(match(), wrap()))
     }
 
     /** input：文本框（角色名、次数等自由输入），带正则校验 */
@@ -2057,8 +2101,14 @@ class MainActivity : AppCompatActivity() {
         val laidOut = v.width > 0
         // 16dp = panelHome 左右各 8dp 内边距，与布局里的一致
         val w = if (laidOut) v.width else (resources.displayMetrics.widthPixels - dp(16))
-        val b = lastBitmap
-        val ratio = if (b != null && b.width > 0) b.height.toFloat() / b.width else 9f / 16f
+        // vdOn 时预览内容恒为 16:9 的 VD 帧（直渲/降级同比例），不跟 lastBitmap 走——
+        // 否则点「截图」后 lastBitmap 变物理屏竖屏位图，会把预览区拉成竖长条、画面变形
+        val ratio = if (vdOn) {
+            9f / 16f
+        } else {
+            val b = lastBitmap
+            if (b != null && b.width > 0) b.height.toFloat() / b.width else 9f / 16f
+        }
         val h = (w * ratio + 0.5f).toInt()
         if (v.layoutParams.height != h) {
             v.layoutParams.height = h
@@ -4013,7 +4063,8 @@ class MainActivity : AppCompatActivity() {
     // 截图/预览
     // ==================================================================
 
-    /** 抓一帧物理屏刷新预览（快捷选项里的「截图」；虚拟屏运行时用它的实时帧） */
+    /** 抓一帧物理屏刷新预览（快捷选项里的「截图」）。lastBitmap 存的是物理屏位图，
+     *  只给 vdOn=false 的物理屏触摸路径当换算基准；vdOn=true 的换算不看它（mapToDeviceVd） */
 
     private fun takeScreenshot() {
         if (!shizukuReady()) { log("无法截图：Shizuku 未就绪"); refreshStatus(); return }
@@ -4037,37 +4088,47 @@ class MainActivity : AppCompatActivity() {
                 gestureActive = false
             }
             MotionEvent.ACTION_MOVE -> {
-                // 虚拟屏实时手势：手指移动时逐点注入 MOVE（>20px 视为滑动开始）；开关关掉后不注入
+                // 虚拟屏实时手势：手指移动时逐点注入 MOVE（>10px 视为滑动开始）；开关关掉后不注入
                 if (!vdOn || !binding.switchTap.isChecked) return true
-                val bmp = lastBitmap ?: return true
                 val dist = Math.hypot((ev.x - downX).toDouble(), (ev.y - downY).toDouble())
                 if (!gestureActive) {
                     if (dist > 10) {
-                        val from = mapToDevice(downX, downY, bmp) ?: return true
-                        val fx = from.x.toInt() * 2; val fy = from.y.toInt() * 2
+                        val from = mapToDeviceVd(downX, downY) ?: return true
                         gestureActive = true
-                        ShizukuShell.touchDown(fx, fy)
-                        log("虚拟屏手势开始 ($fx,$fy)")
+                        ShizukuShell.touchDown(from.x.toInt(), from.y.toInt())
+                        log("虚拟屏手势开始 (${from.x.toInt()},${from.y.toInt()})")
                     }
                 } else {
-                    val p = mapToDevice(ev.x, ev.y, bmp) ?: return true
-                    ShizukuShell.touchMove(p.x.toInt() * 2, p.y.toInt() * 2)
+                    val p = mapToDeviceVd(ev.x, ev.y) ?: return true
+                    ShizukuShell.touchMove(p.x.toInt(), p.y.toInt())
                 }
                 return true
             }
             MotionEvent.ACTION_UP -> {
-                val bmp = lastBitmap ?: return true
                 if (gestureActive) {
-                    val to = mapToDevice(ev.x, ev.y, bmp) ?: return true
-                    val tx = to.x.toInt() * 2; val ty = to.y.toInt() * 2
-                    ShizukuShell.touchUp(tx, ty)
                     gestureActive = false
+                    val to = mapToDeviceVd(ev.x, ev.y) ?: return true
+                    val tx = to.x.toInt(); val ty = to.y.toInt()
+                    ShizukuShell.touchUp(tx, ty)
                     log("虚拟屏手势结束 ($tx,$ty)")
                     return true
                 }
                 val dist = Math.hypot((ev.x - downX).toDouble(), (ev.y - downY).toDouble())
                 if (dist > 20) {
+                    if (vdOn) {
+                        // vdOn 时滑动手势本应由上面的 MOVE 链接管；走到这说明点按注入开关关着，
+                        // 按开关语义只报坐标不注入（旧实现会拿预览位图坐标当物理屏坐标误发 input swipe）
+                        val s = mapToDeviceVd(downX, downY)
+                        val e = mapToDeviceVd(ev.x, ev.y)
+                        log("该滑动未注入（点按注入开关已关）(${s?.x?.toInt()},${s?.y?.toInt()})->(${e?.x?.toInt()},${e?.y?.toInt()})")
+                        return true
+                    }
                     // 非虚拟屏：抬起时合成一次滑动
+                    val bmp = lastBitmap
+                    if (bmp == null) {
+                        log("预览无基准帧，忽略滑动")
+                        return true
+                    }
                     val from = mapToDevice(downX, downY, bmp) ?: return true
                     val to = mapToDevice(ev.x, ev.y, bmp) ?: return true
                     log("模拟滑动 (${from.x.toInt()},${from.y.toInt()})->(${to.x.toInt()},${to.y.toInt()})")
@@ -4078,10 +4139,12 @@ class MainActivity : AppCompatActivity() {
                     }
                     return true
                 }
-                val dev = mapToDevice(ev.x, ev.y, bmp) ?: return true
-                val x = dev.x.toInt(); val y = dev.y.toInt()
                 if (vdOn) {
-                    val nx = x * 2; val ny = y * 2
+                    // 虚拟屏点击：换算不依赖 lastBitmap（直渲健康期间没人产生基准帧位图，
+                    // 旧的 lastBitmap ?: return 会把点击静默吞掉），按视图尺寸线性映射到 VD 坐标
+                    val p = mapToDeviceVd(ev.x, ev.y) ?: return true
+                    val nx = p.x.toInt().coerceIn(0, MaaConst.VD_W - 1)
+                    val ny = p.y.toInt().coerceIn(0, MaaConst.VD_H - 1)
                     if (!binding.switchTap.isChecked) {
                         // 开关关掉：只报坐标（虚拟屏 1280x720 坐标系，与模板/固定坐标同基准），不注入
                         log("该点坐标 ($nx, $ny)")
@@ -4094,6 +4157,13 @@ class MainActivity : AppCompatActivity() {
                     }
                     return true
                 }
+                val bmp = lastBitmap
+                if (bmp == null) {
+                    log("预览无基准帧，忽略点击")
+                    return true
+                }
+                val dev = mapToDevice(ev.x, ev.y, bmp) ?: return true
+                val x = dev.x.toInt(); val y = dev.y.toInt()
                 if (binding.switchTap.isChecked) {
                     log("模拟点击 ($x, $y)")
                     lifecycleScope.launch { runCatching { ShizukuShell.tap(x, y) } }
@@ -4101,6 +4171,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return true
+    }
+
+    /**
+     * 虚拟屏触摸换算（vdOn=true 专用）：预览内容恒为 1280x720 的 VD 帧（直渲 TextureView
+     * 缓冲固定 VD 尺寸、JPEG 降级帧同比例、previewBox 高度也被 [applyPreviewAspect] 恒定在
+     * 16:9），按视图尺寸线性映射即可——与全屏页同款公式，不依赖 lastBitmap。
+     */
+    private fun mapToDeviceVd(vx: Float, vy: Float): PointF? {
+        val vw = binding.imageShot.width.toFloat()
+        val vh = binding.imageShot.height.toFloat()
+        if (vw <= 0 || vh <= 0) return null
+        return PointF(vx / vw * MaaConst.VD_W, vy / vh * MaaConst.VD_H)
     }
 
     private fun mapToDevice(vx: Float, vy: Float, bmp: Bitmap): PointF? {

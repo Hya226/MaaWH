@@ -1,0 +1,134 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-27T11:49:11+08:00",
+        "flowFile": "办公室物资购买.flow.json",
+        "flowHash": "sha256:e5bce32c8d40a14506c6da2fedee37966b7abadd2880d921959f8da07429f6ca",
+        "pipelineHash": "sha256:5e7f6b4b38839c75ccb0865c3da548aa89f56fb43ad15a7c3db0681d28569523",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_办公室物资购买": {
+        "next": [
+            "VF_办公室物资购买_01"
+        ]
+    },
+    "VF_办公室物资购买_01": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_办公室物资购买_01_Hit"
+        ],
+        "on_error": [
+            "VF_办公室物资购买_End"
+        ]
+    },
+    "VF_办公室物资购买_01_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "bangongshi_biaozhi.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_办公室物资购买_02"
+        ]
+    },
+    "VF_办公室物资购买_02": {
+        "recognition": "TemplateMatch",
+        "template": "bangongshi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_办公室物资购买_03"
+        ]
+    },
+    "VF_办公室物资购买_03": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_办公室物资购买_03_Hit"
+        ],
+        "on_error": [
+            "VF_办公室物资购买_07"
+        ]
+    },
+    "VF_办公室物资购买_03_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yiwujigoumai.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_办公室物资购买_04"
+        ]
+    },
+    "VF_办公室物资购买_04": {
+        "recognition": "TemplateMatch",
+        "template": "yiwujigoumai.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_办公室物资购买_05"
+        ]
+    },
+    "VF_办公室物资购买_05": {
+        "recognition": "TemplateMatch",
+        "template": "dianjitoubi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_办公室物资购买_06"
+        ]
+    },
+    "VF_办公室物资购买_06": {
+        "action": "Click",
+        "target": [
+            836,
+            360
+        ],
+        "post_delay": 800,
+        "pre_delay": 200,
+        "next": [
+            "VF_办公室物资购买_07"
+        ]
+    },
+    "VF_办公室物资购买_07": {
+        "recognition": "TemplateMatch",
+        "template": "tuichubangongshi.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_办公室物资购买_08"
+        ]
+    },
+    "VF_办公室物资购买_08": {
+        "action": "DoNothing",
+        "timeout": 1500,
+        "next": [
+            "VF_办公室物资购买_08_Hit"
+        ],
+        "on_error": [
+            "VF_办公室物资购买_End"
+        ]
+    },
+    "VF_办公室物资购买_08_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tuichubangongshi.png",
+        "threshold": 0.5,
+        "action": "DoNothing",
+        "next": [
+            "VF_办公室物资购买_07"
+        ]
+    },
+    "VF_办公室物资购买_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

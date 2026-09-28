@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-20T15:17:38+08:00",
+        "generatedAt": "2026-09-27T11:49:19+08:00",
         "flowFile": "查找器者.flow.json",
-        "flowHash": "sha256:7b237efcb9b284e7fb1213fade39963dc725b7f80258da7b627d1ca1cf6fd65f",
-        "pipelineHash": "sha256:6be424443d9e049f8cc24bcb3fa98f1e18f4e8401e91ce7bd7294efa2b1efb35",
+        "flowHash": "sha256:f9a94419d13dc9324744c1f67de37a2e33363a618b54ff971e3633d5fee0fa77",
+        "pipelineHash": "sha256:42eed83653947b49f40230931c3ce822e8555df33e4c9bc91563ceea7e1c1524",
         "frameW": 1280,
         "frameH": 720
     },
@@ -25,12 +25,90 @@
         ]
     },
     "VF_查找器者_03_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.75,
+        "recognition": "OCR",
+        "expected": [
+            "蛙锣"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
         "action": "DoNothing",
         "next": [
-            "VF_查找器者_01"
+            "VF_查找器者_06"
+        ]
+    },
+    "VF_查找器者_06": {
+        "recognition": "OCR",
+        "expected": [
+            "蛙锣"
+        ],
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
     "VF_查找器者_02": {
@@ -48,14 +126,5 @@
         "next": [
             "VF_查找器者_03"
         ]
-    },
-    "VF_查找器者_01": {
-        "recognition": "TemplateMatch",
-        "template": "蛙锣.png",
-        "threshold": 0.75,
-        "action": "Click",
-        "timeout": 5000,
-        "post_delay": 800,
-        "order_by": "Score"
     }
 }

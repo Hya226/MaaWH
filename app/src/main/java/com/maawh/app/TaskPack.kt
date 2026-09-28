@@ -19,10 +19,14 @@ object TaskPack {
     /**
      * 将 APK 内置任务包（assets/whmx）释放到内部存储 files/taskpacks/whmx。
      *  - 首次安装：全量释放
-     *  - version.txt 与内置版本不同（覆盖安装了新版 APK）：重新释放，
-     *    但保留 pipeline/vf_*.json（流程编辑器同步的可视化流程优先于内置版本）；
-     *    interface.json 做合并：手机版独有的 task/option 条目（编辑器 register_on_phone
-     *    注册的）保留追加，同名条目以内置（仓库定稿）版为准
+     *  - version.txt 与内置版本不同（覆盖安装了新版 APK）：全量释放，内置版
+     *    覆盖手机上的 pipeline（含 vf_*.json）——发新包即任务更新，旧版流程
+     *    不再保留（2026-09-25 改：原先「手机上的 vf_ 优先」只对开发者手机成立；
+     *    最终用户手机上的 vf_ 全是旧包释放的，盖回机制会让新版任务永远装不上）。
+     *    开发者手机的编辑器流程源头在 E:\MaaWH Studio\flows\*.flow.json，经
+     *    whmx/ 随打包同步进 assets，覆盖不会丢数据；
+     *    interface.json 仍做合并：手机版独有的 task/option 条目（编辑器
+     *    register_on_phone 注册的）保留追加，同名条目以内置（新版）版为准
      *  - 版本相同：直接跳过（启动零开销）
      * 返回是否发生了释放。version.txt 在全部文件拷贝完成后才写入，中途失败下次会重试。
      */
@@ -36,13 +40,10 @@ object TaskPack {
         val marker = File(dest, "version.txt")
         if (marker.exists() && marker.readText().trim() == assetsVer) return false
 
-        // 备份可视化流程（vf_*.json）与手机版清单，释放后恢复/合并
-        val pipeDir = File(dest, "pipeline")
+        // 只备份手机版清单（编辑器注册的独有条目靠合并保留）；pipeline 直接随全量释放更新
         val backup = File(ctx.filesDir, "taskpacks/_vf_backup")
         backup.deleteRecursively()
         backup.mkdirs()
-        pipeDir.listFiles { f -> f.name.startsWith("vf_") && f.name.endsWith(".json") }
-            ?.forEach { it.copyTo(File(backup, it.name), overwrite = true) }
         val oldInterface = File(dest, "interface.json")
         if (oldInterface.exists()) oldInterface.copyTo(File(backup, "interface.json"), overwrite = true)
 
@@ -50,11 +51,6 @@ object TaskPack {
         dest.mkdirs()
         copyAssetsDir(ctx, "whmx", dest)
 
-        backup.listFiles()?.forEach {
-            if (it.name == "interface.json") return@forEach   // 清单走合并，不直接还原
-            File(pipeDir, it.name).parentFile?.mkdirs()
-            it.copyTo(File(pipeDir, it.name), overwrite = true)
-        }
         File(backup, "interface.json").takeIf { it.exists() }?.let {
             mergeInterface(File(dest, "interface.json"), it)
         }

@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-22T22:29:26+08:00",
+        "generatedAt": "2026-09-27T11:49:10+08:00",
         "flowFile": "刷活动关.flow.json",
-        "flowHash": "sha256:db491169c647f171f9c6214dae6bdb6f65c7d44a8523711060c20e57273e9c2d",
-        "pipelineHash": "sha256:8aedd2028b6c6791ee488d64b9f9c7caac5d2c654a53b8d060d5406c1fa27131",
+        "flowHash": "sha256:8586a0452845c3e811ce37edb65d70a47463bfaa72e67151550112f85dfc70fe",
+        "pipelineHash": "sha256:06ca9f0f82a733b2cabc4c332467093a1cf6039ae86dca15a159bc2d34ef53b5",
         "frameW": 1280,
         "frameH": 720
     },
@@ -28,6 +28,40 @@
         "recognition": "OCR",
         "expected": [
             "09"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ],
         "action": "DoNothing",
         "next": [
@@ -59,26 +93,63 @@
         "timeout": 8000,
         "post_delay": 2000,
         "next": [
-            "VF_刷活动关_14"
+            "VF_刷活动关_21"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
-    "VF_刷活动关_14": {
+    "VF_刷活动关_21": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
-            "VF_刷活动关_14_Hit"
-        ]
-    },
-    "VF_刷活动关_14_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "sutong.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
-        "next": [
+            "VF_刷活动关_21_Hit"
+        ],
+        "on_error": [
             "VF_刷活动关_07"
         ]
+    },
+    "VF_刷活动关_21_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "sutong.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "next": [
+            "VF_刷活动关_21"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_刷活动关_07": {
         "recognition": "TemplateMatch",
@@ -93,9 +164,12 @@
     },
     "VF_刷活动关_15": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_刷活动关_15_Hit"
+        ],
+        "on_error": [
+            "VF_刷活动关_18"
         ]
     },
     "VF_刷活动关_15_Hit": {
@@ -103,48 +177,11 @@
         "template": "duigou.png",
         "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 2000,
         "next": [
-            "VF_刷活动关_19"
-        ]
-    },
-    "VF_刷活动关_19": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_刷活动关_19_Hit"
+            "VF_刷活动关_15"
         ],
-        "on_error": [
-            "VF_刷活动关_18"
-        ]
-    },
-    "VF_刷活动关_19_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "duigou.png",
-        "threshold": 0.7,
-        "action": "DoNothing",
-        "next": [
-            "VF_刷活动关_20"
-        ]
-    },
-    "VF_刷活动关_20": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_刷活动关_20_Hit"
-        ]
-    },
-    "VF_刷活动关_20_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "duigou.png",
-        "threshold": 0.7,
-        "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 2000,
-        "next": [
-            "VF_刷活动关_18"
-        ]
+        "rate_limit": 200,
+        "post_delay": 2000
     },
     "VF_刷活动关_18": {
         "action": "Click",
@@ -153,21 +190,59 @@
             222
         ],
         "post_delay": 2000,
+        "pre_delay": 200,
         "next": [
             "VF_刷活动关_16"
         ]
     },
     "VF_刷活动关_16": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_刷活动关_16_Hit"
+        ],
+        "on_error": [
+            "VF_刷活动关_11"
         ]
     },
     "VF_刷活动关_16_Hit": {
         "recognition": "OCR",
         "expected": [
             "完成"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ],
         "action": "Click",
         "roi": [
@@ -176,11 +251,11 @@
             231,
             76
         ],
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_刷活动关_11"
-        ]
+            "VF_刷活动关_16"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_刷活动关_11": {
         "next": [
@@ -189,38 +264,44 @@
     },
     "VF_刷活动关_13": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_刷活动关_13_Hit"
+        ],
+        "on_error": [
+            "VF_刷活动关_17"
         ]
     },
     "VF_刷活动关_13_Hit": {
         "recognition": "TemplateMatch",
         "template": "wjwy.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_刷活动关_17"
-        ]
+            "VF_刷活动关_13"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_刷活动关_17": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_刷活动关_17_Hit"
+        ],
+        "on_error": [
+            "VF_刷活动关_03"
         ]
     },
     "VF_刷活动关_17_Hit": {
         "recognition": "TemplateMatch",
         "template": "jhft.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_刷活动关_03"
-        ]
+            "VF_刷活动关_17"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     }
 }

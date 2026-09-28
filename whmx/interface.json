@@ -1,5 +1,4 @@
 {
-
   "interface_version": 2,
   "name": "whmx",
   "label": "物华弥新",
@@ -59,7 +58,7 @@
       "entry": "VF_启动",
       "default_check": true,
       "group": [
-        "startup"
+        "daily"
       ],
       "description": "虚拟屏投游戏并收口到主页"
     },
@@ -71,7 +70,20 @@
         "daily"
       ],
       "option": [
+        "培养/考核",
         "类型",
+        "关卡",
+        "次数"
+      ]
+    },
+    {
+      "name": "实验室",
+      "label": "实验室",
+      "entry": "VF_实验室",
+      "group": [
+        "daily"
+      ],
+      "option": [
         "次数"
       ]
     },
@@ -113,7 +125,11 @@
       "group": [
         "daily"
       ],
-      "description": "收取资源+办公易物+喝茶（内联完整流程，旧集成版 option 开关已并入）"
+      "option": [
+        "办公室物资购买",
+        "喝茶",
+        "顿舍体力领取"
+      ]
     },
     {
       "name": "装卸装备",
@@ -175,11 +191,11 @@
       "label": "刷活动关",
       "entry": "VF_刷活动关",
       "group": [
-        "tools"
+        "daily"
       ],
       "option": [
-        "刷取次数",
-        "关卡名"
+        "关卡名",
+        "刷取次数"
       ]
     },
     {
@@ -205,7 +221,7 @@
       "group": [
         "tools"
       ],
-      "description": "目前仅加入【象戏】，【蹴鞠】暂不支持。运行【象戏】相关队列需要拥有（庞贝、向日葵、李小孩项链、天王石刻、卷云金喇叭）这几位器者。"
+      "description": "【蹴鞠】分为两周，目前仅写入【蹴鞠】第一周。运行【蹴鞠】第一周相关队列需要拥有（庞贝、向日葵、李小孩项链、天王石刻、卷云金喇叭）这几位器者。"
     }
   ],
   "option": {
@@ -300,10 +316,10 @@
       ],
       "pipeline_override": {
         "VF_博物研学_10_Hit": {
-          "template": "{器者1}.png"
+          "expected": "{器者1}"
         },
-        "VF_博物研学_23": {
-          "template": "{器者1}.png"
+        "VF_博物研学_176": {
+          "expected": "{器者1}"
         }
       }
     },
@@ -320,10 +336,10 @@
       ],
       "pipeline_override": {
         "VF_博物研学_15_Hit": {
-          "template": "{器者2}.png"
+          "expected": "{器者2}"
         },
-        "VF_博物研学_26": {
-          "template": "{器者2}.png"
+        "VF_博物研学_177": {
+          "expected": "{器者2}"
         }
       }
     },
@@ -340,10 +356,10 @@
       ],
       "pipeline_override": {
         "VF_博物研学_31_Hit": {
-          "template": "{器者4}.png"
+          "expected": "{器者4}"
         },
-        "VF_博物研学_34": {
-          "template": "{器者4}.png"
+        "VF_博物研学_179": {
+          "expected": "{器者4}"
         }
       }
     },
@@ -360,10 +376,10 @@
       ],
       "pipeline_override": {
         "VF_博物研学_20_Hit": {
-          "template": "{器者3}.png"
+          "expected": "{器者3}"
         },
-        "VF_博物研学_28": {
-          "template": "{器者3}.png"
+        "VF_博物研学_178": {
+          "expected": "{器者3}"
         }
       }
     },
@@ -376,6 +392,9 @@
           "pipeline_override": {
             "VF_清体力_09": {
               "expected": "冬谷币"
+            },
+            "VF_清体力_30_Hit": {
+              "expected": "冬谷币"
             }
           }
         },
@@ -383,6 +402,9 @@
           "name": "装备",
           "pipeline_override": {
             "VF_清体力_09": {
+              "expected": "装备"
+            },
+            "VF_清体力_30_Hit": {
               "expected": "装备"
             }
           }
@@ -392,6 +414,75 @@
           "pipeline_override": {
             "VF_清体力_09": {
               "expected": "教材"
+            },
+            "VF_清体力_30_Hit": {
+              "expected": "教材"
+            }
+          }
+        },
+        {
+          "name": "场域",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "场域"
+            },
+            "VF_清体力_30_Hit": {
+              "expected": "场域"
+            }
+          }
+        },
+        {
+          "name": "宿卫",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "宿卫"
+            },
+            "VF_清体力_30_Hit": {
+              "expected": "宿卫"
+            }
+          }
+        },
+        {
+          "name": "构术",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "构术"
+            },
+            "VF_清体力_30_Hit": {
+              "expected": "构术"
+            }
+          }
+        },
+        {
+          "name": "远击",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "远击"
+            },
+            "VF_清体力_30_Hit": {
+              "expected": "远击"
+            }
+          }
+        },
+        {
+          "name": "轻锐",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "轻锐"
+            },
+            "VF_清体力_30_Hit": {
+              "expected": "轻锐"
+            }
+          }
+        },
+        {
+          "name": "战略",
+          "pipeline_override": {
+            "VF_清体力_09": {
+              "expected": "战略"
+            },
+            "VF_清体力_30_Hit": {
+              "expected": "战略"
             }
           }
         }
@@ -473,6 +564,14 @@
               "repeat": 9
             }
           }
+        },
+        {
+          "name": "最大",
+          "pipeline_override": {
+            "VF_清体力_07": {
+              "template": "zuida.png"
+            }
+          }
         }
       ],
       "default_case": "2"
@@ -486,6 +585,9 @@
           "pipeline_override": {
             "VF_刷活动关_04": {
               "expected": "07"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "07"
             }
           }
         },
@@ -494,6 +596,9 @@
           "pipeline_override": {
             "VF_刷活动关_04": {
               "expected": "08"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "08"
             }
           }
         },
@@ -501,6 +606,9 @@
           "name": "09",
           "pipeline_override": {
             "VF_刷活动关_04": {
+              "expected": "09"
+            },
+            "VF_刷活动关_03_Hit": {
               "expected": "09"
             }
           }
@@ -515,28 +623,28 @@
         {
           "name": "角色名",
           "label": "角色名",
-          "default": "",
+          "default": "五柱器",
           "pipeline_type": "string"
         }
       ],
       "pipeline_override": {
         "VF_升好感度_37_03_Hit": {
-          "template": "{角色名}.png"
-        },
-        "VF_升好感度_37_01": {
-          "template": "{角色名}.png"
+          "expected": "{角色名}"
         },
         "VF_查找器者_03_Hit": {
-          "template": "{角色名}.png"
+          "expected": "{角色名}"
         },
-        "VF_查找器者_01": {
-          "template": "{角色名}.png"
+        "VF_升好感度_37_06": {
+          "expected": "{角色名}"
         },
-        "VF_装卸装备_16_03_Hit": {
-          "template": "{角色名}.png"
+        "VF_查找器者_06": {
+          "expected": "{角色名}"
         },
-        "VF_装卸装备_16_01": {
-          "template": "{角色名}.png"
+        "VF_装卸装备_24_03_Hit": {
+          "expected": "{角色名}"
+        },
+        "VF_装卸装备_24_06": {
+          "expected": "{角色名}"
         }
       }
     },
@@ -553,10 +661,10 @@
       ],
       "pipeline_override": {
         "VF_博物研学_98_Hit": {
-          "template": "{器者5}.png"
+          "expected": "{器者5}"
         },
-        "VF_博物研学_101": {
-          "template": "{器者5}.png"
+        "VF_博物研学_180": {
+          "expected": "{器者5}"
         }
       }
     },
@@ -573,12 +681,163 @@
       ],
       "pipeline_override": {
         "VF_博物研学_120_Hit": {
-          "template": "{器者6}.png"
+          "expected": "{器者6}"
         },
-        "VF_博物研学_122": {
-          "template": "{器者6}.png"
+        "VF_博物研学_181": {
+          "expected": "{器者6}"
         }
       }
+    },
+    "办公室物资购买": {
+      "type": "switch",
+      "label": "办公室物资购买",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "VF_派遣公司事务_48": {
+              "next": [
+                "VF_派遣公司事务_06"
+              ]
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "VF_派遣公司事务_48": {
+              "next": [
+                "VF_派遣公司事务_49"
+              ]
+            }
+          }
+        }
+      ],
+      "default_case": "Yes"
+    },
+    "喝茶": {
+      "type": "switch",
+      "label": "喝茶",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "VF_派遣公司事务_49": {
+              "next": [
+                "VF_派遣公司事务_14"
+              ]
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "VF_派遣公司事务_49": {
+              "next": [
+                "VF_派遣公司事务_59"
+              ]
+            }
+          }
+        }
+      ],
+      "default_case": "Yes"
+    },
+    "顿舍体力领取": {
+      "type": "switch",
+      "label": "顿舍体力领取",
+      "cases": [
+        {
+          "name": "Yes",
+          "pipeline_override": {
+            "VF_派遣公司事务_59": {
+              "next": [
+                "VF_派遣公司事务_54"
+              ]
+            }
+          }
+        },
+        {
+          "name": "No",
+          "pipeline_override": {
+            "VF_派遣公司事务_59": {
+              "next": [
+                "VF_派遣公司事务_53"
+              ]
+            }
+          }
+        }
+      ],
+      "default_case": "Yes"
+    },
+    "培养/考核": {
+      "type": "select",
+      "label": "培养/考核",
+      "cases": [
+        {
+          "name": "培养",
+          "pipeline_override": {
+            "VF_清体力_25_Hit": {
+              "expected": "培养"
+            }
+          }
+        },
+        {
+          "name": "考核",
+          "pipeline_override": {
+            "VF_清体力_25_Hit": {
+              "expected": "考核"
+            }
+          }
+        }
+      ],
+      "default_case": "培养"
+    },
+    "关卡": {
+      "type": "select",
+      "label": "关卡",
+      "cases": [
+        {
+          "name": "01",
+          "pipeline_override": {
+            "VF_清体力_26_Hit": {
+              "expected": "01"
+            }
+          }
+        },
+        {
+          "name": "02",
+          "pipeline_override": {
+            "VF_清体力_26_Hit": {
+              "expected": "02"
+            }
+          }
+        },
+        {
+          "name": "03",
+          "pipeline_override": {
+            "VF_清体力_26_Hit": {
+              "expected": "03"
+            }
+          }
+        },
+        {
+          "name": "04",
+          "pipeline_override": {
+            "VF_清体力_26_Hit": {
+              "expected": "04"
+            }
+          }
+        },
+        {
+          "name": "05",
+          "pipeline_override": {
+            "VF_清体力_26_Hit": {
+              "expected": "05"
+            }
+          }
+        }
+      ],
+      "default_case": "01"
     }
   }
 }

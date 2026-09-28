@@ -1,0 +1,526 @@
+{
+    "VF_派遣公司事务完整版": {
+        "next": [
+            "VF_派遣公司事务完整版_01"
+        ]
+    },
+    "VF_派遣公司事务完整版_01": {
+        "recognition": "TemplateMatch",
+        "template": "paiqiangongsi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_02"
+        ]
+    },
+    "VF_派遣公司事务完整版_02": {
+        "recognition": "TemplateMatch",
+        "template": "shouquziyuan.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务完整版_03"
+        ]
+    },
+    "VF_派遣公司事务完整版_03": {
+        "action": "Click",
+        "target": [
+            1086,
+            400
+        ],
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务完整版_04"
+        ]
+    },
+    "VF_派遣公司事务完整版_04": {
+        "recognition": "TemplateMatch",
+        "template": "huoquganying.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务完整版_05"
+        ]
+    },
+    "VF_派遣公司事务完整版_05": {
+        "action": "Click",
+        "target": [
+            1186,
+            400
+        ],
+        "post_delay": 600,
+        "next": [
+            "VF_派遣公司事务完整版_06"
+        ]
+    },
+    "VF_派遣公司事务完整版_06": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务完整版_06_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_14"
+        ]
+    },
+    "VF_派遣公司事务完整版_06_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "bangongshi_biaozhi.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_07"
+        ]
+    },
+    "VF_派遣公司事务完整版_07": {
+        "recognition": "TemplateMatch",
+        "template": "bangongshi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_08"
+        ]
+    },
+    "VF_派遣公司事务完整版_08": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务完整版_08_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_12"
+        ]
+    },
+    "VF_派遣公司事务完整版_08_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yiwujigoumai.png",
+        "threshold": 0.55,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_09"
+        ]
+    },
+    "VF_派遣公司事务完整版_09": {
+        "recognition": "TemplateMatch",
+        "template": "yiwujigoumai.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_10"
+        ]
+    },
+    "VF_派遣公司事务完整版_10": {
+        "recognition": "TemplateMatch",
+        "template": "dianjitoubi.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_11"
+        ]
+    },
+    "VF_派遣公司事务完整版_11": {
+        "action": "Click",
+        "target": [
+            836,
+            360
+        ],
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_12"
+        ]
+    },
+    "VF_派遣公司事务完整版_12": {
+        "recognition": "TemplateMatch",
+        "template": "tuichubangongshi.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_13"
+        ]
+    },
+    "VF_派遣公司事务完整版_13": {
+        "action": "DoNothing",
+        "timeout": 1500,
+        "next": [
+            "VF_派遣公司事务完整版_13_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_14"
+        ]
+    },
+    "VF_派遣公司事务完整版_13_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tuichubangongshi.png",
+        "threshold": 0.5,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_12"
+        ]
+    },
+    "VF_派遣公司事务完整版_14": {
+        "recognition": "TemplateMatch",
+        "template": "chashi_rukou.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_15"
+        ]
+    },
+    "VF_派遣公司事务完整版_15": {
+        "recognition": "TemplateMatch",
+        "template": "tea_0.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_16"
+        ]
+    },
+    "VF_派遣公司事务完整版_16": {
+        "action": "Click",
+        "target": [
+            200,
+            400
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务完整版_17"
+        ]
+    },
+    "VF_派遣公司事务完整版_17": {
+        "recognition": "TemplateMatch",
+        "template": "tea_queren.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_18"
+        ]
+    },
+    "VF_派遣公司事务完整版_18": {
+        "recognition": "TemplateMatch",
+        "template": "tea_queren2.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_19"
+        ]
+    },
+    "VF_派遣公司事务完整版_19": {
+        "recognition": "TemplateMatch",
+        "template": "tea_qipao.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "rate_limit": 200,
+        "next": [
+            "VF_派遣公司事务完整版_20"
+        ]
+    },
+    "VF_派遣公司事务完整版_20": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务完整版_20_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_19"
+        ]
+    },
+    "VF_派遣公司事务完整版_20_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tea_yaoqing.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_21"
+        ]
+    },
+    "VF_派遣公司事务完整版_21": {
+        "recognition": "TemplateMatch",
+        "template": "tea_yaoqing.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_22"
+        ]
+    },
+    "VF_派遣公司事务完整版_22": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 3,
+        "repeat_delay": 350,
+        "next": [
+            "VF_派遣公司事务完整版_23"
+        ]
+    },
+    "VF_派遣公司事务完整版_23": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务完整版_23_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_22"
+        ]
+    },
+    "VF_派遣公司事务完整版_23_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_24"
+        ]
+    },
+    "VF_派遣公司事务完整版_24": {
+        "action": "Click",
+        "target": [
+            978,
+            376
+        ],
+        "post_delay": 500,
+        "pre_delay": 1000,
+        "next": [
+            "VF_派遣公司事务完整版_25"
+        ]
+    },
+    "VF_派遣公司事务完整版_25": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 500,
+        "pre_delay": 500,
+        "repeat": 2,
+        "repeat_delay": 350,
+        "next": [
+            "VF_派遣公司事务完整版_26"
+        ]
+    },
+    "VF_派遣公司事务完整版_26": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务完整版_26_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_25"
+        ]
+    },
+    "VF_派遣公司事务完整版_26_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_27"
+        ]
+    },
+    "VF_派遣公司事务完整版_27": {
+        "action": "Click",
+        "target": [
+            978,
+            376
+        ],
+        "post_delay": 1500,
+        "pre_delay": 6000,
+        "next": [
+            "VF_派遣公司事务完整版_28"
+        ]
+    },
+    "VF_派遣公司事务完整版_28": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 2000,
+        "pre_delay": 2000,
+        "repeat": 3,
+        "repeat_delay": 4000,
+        "next": [
+            "VF_派遣公司事务完整版_29"
+        ]
+    },
+    "VF_派遣公司事务完整版_29": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务完整版_29_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_28"
+        ]
+    },
+    "VF_派遣公司事务完整版_29_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_30"
+        ]
+    },
+    "VF_派遣公司事务完整版_30": {
+        "action": "Click",
+        "target": [
+            988,
+            266
+        ],
+        "post_delay": 500,
+        "pre_delay": 6000,
+        "next": [
+            "VF_派遣公司事务完整版_31"
+        ]
+    },
+    "VF_派遣公司事务完整版_31": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 500,
+        "pre_delay": 1000,
+        "repeat": 2,
+        "repeat_delay": 350,
+        "next": [
+            "VF_派遣公司事务完整版_32"
+        ]
+    },
+    "VF_派遣公司事务完整版_32": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务完整版_32_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_31"
+        ]
+    },
+    "VF_派遣公司事务完整版_32_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_33"
+        ]
+    },
+    "VF_派遣公司事务完整版_33": {
+        "action": "Click",
+        "target": [
+            988,
+            266
+        ],
+        "post_delay": 500,
+        "next": [
+            "VF_派遣公司事务完整版_34"
+        ]
+    },
+    "VF_派遣公司事务完整版_34": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 1500,
+        "pre_delay": 1000,
+        "repeat": 3,
+        "repeat_delay": 1500,
+        "next": [
+            "VF_派遣公司事务完整版_35"
+        ]
+    },
+    "VF_派遣公司事务完整版_35": {
+        "action": "Click",
+        "target": [
+            136,
+            449
+        ],
+        "post_delay": 500,
+        "pre_delay": 6000,
+        "next": [
+            "VF_派遣公司事务完整版_36"
+        ]
+    },
+    "VF_派遣公司事务完整版_36": {
+        "recognition": "TemplateMatch",
+        "template": "chashi_tuichu.png",
+        "threshold": 0.8,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_37"
+        ]
+    },
+    "VF_派遣公司事务完整版_37": {
+        "recognition": "TemplateMatch",
+        "template": "tuichupaiqiangongsi.png",
+        "threshold": 0.5,
+        "action": "Click",
+        "timeout": 8000,
+        "post_delay": 800,
+        "next": [
+            "VF_派遣公司事务完整版_38"
+        ]
+    },
+    "VF_派遣公司事务完整版_38": {
+        "action": "DoNothing",
+        "timeout": 1500,
+        "next": [
+            "VF_派遣公司事务完整版_38_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务完整版_End"
+        ]
+    },
+    "VF_派遣公司事务完整版_38_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "tuichupaiqiangongsi.png",
+        "threshold": 0.5,
+        "action": "DoNothing",
+        "next": [
+            "VF_派遣公司事务完整版_37"
+        ]
+    },
+    "VF_派遣公司事务完整版_39": {
+        "next": [
+            "Common_回主页"
+        ]
+    },
+    "VF_派遣公司事务完整版_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

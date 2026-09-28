@@ -517,6 +517,25 @@ public class ShellUserService extends IUserService.Stub {
             Thread.sleep(800);
             sb.append("launch2 ").append(launchOnDisplay(mVdId)).append('\n');
             sb.append("pin2 ").append(ensureGameOnDisplay(mVdId, 6000)).append('\n');
+
+            // 窗口布局校验（只读探测 + 异常时尽力 resize，不改任何既有流程）：
+            // pin ok ≠ 窗口铺满。size-compat 触发时固定 ROI 全错位，必须让日志可见。
+            try {
+                Thread.sleep(1200);  // pin ok 时 activity 可能还没挂窗口，等布局稳定
+                String win = probeGameWindow();
+                if (isWindowAbnormal(win)) {
+                    forceTaskFullscreenBounds();
+                    Thread.sleep(1200);
+                    String win2 = probeGameWindow();
+                    sb.append("win=").append(win2)
+                      .append(" fix=").append(isWindowAbnormal(win2) ? "failed" : "resize-ok")
+                      .append(" (was ").append(win).append(")\n");
+                } else {
+                    sb.append("win=").append(win).append('\n');
+                }
+            } catch (Throwable t) {
+                sb.append("win=unknown probe_err:").append(t.getClass().getSimpleName()).append('\n');
+            }
         } catch (Throwable t) {
             sb.append("start_err=").append(t).append('\n');
         }
@@ -705,6 +724,171 @@ public class ShellUserService extends IUserService.Stub {
         } catch (Throwable t) {
             return false;
         }
+    }
+
+    // ============ 游戏窗口布局校验（size-compat 检测，2026-09-27）============
+    // 现象：pin ok 只保证「任务在虚拟屏上」；部分 ROM 对声明不可调整大小的游戏触发
+    // size-compat——窗口按兼容尺寸渲染再放大铺满（画面放大裁切）或单侧锚定（黑边），
+    // 固定 ROI 全部错位、模板识别必然失败（用户可见症状：公告弹窗铺满整个预览）。
+
+    /**
+     * 探测游戏窗口在虚拟屏上的实际布局，返回可读串：
+     * "1280x720"（满铺，正常）/ "912x513 COMPAT"（窗口尺寸异常，黑边/裁切型）/
+     * "unknown COMPAT:…"（frame 没解析到但发现 compat 痕迹）/ "unknown"（该 ROM 的
+     * dumpsys 格式解析不了，不妄下结论）。
+     */
+    private String probeGameWindow() {
+        try {
+            String dump = runCmd("/system/bin/dumpsys", "window", "displays");
+            if (dump == null || dump.length() < 200) {
+                dump = runCmd("/system/bin/dumpsys", "window");
+            }
+            int[] f = (dump != null && dump.length() > 200) ? findGameWindowFrame(dump) : null;
+            if (f != null) {
+                int w = f[2] - f[0], h = f[3] - f[1];
+                // 容差 6%：框架栏/inset 类的小偏差不算异常
+                if (Math.abs(w - VD_W) <= VD_W * 6 / 100 && Math.abs(h - VD_H) <= VD_H * 6 / 100) {
+                    return w + "x" + h;
+                }
+                return w + "x" + h + " COMPAT";
+            }
+            String hint = findCompatHint(
+                runCmd("/system/bin/dumpsys", "activity", "activities"));
+            if (hint != null) return "unknown " + hint;
+            return "unknown";
+        } catch (Throwable t) {
+            return "unknown probe_err:" + t.getClass().getSimpleName();
+        }
+    }
+
+    /** 游戏窗口是否异常（size-compat / 不满铺）。unknown 不算异常，避免误伤。 */
+    private static boolean isWindowAbnormal(String win) {
+        return win != null && win.contains("COMPAT");
+    }
+
+    /**
+     * 在 dumpsys window 输出里找游戏 task/窗口的边界，返回 {x1,y1,x2,y2}；找不到 null。
+     * 形态一（Android 13+ 实测 ColorOS14）：游戏 Task 行的下一行是 bounds=[x,y][w,h]：
+     *   * Task{... A=10208:com.cipaishe.wuhua.bilibili ... mode=fullscreen ...}
+     *     bounds=[0,0][1280,720]
+     *   注意 mPreferredTopFocusableRootTask=Task{...} 这类引用行也含包名，但它们的
+     *   后续行没有行首 bounds=，逐行尝试即可天然跳过；overrideConfig 里的
+     *   mBounds=Rect(0,0-0,0) 占位值是 Rect 格式，不会撞 bounds= 模式。
+     * 形态二（旧版）：WindowState 块标题行（行首 Window #N / mSurfaceWindow{，排除
+     *   mCurrentFocus= 这类行内引用）块内的 frame=[x,y][w,h] / Rect(x, y - w, h)。
+     */
+    private int[] findGameWindowFrame(String dump) {
+        try {
+            String[] lines = dump.split("\n");
+            java.util.regex.Pattern boundsAny = java.util.regex.Pattern.compile(
+                "bounds=\\[(-?\\d+)\\s*,\\s*(-?\\d+)\\]\\[(-?\\d+)\\s*,\\s*(-?\\d+)\\]");
+            java.util.regex.Pattern boundsLineStart = java.util.regex.Pattern.compile(
+                "^\\s*bounds=\\[(-?\\d+)\\s*,\\s*(-?\\d+)\\]\\[(-?\\d+)\\s*,\\s*(-?\\d+)\\]");
+            for (int i = 0; i < lines.length; i++) {
+                if (!lines[i].contains("Task{") || !lines[i].contains(GAME_PKG)) continue;
+                for (int j = i; j < lines.length && j <= i + 3; j++) {
+                    java.util.regex.Matcher m = (j == i ? boundsAny : boundsLineStart).matcher(lines[j]);
+                    if (m.find()) {
+                        return new int[] {
+                            Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)),
+                            Integer.parseInt(m.group(3)), Integer.parseInt(m.group(4)) };
+                    }
+                }
+            }
+            java.util.regex.Pattern frameBr = java.util.regex.Pattern.compile(
+                "frame[^\\n]*?\\[(-?\\d+)\\s*,\\s*(-?\\d+)\\]\\[(-?\\d+)\\s*,\\s*(-?\\d+)\\]");
+            java.util.regex.Pattern rect = java.util.regex.Pattern.compile(
+                "Rect\\((-?\\d+),\\s*(-?\\d+)\\s*-\\s*(-?\\d+),\\s*(-?\\d+)\\)");
+            int anchor = -1;
+            for (int i = 0; i < lines.length; i++) {
+                String t = lines[i].trim();
+                if (lines[i].contains(GAME_PKG)
+                        && (t.startsWith("Window #") || lines[i].contains("mSurfaceWindow{"))) {
+                    anchor = i;
+                    break;
+                }
+            }
+            if (anchor < 0) return null;
+            for (int i = anchor; i < lines.length && i < anchor + 60; i++) {
+                String ln = lines[i];
+                // 走进下一个窗口块还没见到 frame → 放弃（块内行数不同 ROM 差异大，60 行封顶）
+                if (i > anchor && (ln.contains("Window{") || ln.contains("mSurfaceWindow{"))) break;
+                java.util.regex.Matcher m = frameBr.matcher(ln);
+                if (!m.find()) m = rect.matcher(ln);
+                if (m.find()) {
+                    return new int[] {
+                        Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)),
+                        Integer.parseInt(m.group(3)), Integer.parseInt(m.group(4)) };
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * dumpsys activity activities 里游戏 task 附近的 compat 缩放痕迹
+     * （sizeCompat/compatScale 字样，限游戏包名行后 12 行内，避免抓到别的应用）。
+     * 返回如 "COMPAT:sizeCompatScale=1.45"；无痕迹 null。
+     */
+    private String findCompatHint(String acts) {
+        try {
+            if (acts == null || acts.isEmpty()) return null;
+            String[] lines = acts.split("\n");
+            int near = -1000;
+            for (int i = 0; i < lines.length; i++) {
+                if (lines[i].contains(GAME_PKG)) near = i;
+                String low = lines[i].toLowerCase();
+                if ((low.contains("sizecompat") || low.contains("size-compat") || low.contains("compatscale"))
+                        && i - near >= 0 && i - near < 12) {
+                    String s = lines[i].trim();
+                    return "COMPAT:" + s.substring(0, Math.min(s.length(), 80));
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * 尽力把游戏任务边界拉回满屏 1280x720。对 size-compat 任务 ROM 可能直接拒绝
+     * （不可 resize 的 app resizeTask 被忽略），尽力而为：成功与否由调用方复查决定。
+     */
+    private boolean forceTaskFullscreenBounds() {
+        try {
+            int taskId = findGameTaskId();
+            if (taskId < 0) return false;
+            Class<?> ats = Class.forName("android.app.ActivityTaskManager");
+            Object svc = ats.getMethod("getService").invoke(null);
+            try {
+                svc.getClass().getMethod("resizeTask", int.class, android.graphics.Rect.class)
+                    .invoke(svc, taskId, new android.graphics.Rect(0, 0, VD_W, VD_H));
+                return true;
+            } catch (Throwable ignored) {
+            }
+            svc.getClass().getMethod("resizeTask", int.class, int.class, int.class, int.class, int.class)
+                .invoke(svc, taskId, 0, 0, VD_W, VD_H);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** 游戏 top task 的 taskId（readTaskId 兼容 28/29+ 字段差异）；无任务 -1 */
+    private int findGameTaskId() {
+        try {
+            android.app.ActivityManager am = (android.app.ActivityManager)
+                new ShellCtx(mContext).getSystemService(android.content.Context.ACTIVITY_SERVICE);
+            java.util.List<android.app.ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(100);
+            for (android.app.ActivityManager.RunningTaskInfo t : tasks) {
+                android.content.ComponentName top = t.topActivity;
+                if (top != null && GAME_PKG.equals(top.getPackageName())) {
+                    return readTaskId(t);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return -1;
     }
 
     @Override

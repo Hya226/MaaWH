@@ -1,4 +1,14 @@
 {
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-27T11:49:21+08:00",
+        "flowFile": "测试流程.flow.json",
+        "flowHash": "sha256:be3aea92524b3ac56c8196e5b2f6ade99db90ff120b57c0ab1bf0174bf7542b8",
+        "pipelineHash": "sha256:cf208ab390d7ccc685c0774fb0df220dcec925beb63272077a7d38e1ead84dc5",
+        "frameW": 1280,
+        "frameH": 720
+    },
     "VF_测试流程": {
         "next": [
             "VF_测试流程_01"
@@ -6,11 +16,45 @@
     },
     "VF_测试流程_01": {
         "recognition": "OCR",
-        "text": [
+        "expected": [
             "博物研学"
         ],
         "action": "Click",
         "timeout": 8000,
-        "post_delay": 600
+        "post_delay": 600,
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ]
     }
 }

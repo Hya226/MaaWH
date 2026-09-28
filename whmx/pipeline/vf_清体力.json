@@ -2,38 +2,16 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-22T22:25:27+08:00",
+        "generatedAt": "2026-09-28T10:09:19+08:00",
         "flowFile": "清体力.flow.json",
-        "flowHash": "sha256:707061678ddb930cb1500b3dbf55b0da8e2604a64ec4c07324213ffa886086c9",
-        "pipelineHash": "sha256:ac6fbca8ee2c5a508594b5241d94cfb5548b2a2885590eb1b863f128c57fa73b",
+        "flowHash": "sha256:9d8f59783df8d4eb875c972bdbfc149105c8a0c437a03ed56c647fd8d2716248",
+        "pipelineHash": "sha256:2ddc24934d4ef5672a8c159687375ae1f3d7c4884abf2d8b92eccbe938d82a25",
         "frameW": 1280,
         "frameH": 720
     },
     "VF_清体力": {
         "next": [
-            "VF_清体力_01"
-        ]
-    },
-    "VF_清体力_01": {
-        "recognition": "TemplateMatch",
-        "template": "sy_yx.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "next": [
-            "VF_清体力_02"
-        ]
-    },
-    "VF_清体力_02": {
-        "recognition": "TemplateMatch",
-        "template": "yx_ksxl.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "next": [
-            "VF_清体力_09"
+            "VF_清体力_21"
         ]
     },
     "VF_清体力_09": {
@@ -45,16 +23,93 @@
         "timeout": 8000,
         "post_delay": 600,
         "next": [
-            "VF_清体力_10"
+            "VF_清体力_26"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ]
     },
-    "VF_清体力_10": {
-        "action": "Click",
-        "target": [
-            1097,
-            353
+    "VF_清体力_26": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_清体力_26_Hit"
+        ]
+    },
+    "VF_清体力_26_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "05"
         ],
-        "post_delay": 500,
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "rate_limit": 600,
+        "pre_delay": 200,
+        "post_delay": 600,
         "next": [
             "VF_清体力_06"
         ]
@@ -78,56 +133,29 @@
         "timeout": 8000,
         "post_delay": 800,
         "next": [
-            "VF_清体力_11"
+            "VF_清体力_28"
         ]
     },
-    "VF_清体力_11": {
-        "recognition": "TemplateMatch",
-        "template": "duigou.png",
-        "threshold": 0.7,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 2000,
-        "next": [
-            "VF_清体力_19"
-        ]
-    },
-    "VF_清体力_19": {
+    "VF_清体力_28": {
         "action": "DoNothing",
-        "timeout": 3000,
+        "timeout": 5000,
         "next": [
-            "VF_清体力_19_Hit"
+            "VF_清体力_28_Hit"
         ],
         "on_error": [
             "VF_清体力_15"
         ]
     },
-    "VF_清体力_19_Hit": {
+    "VF_清体力_28_Hit": {
         "recognition": "TemplateMatch",
         "template": "duigou.png",
-        "threshold": 0.7,
-        "action": "DoNothing",
-        "next": [
-            "VF_清体力_20"
-        ]
-    },
-    "VF_清体力_20": {
-        "action": "DoNothing",
-        "timeout": 30000,
-        "next": [
-            "VF_清体力_20_Hit"
-        ]
-    },
-    "VF_清体力_20_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "duigou.png",
-        "threshold": 0.7,
+        "threshold": 0.65,
         "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
         "next": [
-            "VF_清体力_15"
-        ]
+            "VF_清体力_28"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_清体力_16": {
         "next": [
@@ -148,15 +176,52 @@
     },
     "VF_清体力_18": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_清体力_18_Hit"
+        ],
+        "on_error": [
+            "VF_清体力_16"
         ]
     },
     "VF_清体力_18_Hit": {
         "recognition": "OCR",
         "expected": [
             "完成"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
         ],
         "action": "Click",
         "roi": [
@@ -165,10 +230,166 @@
             248,
             95
         ],
+        "next": [
+            "VF_清体力_18"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_清体力_21": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_清体力_21_Hit"
+        ],
+        "on_error": [
+            "VF_清体力_22"
+        ]
+    },
+    "VF_清体力_21_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "sy_yx.png",
+        "threshold": 0.75,
+        "action": "Click",
+        "next": [
+            "VF_清体力_21"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_清体力_22": {
+        "action": "DoNothing",
+        "timeout": 4000,
+        "next": [
+            "VF_清体力_22_Hit"
+        ],
+        "on_error": [
+            "VF_清体力_25"
+        ]
+    },
+    "VF_清体力_22_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yx_ksxl.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "next": [
+            "VF_清体力_22"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_清体力_25": {
+        "action": "DoNothing",
+        "timeout": 30000,
+        "next": [
+            "VF_清体力_25_Hit"
+        ]
+    },
+    "VF_清体力_25_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "培养"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            34,
+            79,
+            165,
+            457
+        ],
         "rate_limit": 600,
+        "pre_delay": 300,
         "post_delay": 600,
         "next": [
-            "VF_清体力_16"
+            "VF_清体力_30"
+        ]
+    },
+    "VF_清体力_30": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_清体力_30_Hit"
+        ],
+        "on_error": [
+            "VF_清体力_25"
+        ]
+    },
+    "VF_清体力_30_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "冬谷币"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "DoNothing",
+        "next": [
+            "VF_清体力_09"
         ]
     }
 }

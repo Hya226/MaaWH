@@ -1,4 +1,14 @@
 {
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-09-27T11:49:15+08:00",
+        "flowFile": "喝茶.flow.json",
+        "flowHash": "sha256:efab60133e04003bdf67a26af1f9a773af419180cb2309eef05657cba7646067",
+        "pipelineHash": "sha256:3ee5cc7d146c3626693ec8a1e882fe1c0f799add98c81f562a62261ff9bd5b0e",
+        "frameW": 1280,
+        "frameH": 720
+    },
     "VF_喝茶": {
         "next": [
             "VF_喝茶_01"
@@ -17,7 +27,7 @@
     },
     "VF_喝茶_02": {
         "recognition": "TemplateMatch",
-        "template": "chashi.png",
+        "template": "tea_0.png",
         "threshold": 0.8,
         "action": "Click",
         "timeout": 8000,
@@ -27,19 +37,20 @@
         ]
     },
     "VF_喝茶_03": {
-        "recognition": "TemplateMatch",
-        "template": "tea_0.png",
-        "threshold": 0.8,
         "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
+        "target": [
+            200,
+            400
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_喝茶_04"
         ]
     },
     "VF_喝茶_04": {
         "recognition": "TemplateMatch",
-        "template": "tea_xihulongjing.png",
+        "template": "tea_queren.png",
         "threshold": 0.8,
         "action": "Click",
         "timeout": 8000,
@@ -50,7 +61,7 @@
     },
     "VF_喝茶_05": {
         "recognition": "TemplateMatch",
-        "template": "tea_queren.png",
+        "template": "tea_queren2.png",
         "threshold": 0.8,
         "action": "Click",
         "timeout": 8000,
@@ -61,17 +72,6 @@
     },
     "VF_喝茶_06": {
         "recognition": "TemplateMatch",
-        "template": "tea_queren2.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
-        "next": [
-            "VF_喝茶_07"
-        ]
-    },
-    "VF_喝茶_07": {
-        "recognition": "TemplateMatch",
         "template": "tea_qipao.png",
         "threshold": 0.8,
         "action": "Click",
@@ -79,29 +79,29 @@
         "post_delay": 800,
         "rate_limit": 200,
         "next": [
-            "VF_喝茶_08"
-        ]
-    },
-    "VF_喝茶_08": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_喝茶_08_Hit"
-        ],
-        "on_error": [
             "VF_喝茶_07"
         ]
     },
-    "VF_喝茶_08_Hit": {
+    "VF_喝茶_07": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_喝茶_07_Hit"
+        ],
+        "on_error": [
+            "VF_喝茶_06"
+        ]
+    },
+    "VF_喝茶_07_Hit": {
         "recognition": "TemplateMatch",
         "template": "tea_yaoqing.png",
         "threshold": 0.7,
         "action": "DoNothing",
         "next": [
-            "VF_喝茶_09"
+            "VF_喝茶_08"
         ]
     },
-    "VF_喝茶_09": {
+    "VF_喝茶_08": {
         "recognition": "TemplateMatch",
         "template": "tea_yaoqing.png",
         "threshold": 0.8,
@@ -109,16 +109,36 @@
         "timeout": 8000,
         "post_delay": 800,
         "next": [
-            "VF_喝茶_10"
+            "VF_喝茶_09"
         ]
     },
-    "VF_喝茶_10": {
+    "VF_喝茶_09": {
         "action": "Click",
         "target": [
             642,
             284
         ],
         "post_delay": 500,
+        "pre_delay": 200,
+        "next": [
+            "VF_喝茶_10"
+        ]
+    },
+    "VF_喝茶_10": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_喝茶_10_Hit"
+        ],
+        "on_error": [
+            "VF_喝茶_09"
+        ]
+    },
+    "VF_喝茶_10_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
         "next": [
             "VF_喝茶_11"
         ]
@@ -130,6 +150,7 @@
             376
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_喝茶_12"
         ]
@@ -141,17 +162,26 @@
             284
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_喝茶_13"
         ]
     },
     "VF_喝茶_13": {
-        "action": "Click",
-        "target": [
-            978,
-            376
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_喝茶_13_Hit"
         ],
-        "post_delay": 1500,
+        "on_error": [
+            "VF_喝茶_12"
+        ]
+    },
+    "VF_喝茶_13_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
         "next": [
             "VF_喝茶_14"
         ]
@@ -159,12 +189,11 @@
     "VF_喝茶_14": {
         "action": "Click",
         "target": [
-            642,
-            284
+            978,
+            376
         ],
         "post_delay": 1500,
-        "repeat": 2,
-        "repeat_delay": 1000,
+        "pre_delay": 6000,
         "next": [
             "VF_喝茶_15"
         ]
@@ -172,21 +201,30 @@
     "VF_喝茶_15": {
         "action": "Click",
         "target": [
-            988,
-            266
+            642,
+            284
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_喝茶_16"
         ]
     },
     "VF_喝茶_16": {
-        "action": "Click",
-        "target": [
-            642,
-            284
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_喝茶_16_Hit"
         ],
-        "post_delay": 500,
+        "on_error": [
+            "VF_喝茶_15"
+        ]
+    },
+    "VF_喝茶_16_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
         "next": [
             "VF_喝茶_17"
         ]
@@ -198,6 +236,7 @@
             266
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_喝茶_18"
         ]
@@ -208,25 +247,68 @@
             642,
             284
         ],
-        "post_delay": 1500,
-        "repeat": 3,
-        "repeat_delay": 1500,
+        "post_delay": 500,
+        "pre_delay": 200,
         "next": [
             "VF_喝茶_19"
         ]
     },
     "VF_喝茶_19": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_喝茶_19_Hit"
+        ],
+        "on_error": [
+            "VF_喝茶_18"
+        ]
+    },
+    "VF_喝茶_19_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duihua_maohao.png",
+        "threshold": 0.7,
+        "action": "DoNothing",
+        "next": [
+            "VF_喝茶_20"
+        ]
+    },
+    "VF_喝茶_20": {
+        "action": "Click",
+        "target": [
+            988,
+            266
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "next": [
+            "VF_喝茶_21"
+        ]
+    },
+    "VF_喝茶_21": {
+        "action": "Click",
+        "target": [
+            642,
+            284
+        ],
+        "post_delay": 1500,
+        "pre_delay": 200,
+        "next": [
+            "VF_喝茶_22"
+        ]
+    },
+    "VF_喝茶_22": {
         "action": "Click",
         "target": [
             136,
             449
         ],
         "post_delay": 500,
+        "pre_delay": 200,
         "next": [
-            "VF_喝茶_20"
+            "VF_喝茶_23"
         ]
     },
-    "VF_喝茶_20": {
+    "VF_喝茶_23": {
         "recognition": "TemplateMatch",
         "template": "chashi_tuichu.png",
         "threshold": 0.8,
