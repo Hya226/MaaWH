@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-28T07:12:48+08:00",
+        "generatedAt": "2026-09-28T12:22:18+08:00",
         "flowFile": "领取奖励.flow.json",
-        "flowHash": "sha256:69391de09f4ff2f796f14752c8d8a017f8fc2782b6f7ecfbf6f749a27ec9bdf5",
-        "pipelineHash": "sha256:66aba315266c2249dbd0882c279bd38a6a104b0e76ca995c377e557e22195a02",
+        "flowHash": "sha256:d912921b94add88b57fc4f2b088223c6016f4e92e31197197105badd4b22f017",
+        "pipelineHash": "sha256:b31dc36faf72bdf5222ce22e010510e1c08309968c4abf261604a56ba275906b",
         "frameW": 1280,
         "frameH": 720
     },
@@ -117,6 +117,29 @@
         "post_delay": 2000,
         "order_by": "Score",
         "next": [
+            "VF_领取奖励_17_W"
+        ]
+    },
+    "VF_领取奖励_17_W": {
+        "action": "DoNothing",
+        "timeout": 10000,
+        "next": [
+            "VF_领取奖励_17"
+        ]
+    },
+    "VF_领取奖励_17": {
+        "recognition": "TemplateMatch",
+        "template": "wu.png",
+        "threshold": 0.8,
+        "action": "DoNothing",
+        "timeout": 10000,
+        "roi": [
+            989,
+            367,
+            111,
+            98
+        ],
+        "next": [
             "VF_领取奖励_06"
         ]
     },
@@ -127,7 +150,7 @@
             600
         ],
         "post_delay": 500,
-        "pre_delay": 600,
+        "pre_delay": 200,
         "timeout": 3000,
         "next": [
             "VF_领取奖励_14"
@@ -145,8 +168,8 @@
     },
     "VF_领取奖励_14_Hit": {
         "recognition": "TemplateMatch",
-        "template": "zhuye.png",
-        "threshold": 0.7,
+        "template": "zhuye1.png",
+        "threshold": 0.65,
         "action": "DoNothing",
         "next": [
             "VF_领取奖励_16"
@@ -164,8 +187,8 @@
     },
     "VF_领取奖励_16_Hit": {
         "recognition": "TemplateMatch",
-        "template": "zhuye.png",
-        "threshold": 0.7,
+        "template": "zhuye1.png",
+        "threshold": 0.65,
         "action": "Click",
         "roi": [
             2,

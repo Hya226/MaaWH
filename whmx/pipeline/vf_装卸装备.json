@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-27T11:49:24+08:00",
+        "generatedAt": "2026-09-28T12:16:32+08:00",
         "flowFile": "装卸装备.flow.json",
-        "flowHash": "sha256:ac2496d9ff49fc12686b2d00f991b127f4a755dc85ecb6c1561e6c966a38471a",
-        "pipelineHash": "sha256:b6c56768b0c231c795c6b8922fce6ebfc99d4400877ba35f6baef77ebcc80aa9",
+        "flowHash": "sha256:15fb198d8b3fef562bda5afd05ff6fb95644ed1f7de547429df1d4ca76c0ef24",
+        "pipelineHash": "sha256:3b0298f59f3c14741049a5ebf2edc8e12eb45bf26417df0e0e1771ff29a88db6",
         "frameW": 1280,
         "frameH": 720
     },
@@ -293,6 +293,7 @@
         "next": [
             "VF_装卸装备_10"
         ],
+        "max_hit": 5,
         "rate_limit": 200,
         "post_delay": 600
     },
@@ -303,7 +304,7 @@
             "VF_装卸装备_11_Hit"
         ],
         "on_error": [
-            "VF_装卸装备_15"
+            "VF_装卸装备_25"
         ]
     },
     "VF_装卸装备_11_Hit": {
@@ -320,70 +321,37 @@
         "next": [
             "VF_装卸装备_11"
         ],
+        "max_hit": 5,
         "rate_limit": 200,
         "post_delay": 600
     },
-    "VF_装卸装备_15": {
+    "VF_装卸装备_25": {
         "action": "DoNothing",
         "timeout": 3000,
         "next": [
-            "VF_装卸装备_15_Hit"
-        ],
-        "on_error": [
-            "VF_装卸装备_23"
-        ]
-    },
-    "VF_装卸装备_15_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "xiexia.png",
-        "threshold": 0.7,
-        "action": "DoNothing",
-        "roi": [
-            1056,
-            578,
-            201,
-            128
-        ],
-        "next": [
-            "VF_装卸装备_11"
-        ]
-    },
-    "VF_装卸装备_22": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_装卸装备_22_Hit"
+            "VF_装卸装备_25_Hit"
         ],
         "on_error": [
             "VF_装卸装备_End"
         ]
     },
-    "VF_装卸装备_22_Hit": {
+    "VF_装卸装备_25_Hit": {
         "recognition": "TemplateMatch",
         "template": "zhuye1.png",
-        "threshold": 0.7,
-        "action": "DoNothing",
-        "roi": [
-            192,
-            1,
-            88,
-            72
-        ],
-        "next": [
-            "VF_装卸装备_23"
-        ]
-    },
-    "VF_装卸装备_23": {
+        "threshold": 0.65,
         "action": "Click",
-        "target": [
-            238,
-            34
+        "roi": [
+            190,
+            8,
+            95,
+            57
         ],
-        "post_delay": 500,
-        "pre_delay": 200,
         "next": [
-            "VF_装卸装备_22"
-        ]
+            "VF_装卸装备_25"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_装卸装备_End": {
         "action": "DoNothing",

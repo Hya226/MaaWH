@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-27T11:49:24+08:00",
+        "generatedAt": "2026-09-28T12:18:39+08:00",
         "flowFile": "装备分解.flow.json",
-        "flowHash": "sha256:b30b5bc86cccbb8f9fb6dc6d5f0be67d37f9c3dff2bf3d1b69e87df453ccd442",
-        "pipelineHash": "sha256:c3f9176f5e5e9b847bc658231cda8bed127766d224343a9d32ef011fe0e7e107",
+        "flowHash": "sha256:f2be79f8b18d02318e8d61fff559f1577c8100d88eff807b1dbcec1e601ce44e",
+        "pipelineHash": "sha256:93db59ab5c0b880ba084f1ccf98d41985205580a8480f3c57c7a597fdfaf39aa",
         "frameW": 1280,
         "frameH": 720
     },
@@ -108,13 +108,36 @@
         "pre_delay": 200,
         "timeout": 3000,
         "next": [
-            "VF_装备分解_07"
+            "VF_装备分解_12"
         ]
     },
-    "VF_装备分解_07": {
+    "VF_装备分解_12": {
+        "action": "DoNothing",
+        "timeout": 3000,
         "next": [
-            "Common_回主页"
+            "VF_装备分解_12_Hit"
+        ],
+        "on_error": [
+            "VF_装备分解_End"
         ]
+    },
+    "VF_装备分解_12_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye2.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "roi": [
+            190,
+            8,
+            95,
+            57
+        ],
+        "next": [
+            "VF_装备分解_12"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_装备分解_08": {
         "action": "DoNothing",
