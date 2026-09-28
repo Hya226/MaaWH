@@ -59,4 +59,9 @@ interface IUserService {
     // 已从帧池消费的帧数（看门狗判据：consumed 涨而 drawn 停 = 渲染器真挂需降级；
     // 两者都停 = 游戏画面静止，正常，不降级）
     long previewConsumedCount() = 17;
+
+    // 【启动兜底】把游戏重新投到虚拟屏并确认落位（引擎 StartApp 回调用，2026-09-28）。
+    // 替代没有 display 概念的 monkey 兜底：荣耀/华为的「游戏助手」会杀掉虚拟屏里的
+    // 游戏实例，进程消失后 monkey 会把游戏直接开回物理主屏。虚拟屏没开返回 "vd off"。
+    String relaunchGameOnVd() = 18;
 }

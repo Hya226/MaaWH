@@ -190,6 +190,16 @@ object ShizukuShell {
     }
 
     /**
+     * 【启动兜底】把游戏重新投到虚拟屏并确认落位（引擎 StartApp 回调用）。
+     * 返回 null = 服务不可达；"vd off" = 虚拟屏没开——两种情况调用方都应回退默认启动。
+     */
+    fun relaunchGameOnVd(): String? = try {
+        ensureService().relaunchGameOnVd() ?: "(null)"
+    } catch (e: Throwable) {
+        null
+    }
+
+    /**
      * 仅对游戏静音：appops 按包拒绝其播放音频（PLAY_AUDIO deny，同 maameow 的按包+uid 语义）。
      * 不动系统音量，音量键调节也不影响；appops 状态持久，结束时必须恢复（见 resetGameAudio）。
      * 不要用 --uid：uid 级 mode 包级 reset 清不掉，是静音残留反复出现的根因之一。
@@ -570,7 +580,9 @@ object ShizukuShell {
                 // ★ 服务端代码/AIDL 变更时必须 bump：Shizuku 按此版本判断是否重启旧服务进程，
                 //   不 bump 的话装机后仍会绑到旧代码服务，新 AIDL 方法直接 Marshalling 崩
                 // v4: startVirtualGame 增加 win= 窗口布局探测（size-compat 检测）
-                .version(4)
+                // v5: relaunchGameOnVd 启动兜底（游戏进程被 ROM 游戏助手杀掉后，
+                //     StartApp 不再 monkey 回物理主屏，改投虚拟屏）
+                .version(5)
                 .daemon(false)
             args = a
 

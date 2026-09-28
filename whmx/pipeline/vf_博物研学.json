@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-28T10:30:21+08:00",
+        "generatedAt": "2026-09-28T19:21:28+08:00",
         "flowFile": "博物研学.flow.json",
-        "flowHash": "sha256:ef9026445adb079cb83e8cb2258e760e7a74f73d138902aae81c79a7125bdb60",
-        "pipelineHash": "sha256:95c33b7611b5e64e7818a57e25e3a15cbfa18fc109e59a2a7a04542c0f1159c8",
+        "flowHash": "sha256:44faa9b06b45ed1f90d6604e10bb3e88784dd158c7ce46eb925babeb49722d5a",
+        "pipelineHash": "sha256:4f4d679b53c5be908066f2e239575314e85a449500b5f69eec2398c722a9d32c",
         "frameW": 1280,
         "frameH": 720
     },
@@ -685,6 +685,12 @@
         "template": "yanxue_juese_duigou.png",
         "threshold": 0.65,
         "action": "Click",
+        "roi": [
+            1125,
+            667,
+            123,
+            43
+        ],
         "next": [
             "VF_博物研学_13"
         ],
@@ -782,6 +788,7 @@
         "action": "Click",
         "timeout": 8000,
         "post_delay": 600,
+        "pre_delay": 100,
         "target_offset": [
             0,
             -80,
@@ -789,7 +796,7 @@
             0
         ],
         "next": [
-            "VF_博物研学_18"
+            "VF_博物研学_215"
         ],
         "replace": [
             [
@@ -826,6 +833,34 @@
             ]
         ]
     },
+    "VF_博物研学_215": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_博物研学_215_Hit"
+        ],
+        "on_error": [
+            "VF_博物研学_19"
+        ]
+    },
+    "VF_博物研学_215_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yanxue_juese_duigou.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "roi": [
+            1125,
+            667,
+            123,
+            43
+        ],
+        "next": [
+            "VF_博物研学_215"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 800
+    },
     "VF_博物研学_67": {
         "action": "Swipe",
         "begin": [
@@ -841,28 +876,6 @@
         "next": [
             "VF_博物研学_15"
         ]
-    },
-    "VF_博物研学_18": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_博物研学_18_Hit"
-        ],
-        "on_error": [
-            "VF_博物研学_19"
-        ]
-    },
-    "VF_博物研学_18_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "yanxue_juese_duigou.png",
-        "threshold": 0.65,
-        "action": "Click",
-        "next": [
-            "VF_博物研学_18"
-        ],
-        "max_hit": 3,
-        "rate_limit": 200,
-        "post_delay": 800
     },
     "VF_博物研学_19": {
         "action": "DoNothing",
@@ -962,7 +975,7 @@
             0
         ],
         "next": [
-            "VF_博物研学_29"
+            "VF_博物研学_216"
         ],
         "replace": [
             [
@@ -999,6 +1012,34 @@
             ]
         ]
     },
+    "VF_博物研学_216": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_博物研学_216_Hit"
+        ],
+        "on_error": [
+            "VF_博物研学_30"
+        ]
+    },
+    "VF_博物研学_216_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yanxue_juese_duigou.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "roi": [
+            1125,
+            667,
+            123,
+            43
+        ],
+        "next": [
+            "VF_博物研学_216"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 800
+    },
     "VF_博物研学_68": {
         "action": "Swipe",
         "begin": [
@@ -1014,28 +1055,6 @@
         "next": [
             "VF_博物研学_20"
         ]
-    },
-    "VF_博物研学_29": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_博物研学_29_Hit"
-        ],
-        "on_error": [
-            "VF_博物研学_30"
-        ]
-    },
-    "VF_博物研学_29_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "yanxue_juese_duigou.png",
-        "threshold": 0.65,
-        "action": "Click",
-        "next": [
-            "VF_博物研学_29"
-        ],
-        "max_hit": 3,
-        "rate_limit": 200,
-        "post_delay": 800
     },
     "VF_博物研学_30": {
         "action": "DoNothing",
@@ -1134,28 +1153,6 @@
         "next": [
             "VF_博物研学_31"
         ]
-    },
-    "VF_博物研学_35": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_博物研学_35_Hit"
-        ],
-        "on_error": [
-            "VF_博物研学_36"
-        ]
-    },
-    "VF_博物研学_35_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "yanxue_juese_duigou.png",
-        "threshold": 0.65,
-        "action": "Click",
-        "next": [
-            "VF_博物研学_35"
-        ],
-        "max_hit": 3,
-        "rate_limit": 200,
-        "post_delay": 800
     },
     "VF_博物研学_36": {
         "recognition": "OCR",
@@ -1622,7 +1619,7 @@
             "VF_博物研学_188_Hit"
         ],
         "on_error": [
-            "VF_博物研学_73"
+            "VF_博物研学_224"
         ]
     },
     "VF_博物研学_188_Hit": {
@@ -1677,17 +1674,20 @@
         "rate_limit": 200,
         "post_delay": 600
     },
-    "VF_博物研学_73": {
+    "VF_博物研学_224": {
         "action": "DoNothing",
         "timeout": 30000,
         "next": [
-            "VF_博物研学_73_Hit"
+            "VF_博物研学_224_Hit"
+        ],
+        "on_error": [
+            "VF_博物研学_74_W"
         ]
     },
-    "VF_博物研学_73_Hit": {
+    "VF_博物研学_224_Hit": {
         "recognition": "TemplateMatch",
         "template": "ks.png",
-        "threshold": 0.7,
+        "threshold": 0.65,
         "action": "Click",
         "roi": [
             1065,
@@ -1695,12 +1695,12 @@
             102,
             39
         ],
-        "rate_limit": 200,
-        "pre_delay": 300,
-        "post_delay": 600,
         "next": [
-            "VF_博物研学_74_W"
-        ]
+            "VF_博物研学_224"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_博物研学_74_W": {
         "action": "DoNothing",
@@ -2401,7 +2401,7 @@
             0
         ],
         "next": [
-            "VF_博物研学_102"
+            "VF_博物研学_218"
         ],
         "replace": [
             [
@@ -2438,27 +2438,33 @@
             ]
         ]
     },
-    "VF_博物研学_102": {
+    "VF_博物研学_218": {
         "action": "DoNothing",
         "timeout": 3000,
         "next": [
-            "VF_博物研学_102_Hit"
+            "VF_博物研学_218_Hit"
         ],
         "on_error": [
             "VF_博物研学_103"
         ]
     },
-    "VF_博物研学_102_Hit": {
+    "VF_博物研学_218_Hit": {
         "recognition": "TemplateMatch",
         "template": "yanxue_juese_duigou.png",
         "threshold": 0.65,
         "action": "Click",
+        "roi": [
+            1125,
+            667,
+            123,
+            43
+        ],
         "next": [
-            "VF_博物研学_102"
+            "VF_博物研学_218"
         ],
         "max_hit": 3,
         "rate_limit": 200,
-        "post_delay": 1000
+        "post_delay": 800
     },
     "VF_博物研学_103": {
         "action": "DoNothing",
@@ -2522,7 +2528,7 @@
         ],
         "pre_delay": 1000,
         "next": [
-            "VF_博物研学_106"
+            "VF_博物研学_223"
         ],
         "replace": [
             [
@@ -2559,17 +2565,20 @@
             ]
         ]
     },
-    "VF_博物研学_106": {
+    "VF_博物研学_223": {
         "action": "DoNothing",
         "timeout": 30000,
         "next": [
-            "VF_博物研学_106_Hit"
+            "VF_博物研学_223_Hit"
+        ],
+        "on_error": [
+            "VF_博物研学_200"
         ]
     },
-    "VF_博物研学_106_Hit": {
+    "VF_博物研学_223_Hit": {
         "recognition": "TemplateMatch",
         "template": "ks.png",
-        "threshold": 0.7,
+        "threshold": 0.65,
         "action": "Click",
         "roi": [
             1065,
@@ -2577,12 +2586,12 @@
             102,
             39
         ],
-        "rate_limit": 200,
-        "pre_delay": 600,
-        "post_delay": 800,
         "next": [
-            "VF_博物研学_200"
-        ]
+            "VF_博物研学_223"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_博物研学_200": {
         "action": "DoNothing",
@@ -3024,7 +3033,7 @@
             0
         ],
         "next": [
-            "VF_博物研学_124"
+            "VF_博物研学_219"
         ],
         "replace": [
             [
@@ -3061,27 +3070,33 @@
             ]
         ]
     },
-    "VF_博物研学_124": {
+    "VF_博物研学_219": {
         "action": "DoNothing",
         "timeout": 3000,
         "next": [
-            "VF_博物研学_124_Hit"
+            "VF_博物研学_219_Hit"
         ],
         "on_error": [
             "VF_博物研学_125"
         ]
     },
-    "VF_博物研学_124_Hit": {
+    "VF_博物研学_219_Hit": {
         "recognition": "TemplateMatch",
         "template": "yanxue_juese_duigou.png",
         "threshold": 0.65,
         "action": "Click",
+        "roi": [
+            1125,
+            667,
+            123,
+            43
+        ],
         "next": [
-            "VF_博物研学_124"
+            "VF_博物研学_219"
         ],
         "max_hit": 3,
         "rate_limit": 200,
-        "post_delay": 1000
+        "post_delay": 800
     },
     "VF_博物研学_125": {
         "action": "DoNothing",
@@ -3148,7 +3163,7 @@
             45
         ],
         "next": [
-            "VF_博物研学_128"
+            "VF_博物研学_220"
         ],
         "replace": [
             [
@@ -3185,17 +3200,20 @@
             ]
         ]
     },
-    "VF_博物研学_128": {
+    "VF_博物研学_220": {
         "action": "DoNothing",
         "timeout": 30000,
         "next": [
-            "VF_博物研学_128_Hit"
+            "VF_博物研学_220_Hit"
+        ],
+        "on_error": [
+            "VF_博物研学_129_W"
         ]
     },
-    "VF_博物研学_128_Hit": {
+    "VF_博物研学_220_Hit": {
         "recognition": "TemplateMatch",
         "template": "ks.png",
-        "threshold": 0.7,
+        "threshold": 0.65,
         "action": "Click",
         "roi": [
             1065,
@@ -3203,12 +3221,12 @@
             102,
             39
         ],
-        "rate_limit": 200,
-        "pre_delay": 300,
-        "post_delay": 600,
         "next": [
-            "VF_博物研学_129_W"
-        ]
+            "VF_博物研学_220"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_博物研学_129_W": {
         "action": "DoNothing",
@@ -3477,7 +3495,7 @@
         ],
         "pre_delay": 1000,
         "next": [
-            "VF_博物研学_139"
+            "VF_博物研学_221"
         ],
         "replace": [
             [
@@ -3514,17 +3532,20 @@
             ]
         ]
     },
-    "VF_博物研学_139": {
+    "VF_博物研学_221": {
         "action": "DoNothing",
         "timeout": 30000,
         "next": [
-            "VF_博物研学_139_Hit"
+            "VF_博物研学_221_Hit"
+        ],
+        "on_error": [
+            "VF_博物研学_140_W"
         ]
     },
-    "VF_博物研学_139_Hit": {
+    "VF_博物研学_221_Hit": {
         "recognition": "TemplateMatch",
         "template": "ks.png",
-        "threshold": 0.7,
+        "threshold": 0.65,
         "action": "Click",
         "roi": [
             1065,
@@ -3532,12 +3553,12 @@
             102,
             39
         ],
-        "rate_limit": 200,
-        "pre_delay": 600,
-        "post_delay": 800,
         "next": [
-            "VF_博物研学_140_W"
-        ]
+            "VF_博物研学_221"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_博物研学_140_W": {
         "action": "DoNothing",
@@ -4105,7 +4126,7 @@
         ],
         "pre_delay": 1000,
         "next": [
-            "VF_博物研学_161"
+            "VF_博物研学_222"
         ],
         "replace": [
             [
@@ -4142,17 +4163,20 @@
             ]
         ]
     },
-    "VF_博物研学_161": {
+    "VF_博物研学_222": {
         "action": "DoNothing",
         "timeout": 30000,
         "next": [
-            "VF_博物研学_161_Hit"
+            "VF_博物研学_222_Hit"
+        ],
+        "on_error": [
+            "VF_博物研学_162_W"
         ]
     },
-    "VF_博物研学_161_Hit": {
+    "VF_博物研学_222_Hit": {
         "recognition": "TemplateMatch",
         "template": "ks.png",
-        "threshold": 0.7,
+        "threshold": 0.65,
         "action": "Click",
         "roi": [
             1065,
@@ -4160,12 +4184,12 @@
             102,
             39
         ],
-        "rate_limit": 200,
-        "pre_delay": 600,
-        "post_delay": 800,
         "next": [
-            "VF_博物研学_162_W"
-        ]
+            "VF_博物研学_222"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_博物研学_162_W": {
         "action": "DoNothing",
@@ -4566,7 +4590,7 @@
             0
         ],
         "next": [
-            "VF_博物研学_35"
+            "VF_博物研学_217"
         ],
         "replace": [
             [
@@ -4602,6 +4626,34 @@
                 "兔形陶埙"
             ]
         ]
+    },
+    "VF_博物研学_217": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_博物研学_217_Hit"
+        ],
+        "on_error": [
+            "VF_博物研学_36"
+        ]
+    },
+    "VF_博物研学_217_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "yanxue_juese_duigou.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "roi": [
+            1125,
+            667,
+            123,
+            43
+        ],
+        "next": [
+            "VF_博物研学_217"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 800
     },
     "VF_博物研学_End": {
         "action": "DoNothing",

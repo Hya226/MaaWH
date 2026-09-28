@@ -542,6 +542,22 @@ public class ShellUserService extends IUserService.Stub {
         return sb.toString();
     }
 
+    /**
+     * 【启动兜底】把游戏重新投到虚拟屏并确认落位（引擎 StartApp 回调路径，2026-09-28）。
+     * 背景：StartApp 走到「进程不在」分支，多半是 ROM 游戏助手（荣耀/华为实测）杀掉了
+     * 虚拟屏里的游戏实例——此时 App 侧的 monkey 兜底没有 display 概念，会把游戏直接
+     * 开回物理主屏，用户看到「游戏跳出虚拟屏」。复用 launchOnDisplay（自带 force-stop
+     * 冷启动，防半死 task 复用主屏落点）+ ensureGameOnDisplay（落点确认 + 漂移拉回）。
+     */
+    @Override
+    public synchronized String relaunchGameOnVd() {
+        if (mVdId < 0) return "vd off";
+        StringBuilder sb = new StringBuilder();
+        sb.append("launch=").append(launchOnDisplay(mVdId)).append(' ');
+        sb.append("pin=").append(ensureGameOnDisplay(mVdId, 6000));
+        return sb.toString();
+    }
+
     /** 用 ActivityOptions.launchDisplayId + IActivityManager.startActivityAsUser 把游戏投到虚拟屏 */
     private String launchOnDisplay(int displayId) {
         StringBuilder sb = new StringBuilder();

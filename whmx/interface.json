@@ -85,7 +85,7 @@
         "daily"
       ],
       "option": [
-        "次数"
+        "实验室·次数"
       ]
     },
     {
@@ -839,6 +839,93 @@
         }
       ],
       "default_case": "01"
+    },
+    "实验室·次数": {
+      "type": "select",
+      "label": "实验室·次数",
+      "cases": [
+        {
+          "name": "2",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 1
+            }
+          }
+        },
+        {
+          "name": "3",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 2
+            }
+          }
+        },
+        {
+          "name": "4",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 3
+            }
+          }
+        },
+        {
+          "name": "5",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 4
+            }
+          }
+        },
+        {
+          "name": "6",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 5
+            }
+          }
+        },
+        {
+          "name": "7",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 6
+            }
+          }
+        },
+        {
+          "name": "8",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 7
+            }
+          }
+        },
+        {
+          "name": "9",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 8
+            }
+          }
+        },
+        {
+          "name": "10",
+          "pipeline_override": {
+            "VF_实验室_08": {
+              "repeat": 9
+            }
+          }
+        },
+        {
+          "name": "最大",
+          "pipeline_override": {
+            "VF_实验室_08_Hit": {
+              "template": "zuida.png"
+            }
+          }
+        }
+      ],
+      "default_case": "2"
     }
   }
 }

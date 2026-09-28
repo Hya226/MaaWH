@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-27T14:23:09+08:00",
+        "generatedAt": "2026-09-28T19:46:31+08:00",
         "flowFile": "实验室.flow.json",
-        "flowHash": "sha256:220fb92d2968d9ecbe119315113e168921716a60326668c5b50d25ee807e0ff2",
-        "pipelineHash": "sha256:4ec35aa15a1fe41cf84527ca47bbe745a383bb8ee349f81c3d8fc0c31731bfdf",
+        "flowHash": "sha256:a08e89ddf39b7579c804c15921b961b749d0802c26e20f11545438423b4c42e2",
+        "pipelineHash": "sha256:9a590f183b82b888c44b8d021fb42736ea4457b92f985f2649b181bb8ee8be2d",
         "frameW": 1280,
         "frameH": 720
     },
@@ -303,7 +303,7 @@
             "VF_实验室_10_Hit"
         ],
         "on_error": [
-            "VF_实验室_11"
+            "VF_实验室_13"
         ]
     },
     "VF_实验室_10_Hit": {
@@ -317,9 +317,21 @@
         "rate_limit": 200,
         "post_delay": 600
     },
+    "VF_实验室_13": {
+        "action": "Click",
+        "target": [
+            320,
+            247
+        ],
+        "post_delay": 500,
+        "pre_delay": 500,
+        "next": [
+            "VF_实验室_11"
+        ]
+    },
     "VF_实验室_11": {
         "action": "DoNothing",
-        "timeout": 10000,
+        "timeout": 15000,
         "next": [
             "VF_实验室_11_Hit"
         ]

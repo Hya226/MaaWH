@@ -507,15 +507,13 @@ object MaaBridge {
         cb.startApp = MaaCustomControllerCallbacks.StartAppCb { intent, _ ->
             try {
                 val i = intent ?: ""
+                val pkg = i.substringBefore('/')
                 val act: String =
-                    if (i.contains("/")) {
-                        ShizukuShell.execBlocking("am", "start", "-n", i)
-                        "am start -n $i"
-                    } else {
-                        // 游戏进程已在运行则跳过 monkey：避免「启动已把游戏送进虚拟屏后，
+                    if (pkg == MaaConst.GAME_PKG) {
+                        // 游戏进程已在运行则跳过重启：避免「启动已把游戏送进虚拟屏后，
                         // 刷冬谷币又整包冷启动一遍、重弹公告」。只有进程不在时才拉起来。
                         val running = try {
-                            val out = ShizukuShell.execBlocking("pidof", i)
+                            val out = ShizukuShell.execBlocking("pidof", pkg)
                             out.toString(Charsets.UTF_8).trim().isNotEmpty()
                         } catch (e: Throwable) {
                             false
@@ -523,9 +521,25 @@ object MaaBridge {
                         if (running) {
                             "skip(already running)"
                         } else {
-                            ShizukuShell.execBlocking("monkey", "-p", i, "1")
-                            "monkey -p $i 1"
+                            // monkey/am 没有 display 概念：进程消失多半是 ROM 游戏助手
+                            // （荣耀/华为实测）杀掉了虚拟屏里的游戏实例，裸 monkey 会把
+                            // 游戏直接开回物理主屏（用户看到「游戏跳出虚拟屏」）。
+                            // 虚拟屏活着时一律走服务端投屏重启（launchDisplayId + 落点确认），
+                            // 虚拟屏没开/服务不可达才回退 monkey。
+                            val r = ShizukuShell.relaunchGameOnVd()
+                            if (r != null && !r.startsWith("vd off")) {
+                                "投虚拟屏重启 [$r]"
+                            } else {
+                                ShizukuShell.execBlocking("monkey", "-p", i, "1")
+                                "monkey -p $i 1（虚拟屏不可用，回退默认启动）"
+                            }
                         }
+                    } else if (i.contains("/")) {
+                        ShizukuShell.execBlocking("am", "start", "-n", i)
+                        "am start -n $i"
+                    } else {
+                        ShizukuShell.execBlocking("monkey", "-p", i, "1")
+                        "monkey -p $i 1"
                     }
                 onLog("启动App: $i -> $act")
                 1
