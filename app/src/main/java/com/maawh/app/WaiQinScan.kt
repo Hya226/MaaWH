@@ -19,8 +19,9 @@ import kotlin.math.min
  *
  * 流程：抓帧等稳 → 裁左右两个标题框 OCR → 归一后对名单匹配（精确 → 编辑距离≤2 唯一
  * 最近邻）→ 命中置 1（内存 Set，任务结束丢弃，每次运行从全 0 开始）→ 点 (1161,352) 翻页。
- * 终止：本页两个名字与上一页完全一致累计 3 次（= 翻到底/点击失效）；兜底：连续 3 页
- * 识别不完整判 OCR/页面异常退出；MAX_PAGES 防死循环。
+ * 终止：本页两个名字与上一页完全一致累计 3 次（= 翻到底/点击失效）；最后一页只有左
+ * 记录（名单奇数条时的常态）按「右框空白 + 左框同一条目连续 3 次」同样正常收尾。
+ * 兜底：连续 3 页识别不完整（两框都失败/左框失败）判 OCR/页面异常退出；MAX_PAGES 防死循环。
  * 结束输出名单中本轮没出现的条目（带器者括注）到日志区 + files/waiqin/missing.txt。
  *
  * 名单随包（assets/waiqin/roster.json，构建时由仓库 waiqin/ 同步）：运行时直读，
@@ -54,9 +55,9 @@ class WaiQinScan(
     private var roster: List<Entry> = emptyList()
     private var normNames: List<String> = emptyList()
 
-    /** 与上一页完全一致累计到此即判翻到底 */
+    /** 与上一页完全一致累计到此即判翻到底（双框完整页与"右框空白"的单侧页共用） */
     private val matchesToEnd = 3
-    /** 连续识别不完整页到此判异常 */
+    /** 连续识别不完整页到此判异常（只数两框都失败/左框失败；右框空白是最后一页常态，不算） */
     private val badPagesToAbort = 3
     /** 40 条/每页 2 条 = 20 页 + 重合 3 页 + 余量 */
     private val maxPages = 30
@@ -79,6 +80,10 @@ class WaiQinScan(
         var prevR = -1
         var matchRun = 0
         var badRun = 0
+        // 单侧页（右框空白，最后一页常态）的重合状态：上一轮左框命中的条目 + 连续计数，
+        // 与完整页的 prevL/prevR/matchRun 互斥维护（两种页面形态各自计各自的）
+        var prevSingle = -1
+        var singleMatchRun = 0
         var pages = 0
 
         while (true) {
@@ -113,22 +118,42 @@ class WaiQinScan(
                         throw ScanException("连续 $badRun 页无法识别，已中止（OCR 异常或页面异常）")
                     }
                     onLog("第 $pages 页两框都识别失败（左「$lraw」右「$rraw」），跳过继续（$badRun/$badPagesToAbort）", LogLevel.WRN)
-                    prevL = -1; prevR = -1; matchRun = 0
+                    prevL = -1; prevR = -1; matchRun = 0; prevSingle = -1
                 }
-                li == null || ri == null -> {
-                    // 框级处理：识别成功的框可靠（能对上名单），照常置 1；
-                    // 但页不完整不能参与重合判定（另一框是否与上页相同不可知）
+                li == null -> {
+                    // 左框失败右框成功：左框是主识别区，这不是"最后一页只有左记录"的形态
+                    // （列表从左往右填，末页不会有"只有右记录"），大概率框位/OCR 异常，保留兜底
                     badRun++
-                    val badSide = if (li == null) "左" else "右"
-                    val raw = if (li == null) lraw else rraw
                     if (badRun >= badPagesToAbort) {
-                        throw ScanException("连续 $badRun 页识别不完整（本页${badSide}框「$raw」），已中止（框位或名单是否需要更新？）")
+                        throw ScanException("连续 $badRun 页左框识别失败（右框「$rraw」），已中止（框位或名单是否需要更新？）")
                     }
-                    onLog("第 $pages 页${badSide}框识别失败（「$raw」），本页不计重合，继续（$badRun/$badPagesToAbort）", LogLevel.WRN)
-                    prevL = -1; prevR = -1; matchRun = 0
+                    onLog("第 $pages 页左框识别失败（右「$rraw」），本页不计重合，继续（$badRun/$badPagesToAbort）", LogLevel.WRN)
+                    prevL = -1; prevR = -1; matchRun = 0; prevSingle = -1
+                }
+                ri == null -> {
+                    // 右框空白：名单奇数条时最后一页只有左边有记录，是正常页面形态——
+                    // 左框连续命中同一条目（= 翻页点击已无效，到底了）即正常收尾，不计 badRun。
+                    // 右侧若 OCR 出了字但匹配不上名单（rraw 非空），日志带上原文便于发现名单缺新见闻
+                    badRun = 0
+                    if (li == prevSingle) singleMatchRun++ else singleMatchRun = 0
+                    prevSingle = li
+                    val rnote = if (rraw.isEmpty()) "右侧无记录" else "右侧「$rraw」未匹配名单"
+                    if (singleMatchRun >= matchesToEnd) {
+                        onLog(
+                            "第 $pages 页$rnote（左：${roster[li].name}），单侧重合 " +
+                                "$singleMatchRun/$matchesToEnd——已到最后一页，扫描收尾",
+                            LogLevel.INFO
+                        )
+                        break
+                    }
+                    onLog(
+                        "第 $pages 页$rnote（左：${roster[li].name}），单侧重合 $singleMatchRun/$matchesToEnd",
+                        LogLevel.TRACE
+                    )
                 }
                 else -> {
                     badRun = 0
+                    prevSingle = -1
                     if (li == prevL && ri == prevR) {
                         matchRun++
                         onLog("第 $pages 页与上一页相同（${roster[li].name}、${roster[ri].name}），重合 $matchRun/$matchesToEnd", LogLevel.TRACE)
