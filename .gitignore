@@ -89,3 +89,5 @@ _tools/*.xml
 
 # CMake/NDK 构建中间目录
 app/.cxx/
+app/src/main/assets/gacha/names.json
+app/src/main/assets/gacha/points.json
