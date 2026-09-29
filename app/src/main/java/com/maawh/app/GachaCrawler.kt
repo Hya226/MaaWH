@@ -652,8 +652,10 @@ class GachaCrawler(
         /** 游戏单池最多 18 页左右；60 是保险上限，防止异常页面无限翻 */
         private const val MAX_PAGES = 60
 
-        /** 下拉展开面板的区域（frame_dropdown.jpg 实测 ≈x1047..1232, y178..362），用于判"面板是否还开着" */
-        private val DROPDOWN_PANEL = Points.R(1047, 178, 185, 184)
+        /** 下拉展开面板的区域（frame_dropdown.jpg 实测 ≈x1047..1232；2026-09-29 面板
+         *  加「赛季渠道」后 5 项到 y≈404），用于判"面板是否还开着"——只比对开着/收起
+         *  的哈希差异，覆盖部分面板即可工作，但框全更稳 */
+        private val DROPDOWN_PANEL = Points.R(1047, 178, 185, 226)
 
         /**
          * 下拉面板的「面板外收起」点击点（面板右上外侧空白，用户实测可关闭面板；

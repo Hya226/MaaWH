@@ -2834,7 +2834,7 @@ class MainActivity : AppCompatActivity() {
         val pools = try {
             GachaCrawler.Points.load(ctx).pools
         } catch (e: Throwable) {
-            listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道")
+            listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道", "赛季渠道")
         }
         val upPools = listOf("限时渠道", "限定渠道")
 
@@ -3438,7 +3438,7 @@ class MainActivity : AppCompatActivity() {
         val pools = try {
             GachaCrawler.Points.load(applicationContext).pools
         } catch (e: Throwable) {
-            listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道")
+            listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道", "赛季渠道")
         }
         val upMarks = GachaStore.loadUpMarks(applicationContext)
         container.addView(buildStatRow(pools, all, upMarks))
