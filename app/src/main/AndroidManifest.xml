@@ -18,6 +18,13 @@
     <!-- 拉起系统安装器安装下载的新 APK（用户需在系统设置允许「安装未知应用」） -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- Android 11+ 包可见性：不声明这个，本应用查不到 Shizuku 的包信息——
+         getPackageInfo 抛 NameNotFoundException、getLaunchIntentForPackage 返回 null，
+         于是"Shizuku 已运行但未授权"会被错报成"未安装 Shizuku"，"打开 Shizuku"按钮也点不动 -->
+    <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+    </queries>
+
     <!-- 自定义 Application：把界面整体缩放（DisplayScale）挂到 applicationContext，
          悬浮窗用 applicationContext 建视图，只在 Activity 层包一层管不到它 -->
     <application

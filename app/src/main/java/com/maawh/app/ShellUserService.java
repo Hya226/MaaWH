@@ -196,30 +196,64 @@ public class ShellUserService extends IUserService.Stub {
     private static final int VD_FLAG_DEVICE_DISPLAY_GROUP = 1 << 15;
     private static final int VD_FLAG_STEAL_TOP_FOCUS_DISABLED = 1 << 16;
 
+    /** 建虚拟屏的 flag 名单（反射取真实常量，避免手写位数出错；本 ROM 没有的常量自动跳过）。
+     *  ★ TRUSTED 要签名权限 ADD_TRUSTED_DISPLAY：Android 12/12L 的 com.android.shell 没这个
+     *  权限，带上它会被 DisplayManagerService 直接拒（`SecurityException: Requires
+     *  ADD_TRUSTED_DISPLAY permission to create a trusted virtual display.`）→ 整块虚拟屏建不出来，
+     *  用户侧表现是预览全黑 + 引擎退回截物理屏（识别全废、点击打在手机屏幕上）。Android 13
+     *  起 shell 才被授予该权限（scrcpy 也是据此把 TRUSTED 门控在 13+），所以按版本决定传不传。 */
+    private static final String[] VD_FLAG_NAMES = {
+        "VIRTUAL_DISPLAY_FLAG_PUBLIC",
+        "VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY",
+        "VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH",
+        "VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL",
+        "VIRTUAL_DISPLAY_FLAG_TRUSTED",
+        "VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP",
+        "VIRTUAL_DISPLAY_FLAG_ALWAYS_UNLOCKED",
+        "VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED",
+        "VIRTUAL_DISPLAY_FLAG_OWN_FOCUS",
+        "VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP",
+        "VIRTUAL_DISPLAY_FLAG_STEAL_TOP_FOCUS_DISABLED"
+    };
+
+    /** 建屏 flag 的降级档位。★ 为什么做阶梯而不是一次判定：Android 12 上同一个签名权限
+     *  ADD_TRUSTED_DISPLAY 卡住**两个** flag——TRUSTED 报 "trusted virtual display"，
+     *  OWN_DISPLAY_GROUP 报 "which is not in the default DisplayGroup"；而每个 ROM 究竟卡哪几个
+     *  flag 并不一致，这类机器又常常不在手边（一轮排查要等用户回传日志），所以从起始档位起
+     *  被拒就自动下一档，最终档位写进返回串（`vd_flags=full|no-trusted|no-priv|minimal`）。
+     *  0 full=能反射到的全给（13+ 的历史行为）/ 1 去掉 TRUSTED / 2 再去掉 OWN_DISPLAY_GROUP
+     *  / 3 minimal=只留建屏与投屏必需（PUBLIC + OWN_CONTENT_ONLY + SUPPORTS_TOUCH）。 */
+    private static final String[] VD_TIER_NAMES = { "full", "no-trusted", "no-priv", "minimal" };
+
+    /** 起始档位：Android 13(T) 起 com.android.shell 才有 ADD_TRUSTED_DISPLAY，12/12L 直接跳过有权限要求的那两档 */
+    private static int vdStartTier() {
+        return android.os.Build.VERSION.SDK_INT >= 33 ? 0 : 2;
+    }
+
+    private static boolean vdFlagRequired(String n) {
+        return n.equals("VIRTUAL_DISPLAY_FLAG_PUBLIC")
+            || n.equals("VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY")
+            || n.equals("VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH");
+    }
+
+    private static int vdFlags(int tier) {
+        int flags = 0;
+        for (String n : VD_FLAG_NAMES) {
+            if (tier >= 1 && n.contains("TRUSTED")) continue;
+            if (tier >= 2 && n.contains("OWN_DISPLAY_GROUP")) continue;
+            if (tier >= 3 && !vdFlagRequired(n)) continue;
+            try {
+                flags |= android.hardware.display.DisplayManager.class.getField(n).getInt(null);
+            } catch (Throwable ignored) {
+            }
+        }
+        return flags;
+    }
+
     private android.hardware.display.VirtualDisplay createVdProbe(StringBuilder sb) {
         try {
-            // 用反射取真实 flag 常量，避免写错位数
-            int flags = 0;
-            String[] names = {
-                "VIRTUAL_DISPLAY_FLAG_PUBLIC",
-                "VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY",
-                "VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH",
-                "VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL",
-                "VIRTUAL_DISPLAY_FLAG_TRUSTED",
-                "VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP",
-                "VIRTUAL_DISPLAY_FLAG_ALWAYS_UNLOCKED",
-                "VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED",
-                "VIRTUAL_DISPLAY_FLAG_OWN_FOCUS",
-                "VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP",
-                "VIRTUAL_DISPLAY_FLAG_STEAL_TOP_FOCUS_DISABLED"
-            };
-            for (String n : names) {
-                try {
-                    java.lang.reflect.Field f = android.hardware.display.DisplayManager.class.getField(n);
-                    flags |= f.getInt(null);
-                } catch (Throwable ignored) {
-                }
-            }
+            // 与生产路径同口径取 flag（探针要能反映真实建屏条件，别再单独攒一份）
+            int flags = vdFlags(vdStartTier());
             sb.append("vd_flags=0x").append(Integer.toHexString(flags)).append('\n');
 
             int w = 1080, h = 1920, dpi = 320;
@@ -453,22 +487,6 @@ public class ShellUserService extends IUserService.Stub {
         StringBuilder sb = new StringBuilder();
         try {
             if (mVd == null) {
-                int flags = 0;
-                String[] names = {
-                    "VIRTUAL_DISPLAY_FLAG_PUBLIC", "VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY",
-                    "VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH", "VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL",
-                    "VIRTUAL_DISPLAY_FLAG_TRUSTED", "VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP",
-                    "VIRTUAL_DISPLAY_FLAG_ALWAYS_UNLOCKED", "VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED",
-                    "VIRTUAL_DISPLAY_FLAG_OWN_FOCUS", "VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP",
-                    "VIRTUAL_DISPLAY_FLAG_STEAL_TOP_FOCUS_DISABLED"
-                };
-                for (String n : names) {
-                    try {
-                        java.lang.reflect.Field f = android.hardware.display.DisplayManager.class.getField(n);
-                        flags |= f.getInt(null);
-                    } catch (Throwable ignored) {
-                    }
-                }
                 int w = VD_W, h = VD_H, dpi = VD_DPI; // 1280x720：与 whmx 基准帧同尺寸
                 // API 29+：给 ImageReader 显式加 GPU_SAMPLED_IMAGE usage——同一块帧缓冲既可
                 // CPU 读（grabVirtualFrame 引擎截图）也可作 GPU 纹理（预览零拷贝直绘）；
@@ -494,7 +512,22 @@ public class ShellUserService extends IUserService.Stub {
                     android.hardware.display.DisplayManager.class.getDeclaredConstructor(Context.class);
                 ctor.setAccessible(true);
                 android.hardware.display.DisplayManager dm = ctor.newInstance(new ShellCtx(mContext));
-                mVd = dm.createVirtualDisplay("MaaWH-VD", w, h, dpi, ir.getSurface(), flags);
+                // 建屏 flag 逐级降级：13+ 从 full 起（与历史行为一致），被 DMS 拒就下一档，
+                // 档次见 VD_TIER_NAMES。少掉的那几个只是"待遇"（系统装饰/免触摸输入/独立
+                // display group），建屏、投应用、注入触摸都不依赖它们。
+                int tier = vdStartTier();
+                while (true) {
+                    try {
+                        mVd = dm.createVirtualDisplay("MaaWH-VD", w, h, dpi, ir.getSurface(), vdFlags(tier));
+                        break;
+                    } catch (SecurityException | IllegalArgumentException e) {
+                        if (tier >= VD_TIER_NAMES.length - 1) throw e;
+                        sb.append("vd_flags_denied(").append(e.getMessage()).append(") → 降到 ")
+                          .append(VD_TIER_NAMES[tier + 1]).append('\n');
+                        tier++;
+                    }
+                }
+                sb.append("vd_flags=").append(VD_TIER_NAMES[tier]).append('\n');
                 mReader = ir;
                 mVdId = mVd.getDisplay().getDisplayId();
                 // 点亮虚拟屏，保证可接收输入/渲染

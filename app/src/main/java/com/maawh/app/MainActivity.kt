@@ -2333,9 +2333,13 @@ class MainActivity : AppCompatActivity() {
         if (::onboarding.isInitialized && onboarding.isActive) return
         if (shizukuReady()) return
         val case = when {
+            // ★ 顺序有讲究：binder 能 ping 通就说明 Shizuku 装着且服务在跑，只剩授权问题。
+            // 不能反过来先查"是否安装"——Android 11+ 包可见性会让 getPackageInfo 查不到
+            // （Manifest 里的 <queries> 是修这个的），一旦某台机器上仍被过滤，
+            // 就会像用户实测那样：Shizuku 明明在运行，MaaWH 却弹"未安装 Shizuku"
+            shizukuRunning() -> CASE_NOT_GRANTED
             !isShizukuInstalled() -> CASE_NOT_INSTALLED
-            !shizukuRunning() -> CASE_NOT_RUNNING
-            else -> CASE_NOT_GRANTED
+            else -> CASE_NOT_RUNNING
         }
         // 同一状态已提示过就不再弹（用户从 Shizuku 启动服务回来后状态变化会重新检测）
         if (case == lastPromptedCase) return

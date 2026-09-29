@@ -582,7 +582,9 @@ object ShizukuShell {
                 // v4: startVirtualGame 增加 win= 窗口布局探测（size-compat 检测）
                 // v5: relaunchGameOnVd 启动兜底（游戏进程被 ROM 游戏助手杀掉后，
                 //     StartApp 不再 monkey 回物理主屏，改投虚拟屏）
-                .version(5)
+                // v6: 建屏 flag 阶梯降级（Android 12/12L 无 ADD_TRUSTED_DISPLAY 权限，
+                //     TRUSTED/OWN_DISPLAY_GROUP 会被 DMS 拒 → 自动降到 no-priv 档）
+                .version(6)
                 .daemon(false)
             args = a
 

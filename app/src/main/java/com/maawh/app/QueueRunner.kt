@@ -62,6 +62,10 @@ class QueueRunner(
     /** 最近一次上报到状态行的节点名（同节点不重复刷） */
     private var lastNode: String? = null
 
+    /** 进程/帧流守护线程的退出旗标（见 startGameWatchdog） */
+    @Volatile
+    private var watchdogStop = false
+
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private fun notify(block: () -> Unit) {
@@ -147,8 +151,13 @@ class QueueRunner(
             ShizukuShell.syncVdMode()
             var ok = true
             val failed = ArrayList<String>()
+            // 虚拟屏没建起来（如 Android 12 上带 TRUSTED 被拒）：后续任务会操作物理屏，必须中止
+            var vdDead = false
             // 跟读引擎日志：把"识别失败 / 超时 / 节点失败 / 包校验失败"按性质打进日志区
             val stopTail = startEngineLogTail()
+            // 进程/帧流守护：远端用户报"游戏进虚拟屏一瞬间就没然后了"时，识别超时日志分不清
+            // 是【加载慢】还是【进程被杀、画面停在最后一帧】——后者等多久都不可能识别成功
+            val stopWatchdog = startGameWatchdog()
             try {
                 for ((idx, item) in planTasks.withIndex()) {
                     if (stopRequested) {
@@ -199,8 +208,16 @@ class QueueRunner(
                                 }
                                 rr
                             } else {
-                                cb.onLog("虚拟屏未就绪，跳过收口", LogLevel.INFO)
-                                true
+                                // 虚拟屏没建起来 = 后面每个任务都会拿物理屏当游戏画面（截图走
+                                // screencap -p、点击打在手机屏幕上），所以不能当成功继续跑。
+                                vdDead = true
+                                cb.onLog(
+                                    "✗ 虚拟屏未就绪（原因见上方 start_err / vd_flags_denied 那几行）：" +
+                                        "后续任务的截图与点击会落到手机物理屏上，已中止本次队列。" +
+                                        "请把这几行日志反馈给开发者。",
+                                    LogLevel.ERR
+                                )
+                                false
                             }
                         } else if (item.entry == "关闭游戏" || item.name == "关闭游戏") {
                             // 关闭游戏：强杀游戏进程（放在一键长草末尾，跑完即退出游戏）
@@ -280,12 +297,17 @@ class QueueRunner(
                         ok = false
                         if (!stopRequested) {
                             failed += item.label
-                            cb.onLog("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）", LogLevel.WRN)
+                            // 虚拟屏死了是唯一例外：后面的任务会操作错屏，不提示"继续执行"
+                            if (!vdDead) {
+                                cb.onLog("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）", LogLevel.WRN)
+                            }
                         }
                     }
+                    if (vdDead) break
                 }
             } finally {
                 stopTail()          // 收尾：把折叠掉的重复次数与归类小结打出来
+                stopWatchdog()
             }
             // 任务结束：勾选「游戏启动后关闭游戏声音」时，
             // 若游戏仍在运行（虚拟屏未退出）则保持静音效果，不主动恢复声音；
@@ -429,6 +451,59 @@ class QueueRunner(
 
     /** 游戏主进程是否还在跑（精确匹配进程名；Shizuku 不可用时按"在跑"处理，避免误报"已关闭"） */
     private fun gameAlive(): Boolean = gamePids().isNotEmpty()
+
+    /**
+     * 「游戏进程 / 虚拟屏帧流」守护（2026-09-28 加，只记日志、不改流程）。
+     *
+     * 起因：远端用户报「游戏进虚拟屏一瞬间，然后就没有然后了」，而日志里只有一串识别超时——
+     * 分不清是【游戏加载慢】还是【进程被杀/卡死、虚拟屏停在最后一帧】，后者等多久都不可能
+     * 识别成功（帧缓存永远返回那张旧帧）。有了这两行，下一轮看日志就能定性：
+     *   ①`游戏进程消失` 意味着进程真没了（虚拟屏里什么都没了，画面定格）；
+     *   ②`虚拟屏已 N 秒没有新帧` 是辅助信号——也可能是画面本身静止（游戏不动就不出帧），
+     *     所以要和①一起看。状态没变化时不打日志，避免刷屏。
+     */
+    private fun startGameWatchdog(): () -> Unit {
+        watchdogStop = false
+        val t = Thread {
+            var lastAlive: Boolean? = null
+            var lastConsumed = -1L
+            var stallMs = 0L
+            while (!watchdogStop && running) {
+                Thread.sleep(2000)
+                val alive = gameAlive()
+                if (lastAlive == null) {
+                    if (alive) cb.onLog("游戏进程已在运行（${gamePids().joinToString(" ")}）", LogLevel.INFO)
+                } else if (alive != lastAlive) {
+                    cb.onLog(
+                        if (alive) "游戏进程重新出现（${gamePids().joinToString(" ")}）"
+                        else "✗ 游戏进程消失：虚拟屏里已经没有游戏了，画面会定格在最后一帧",
+                        if (alive) LogLevel.INFO else LogLevel.ERR
+                    )
+                }
+                lastAlive = alive
+                if (!ShizukuShell.vdMode) continue
+                val c = ShizukuShell.previewConsumedCount()
+                if (lastConsumed < 0 || c != lastConsumed) {
+                    lastConsumed = c
+                    stallMs = 0
+                } else {
+                    stallMs += 2000
+                    // 只提示一次；帧计数重新增长（or 下个循环）会自然归零
+                    if (stallMs == 8000L) {
+                        cb.onLog(
+                            "虚拟屏已 8 秒没有新帧（画面停在最后一帧）——可能是游戏卡死/被系统回收，" +
+                                "也可能只是画面静止；结合上面的「游戏进程」行判断",
+                            LogLevel.WRN
+                        )
+                    }
+                }
+            }
+        }
+        t.isDaemon = true
+        t.name = "maawh-game-watchdog"
+        t.start()
+        return { watchdogStop = true }
+    }
 
     /**
      * 游戏主进程的 "pid name" 列表，空 = 没在跑。
