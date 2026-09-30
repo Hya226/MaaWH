@@ -3420,6 +3420,9 @@ class MainActivity : AppCompatActivity() {
     private fun renderGachaPanel() {
         val container = binding.llGachaCards
         container.removeAllViews()
+        // banner 存量归并（幂等，无改动零写盘）：老数据里 OCR 变形的池名就地合并，
+        // 分组与 UP 标注按干净后的原文渲染——装新包后打开本页即自动修复
+        GachaStore.normalizeBanners(applicationContext)
         val all = GachaStore.loadRecords(applicationContext)
         val cfg = GachaStore.loadConfig(applicationContext)
         if (!gachaRunning) {

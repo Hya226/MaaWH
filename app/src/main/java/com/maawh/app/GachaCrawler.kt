@@ -147,13 +147,19 @@ class GachaCrawler(
         if (cfg.isFirstRun) onLog("首次运行（无锚点）：全量抓取所有池子", LogLevel.INFO)
         val fresh = HashMap<String, MutableList<GachaStore.Record>>()
         val perPool = HashMap<String, Int>()
+        // banner 纠错参照集：库内已知写法 + 本会话增量。招集列没有字典纠错，
+        // 「万嶂烟峦」OCR 错一字成「万蟑烟峦」会在面板裂成两个卡池，就地归并。
+        val bannerDict = HashMap<String, MutableSet<String>>()
+        for (r in GachaStore.loadRecords(ctx)) {
+            if (r.banner.isNotBlank()) bannerDict.getOrPut(r.pool) { HashSet() }.add(r.banner)
+        }
 
         for (pool in pts.pools) {
             ensureActive()
             onProgress("切换：$pool")
             switchPool(pool, pts)
             verifyPool(pool, pts)
-            val n = crawlPool(pool, pts, cfg, fresh, onProgress)
+            val n = crawlPool(pool, pts, cfg, fresh, bannerDict, onProgress)
             perPool[pool] = n
             onLog("池[$pool] 完成：新增 $n 条", LogLevel.SUCCESS)
         }
@@ -169,6 +175,7 @@ class GachaCrawler(
         pts: Points,
         cfg: GachaStore.Config,
         fresh: HashMap<String, MutableList<GachaStore.Record>>,
+        bannerDict: MutableMap<String, MutableSet<String>>,
         onProgress: (String) -> Unit
     ): Int = withContext(Dispatchers.IO) {
         val anchors = cfg.anchors[pool] ?: emptyList()
@@ -179,7 +186,10 @@ class GachaCrawler(
         var added = 0
         while (true) {
             ensureActive()
-            val rows = scanPage(pool, pts, seqMap)
+            // banner 在入库前就近归并（uid 不含 banner，copy 不动 uid）
+            val rows = scanPage(pool, pts, seqMap).map { r ->
+                if (r.banner.isBlank()) r else r.copy(banner = normalizeBanner(pool, r.banner, bannerDict))
+            }
             if (rows.isEmpty()) {
                 onLog("池[$pool] 无记录行，本池到底", LogLevel.TRACE)
                 break
@@ -322,6 +332,24 @@ class GachaCrawler(
             delay(500)
         }
         error("unreachable")
+    }
+
+    /**
+     * banner 就近归并：参照集（库内已知 + 本会话已见）里取容差内最近者；
+     * 没有参照时登记为新写法，后续行向它归并。本会话第一条若 OCR 错且库内
+     * 无参照，会先以错字入库——commitCrawl 的 normalizeBanners 按条数兜底纠正。
+     */
+    private fun normalizeBanner(
+        pool: String,
+        raw: String,
+        dict: MutableMap<String, MutableSet<String>>
+    ): String {
+        val known = dict.getOrPut(pool) { HashSet() }
+        val best = known.filter { GachaDictionary.bannerMatch(raw, it) }
+            .minByOrNull { GachaDictionary.levenshtein(raw, it) }
+        if (best != null) return best
+        known.add(raw)
+        return raw
     }
 
     // ---------------- 像素分析 ----------------

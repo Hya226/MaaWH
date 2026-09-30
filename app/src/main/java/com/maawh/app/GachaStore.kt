@@ -186,8 +186,56 @@ object GachaStore {
                 put("lastCrawlMs", System.currentTimeMillis())
             }
             atomicWrite(configFile(ctx), cfg.toString())
+            normalizeBanners(ctx)
             return added
         }
+    }
+
+    /**
+     * 卡池小类（banner）存量归并：同池内按条数降序选正字，容差内（bannerMatch）
+     * 的少数派写法全部并入——「限定/万蟑烟峦」8 条 → 「限定/万嶂烟峦」——否则
+     * 面板按 banner 原文分组会把同一卡池裂成两个。UP 标注的 key 同步迁移。
+     * uid/锚点不含 banner，改写零副作用。幂等：无变化时零写盘。返回改动条数。
+     */
+    fun normalizeBanners(ctx: Context): Int = synchronized(this) {
+        val all = ArrayList(loadRecords(ctx))
+        val counts = HashMap<String, MutableMap<String, Int>>() // pool → banner → 条数
+        for (r in all) {
+            if (r.banner.isBlank()) continue
+            counts.getOrPut(r.pool) { LinkedHashMap() }.merge(r.banner, 1, Int::plus)
+        }
+        val mapping = HashMap<String, Map<String, String>>() // pool → 变形写法 → 正字
+        for ((pool, cnt) in counts) {
+            val reps = ArrayList<String>()
+            val m = HashMap<String, String>()
+            for (b in cnt.entries.sortedByDescending { it.value }.map { it.key }) {
+                val rep = reps.firstOrNull { GachaDictionary.bannerMatch(b, it) }
+                if (rep != null) m[b] = rep else reps.add(b)
+            }
+            if (m.isNotEmpty()) mapping[pool] = m
+        }
+        if (mapping.isEmpty()) return 0
+        var changed = 0
+        for (i in all.indices) {
+            val r = all[i]
+            val nb = mapping[r.pool]?.get(r.banner) ?: continue
+            all[i] = r.copy(banner = nb)
+            changed++
+        }
+        atomicWrite(recordsFile(ctx), serializeRecords(all))
+        val marks = loadUpMarks(ctx)
+        var dirty = false
+        for ((pool, m) in marks) {
+            val mm = mapping[pool] ?: continue
+            for ((k, v) in m) {
+                val nk = mm[k] ?: continue
+                m.remove(k)
+                m[nk] = v
+                dirty = true
+            }
+        }
+        if (dirty) saveUpMarks(ctx, marks)
+        changed
     }
 
     // ---------- 统计（面板用；rs 必须新→旧） ----------

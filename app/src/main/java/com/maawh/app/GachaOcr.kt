@@ -174,6 +174,15 @@ object GachaDictionary {
         return if (bestDist in 1..maxDistance) best to true else raw to (bestDist == 0)
     }
 
+    /**
+     * 卡池小类（banner）就近归并判定：OCR 错 1 字的变形（「限定/万蟑烟峦」→
+     * 「限定/万嶂烟峦」）要并回正字，否则面板按 banner 原文分组会裂成两个卡池。
+     * 短串（≤6 字符，如「/孤岛螺旋」）容差 1、长串容差 2——四字池名带前缀后
+     * 两两距离 ≥3，容差 2 不会误并两个真实池。
+     */
+    fun bannerMatch(a: String, b: String): Boolean =
+        levenshtein(a, b) <= (if (minOf(a.length, b.length) <= 6) 1 else 2)
+
     fun levenshtein(a: String, b: String): Int {
         if (a == b) return 0
         if (a.isEmpty()) return b.length
