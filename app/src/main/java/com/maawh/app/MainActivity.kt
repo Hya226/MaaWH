@@ -2836,7 +2836,8 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Throwable) {
             listOf("限时渠道", "限定渠道", "招集渠道", "征集渠道", "赛季渠道")
         }
-        val upPools = listOf("限时渠道", "限定渠道")
+        // 全渠道都可标注 UP（含赛季渠道；常驻池没有 UP 就不填，留空即无标注）
+        val upPools = pools
 
         // ===== 页签行 =====
         fun tabBtn(text: String) = TextView(this).apply {
@@ -2865,6 +2866,32 @@ class MainActivity : AppCompatActivity() {
         }
 
         // ===== 面板1：标注UP器者 =====
+        // 提前声明：改池名回调要在对话框建好前就能引用（关掉重建以刷新列表）
+        var dlgRef: androidx.appcompat.app.AlertDialog? = null
+        // 改池名：联动该小类全部记录与 UP 标注；成功后关掉本对话框重建（列表刷新）
+        fun promptRenameBanner(pool: String, banner: String, label: String, cnt: Int) {
+            val input = EditText(this).apply {
+                setText(banner.substringAfter('/', banner).ifBlank { banner })
+                setSingleLine()
+                setSelection(banner.substringAfter('/', banner).length)
+                setPadding(dp(16), dp(12), dp(16), dp(12))
+            }
+            AlertDialog.Builder(this)
+                .setTitle("改池名")
+                .setMessage("「$pool」『$label』（$cnt 抽）\n记录与UP标注一起改名；与其他小类同名则合并。")
+                .setView(input)
+                .setPositiveButton("确定") { _, _ ->
+                    val changed = GachaStore.renameBanner(ctx, pool, banner, input.text.toString())
+                    if (changed > 0) {
+                        toast("已改名，$changed 条记录联动")
+                        renderGachaPanel()
+                        dlgRef?.dismiss()
+                        editGachaRecord()
+                    } else toast("没有变化")
+                }
+                .setNegativeButton("取消", null)
+                .show()
+        }
         val upEditors = ArrayList<Triple<String, String, EditText>>() // (pool, banner原文, 输入框)
         val upBox = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -2915,6 +2942,16 @@ class MainActivity : AppCompatActivity() {
                             }, LinearLayout.LayoutParams(
                                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
                             ).apply { marginEnd = dp(8) })
+                            // 改池名入口：空 banner 的「未识别」组不给改（可能混多个真池）
+                            if (b.isNotBlank()) {
+                                addView(TextView(this@MainActivity).apply {
+                                    text = "✎"
+                                    setTextColor(getColor(R.color.text_secondary))
+                                    textSize = 14f
+                                    setPadding(dp(8), dp(6), dp(4), dp(6))
+                                    setOnClickListener { promptRenameBanner(pool, b, label, cnt) }
+                                })
+                            }
                             addView(et, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.1f))
                         })
                     }
@@ -3317,7 +3354,6 @@ class MainActivity : AppCompatActivity() {
             addView(frame)
         }
 
-        var dlgRef: androidx.appcompat.app.AlertDialog? = null
         btnUpSave.setOnClickListener {
             saveGachaUpMarks(ctx, upEditors)
             toast("已保存UP标注")

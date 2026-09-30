@@ -314,6 +314,39 @@ object GachaStore {
         rec
     }
 
+    /**
+     * 改池名（banner「/」后半段，前缀保留）：该池该小类的全部记录与 UP 标注 key
+     * 一起改。新名与同池另一小类相同 = 手动合并两组（正常语义）。
+     * 「未识别」组（空 banner）不允许改——它可能混着多个真池，整体改名必误归。
+     * 返回改动的记录条数；无变化返回 0。
+     */
+    fun renameBanner(ctx: Context, pool: String, oldBanner: String, newName: String): Int =
+        synchronized(this) {
+            val label = newName.trim()
+            if (label.isEmpty() || oldBanner.isBlank()) return 0
+            val newBanner =
+                if ('/' in oldBanner) oldBanner.substringBefore('/') + "/" + label else label
+            if (newBanner == oldBanner) return 0
+            val all = ArrayList(loadRecords(ctx))
+            var changed = 0
+            for (i in all.indices) {
+                val r = all[i]
+                if (r.pool == pool && r.banner == oldBanner) {
+                    all[i] = r.copy(banner = newBanner)
+                    changed++
+                }
+            }
+            if (changed > 0) atomicWrite(recordsFile(ctx), serializeRecords(all))
+            val marks = loadUpMarks(ctx)
+            val m = marks[pool]
+            if (m != null && m.containsKey(oldBanner)) {
+                val v = m.remove(oldBanner)
+                if (!v.isNullOrBlank()) m[newBanner] = v
+                saveUpMarks(ctx, marks)
+            }
+            changed
+        }
+
     private fun serializeRecords(list: List<Record>): String {
         val arr = JSONArray()
         list.forEach { r ->
