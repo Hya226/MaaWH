@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-29T14:25:31+08:00",
+        "generatedAt": "2026-10-02T13:05:34+08:00",
         "flowFile": "清体力.flow.json",
-        "flowHash": "sha256:6f5fd96c27dcddb023d2308841bedef30ecf3aa8cf3f8d18d47885530e40d577",
-        "pipelineHash": "sha256:8edad90b04dfed9a551c21cfb4a0a3631386fbb9e0bb9b4814296cb34c38c090",
+        "flowHash": "sha256:a5ce1b4bbd1bea67734b8c9eec236c6e6f5585cb86573694175aef4eb52696dc",
+        "pipelineHash": "sha256:8c97ffb652cc228db781e83bb8971c886af9cae4281c33945a84895dfdc22b55",
         "frameW": 1280,
         "frameH": 720
     },
@@ -369,7 +369,7 @@
     },
     "VF_清体力_30": {
         "action": "DoNothing",
-        "timeout": 3000,
+        "timeout": 30000,
         "next": [
             "VF_清体力_30_Hit"
         ],

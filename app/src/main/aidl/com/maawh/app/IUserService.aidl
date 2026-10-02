@@ -64,4 +64,9 @@ interface IUserService {
     // 替代没有 display 概念的 monkey 兜底：荣耀/华为的「游戏助手」会杀掉虚拟屏里的
     // 游戏实例，进程消失后 monkey 会把游戏直接开回物理主屏。虚拟屏没开返回 "vd off"。
     String relaunchGameOnVd() = 18;
+
+    // 【显示守护报告】取出并清空守护期间累积的记录（帧流增量、漂移拉回次数等）。
+    // 守护在 StartApp 之后跑 45s，期间 App 无从得知；任务结束时取一次即可拿到，
+    // 不必等到下一次 StartApp（2026-09-29）。
+    String takeGuardReport() = 19;
 }

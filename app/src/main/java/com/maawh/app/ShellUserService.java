@@ -576,25 +576,280 @@ public class ShellUserService extends IUserService.Stub {
     }
 
     /**
-     * 【启动兜底】把游戏重新投到虚拟屏并确认落位（引擎 StartApp 回调路径，2026-09-28）。
-     * 背景：StartApp 走到「进程不在」分支，多半是 ROM 游戏助手（荣耀/华为实测）杀掉了
-     * 虚拟屏里的游戏实例——此时 App 侧的 monkey 兜底没有 display 概念，会把游戏直接
-     * 开回物理主屏，用户看到「游戏跳出虚拟屏」。复用 launchOnDisplay（自带 force-stop
-     * 冷启动，防半死 task 复用主屏落点）+ ensureGameOnDisplay（落点确认 + 漂移拉回）。
+     * 【启动兜底】确保游戏在虚拟屏上（引擎 StartApp 回调路径）。
+     * 三种情形分别处理：
+     *   进程在 + task 在虚拟屏 → 零操作（保持"不重启游戏、不重弹公告"的语义）
+     *   进程在 + task 漂移主屏 → moveRootTaskToDisplay 拉回（不重启游戏），拉不动才冷启动重投
+     *   进程不在              → force-stop + 冷启动投虚拟屏，未存活自动再投一轮
+     * 根因背景见 ensureGameResizableCompat：ROM 因 resizeableActivity=false 拒绝把游戏留在
+     * 辅助屏，表现为"投屏瞬间 pin=ok、几秒后被送回物理主屏"，只看进程在不在是看不到的。
      */
     @Override
     public synchronized String relaunchGameOnVd() {
         if (mVdId < 0) return "vd off";
         StringBuilder sb = new StringBuilder();
-        sb.append("launch=").append(launchOnDisplay(mVdId)).append(' ');
-        sb.append("pin=").append(ensureGameOnDisplay(mVdId, 6000));
+        String prevGuard = takeGuardLog();
+        if (!prevGuard.isEmpty()) sb.append("上次守护:").append(prevGuard).append(' ');
+        String pid = gamePid();
+        if (pid != null) {
+            sb.append("pid=").append(pid);
+            int d = getGameTaskDisplayId();
+            if (d != mVdId) {
+                sb.append(" 漂移:").append(d == -2 ? "无task" : (d == -1 ? "未知" : "disp" + d));
+                // ⚠ 判据必须用 d >= 0：主屏 displayId 就是 0，写成 d > 0 会把「游戏在主屏」
+                //   这个最该处理的情形排除掉（该 bug 曾让 move 路径从未被执行、每次都退回重投）
+                boolean moved = (d >= 0) && moveGameTaskToDisplay(mVdId);
+                sb.append(moved ? " ->move " : " ->重投 ");
+                if (!moved) launchOnDisplay(mVdId);
+                sb.append("pin=").append(ensureGameOnDisplay(mVdId, 6000));
+            } else {
+                sb.append(" task已在虚拟屏(disp").append(d).append(')');
+            }
+        } else {
+            for (int round = 1; round <= 2; round++) {
+                sb.append("第").append(round).append("轮launch=")
+                  .append(launchOnDisplay(mVdId)).append(' ')
+                  .append("pin=").append(ensureGameOnDisplay(mVdId, 6000)).append(' ');
+                if (gamePid() != null) break;
+                sb.append("(进程未存活) ");
+            }
+        }
+        // 落点复查：pin=ok 只证明"任务记录在虚拟屏"，几秒后还在不在才是关键判据
+        try { Thread.sleep(3000); } catch (InterruptedException ignored) {}
+        sb.append("|复查 ").append(gameTaskSummary());
+        // 帧内容 + 渲染日志：task/进程/窗口都正常、用户也说游戏不在主屏，却识别不到时，
+        // 这两个才是能区分"渲染去错屏"和"渲染起不来"的东西（2026-09-29 荣耀实测：
+        // 预览与虚拟屏帧全黑 → 黑屏发生在渲染层，游戏多半卡在视频启动页 VideoSplashActivity）
+        sb.append(" 帧=").append(frameLiveness());
+        sb.append(" 渲染=").append(renderEvidence());
+        // StartApp 之后还有 15s post_delay + 60s 识别窗口，ROM 有的是时间再动手，起守护
+        startDisplayGuard();
         return sb.toString();
+    }
+
+    /**
+     * 虚拟屏最新帧的分通道亮度（直接读帧缓存，不编解码）——"均亮"会把白和单色混在一起，
+     * 分通道报才能一眼分清：`R255G255B255` = 纯白、`R0G0B0` = 纯黑、`R12G18B30` = 有画面。
+     */
+    private String frameLiveness() {
+        synchronized (mFrameLock) {
+            if (!mFrameHas || mLastFrame == null) return "无帧";
+            try {
+                int w = mFrameW, h = mFrameH;
+                java.nio.ByteBuffer buf = java.nio.ByteBuffer.wrap(mLastFrame);
+                int step = 7;   // RGBA_8888，隔 7 像素采样足够定性
+                long sr = 0, sg = 0, sb = 0;
+                int total = 0, lit = 0;
+                for (int y = 0; y < h; y += step) {
+                    for (int x = 0; x < w; x += step) {
+                        int p = buf.getInt((y * w + x) * 4);
+                        int r = p & 0xff, g = (p >> 8) & 0xff, b = (p >> 16) & 0xff;
+                        sr += r;
+                        sg += g;
+                        sb += b;
+                        total++;
+                        if (Math.max(r, Math.max(g, b)) > 32) lit++;
+                    }
+                }
+                int n = Math.max(1, total);
+                return "R" + (sr / n) + "G" + (sg / n) + "B" + (sb / n)
+                    + " 亮像素" + (lit * 100 / n) + "%";
+            } catch (Throwable t) {
+                return "err:" + t.getClass().getSimpleName();
+            }
+        }
+    }
+
+    /**
+     * logcat 里与"视频解码 / 图形合成 / 游戏自身报错"相关的行——虚拟屏黑屏时用来判断
+     * 渲染层倒在哪一步（视频启动页在辅助 display 上拿不到硬解输出是首要嫌疑）。
+     */
+    private String renderEvidence() {
+        try {
+            String log = runCmd("/system/bin/logcat", "-d", "-t", "2500");
+            if (log == null || log.startsWith("runErr") || log.isEmpty()) return "读不到";
+            StringBuilder sb = new StringBuilder("(");
+            int before = sb.length();
+            int count = 0;
+            String[] lines = log.split("\n");
+            for (int i = lines.length - 1; i >= 0 && count < 6; i--) {
+                String ln = lines[i];
+                if (ln.contains("MediaCodec") || ln.contains("ACodec") || ln.contains("Codec2")
+                        || ln.contains("OMX") || ln.contains("NuPlayer") || ln.contains("MediaPlayer")
+                        || ln.contains("VideoSplash")
+                        || (ln.contains("SurfaceFlinger") && (ln.contains(" E ") || ln.contains(" W ")))
+                        || (ln.contains(GAME_PKG) && (ln.contains(" E ") || ln.contains(" W ")))) {
+                    String s = ln.trim();
+                    sb.append(" ◂ ").append(s, 0, Math.min(s.length(), 140)).append('\n');
+                    count++;
+                }
+            }
+            if (sb.length() == before) return "无相关记录";
+            return sb.append(')').toString();
+        } catch (Throwable t) {
+            return "err:" + t.getClass().getSimpleName();
+        }
+    }
+
+    /** 游戏主进程 pid（多进程取第一个）；null = 进程不在或查询失败 */
+    private String gamePid() {
+        try {
+            String out = runCmd("/system/bin/pidof", GAME_PKG);
+            if (out != null && !out.isEmpty() && !out.startsWith("runErr")) {
+                return out.split("\\s+")[0];
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    /** 游戏 task 落点复查："#123@disp11"（task 残留但进程死时会与 pid=无 并存）/ "无任务" */
+    private String gameTaskSummary() {
+        try {
+            android.app.ActivityManager am = (android.app.ActivityManager)
+                new ShellCtx(mContext).getSystemService(android.content.Context.ACTIVITY_SERVICE);
+            for (android.app.ActivityManager.RunningTaskInfo t : am.getRunningTasks(100)) {
+                android.content.ComponentName top = t.topActivity;
+                if (top != null && GAME_PKG.equals(top.getPackageName())) {
+                    return "#" + readTaskId(t) + "@disp" + readTaskDisplayId(t);
+                }
+            }
+            return "无任务";
+        } catch (Throwable t) {
+            return "err:" + t.getClass().getSimpleName();
+        }
+    }
+
+    // ============ 显示守护（StartApp 之后 ROM 可能再把游戏搬走/杀掉）============
+    // StartApp 只检查一次不够：VF_启动 的 StartApp 节点后面有 15s post_delay，加上后续 60s
+    // 识别窗口，ROM 有充足时间再动手。守护在 StartApp 之后 45s 内每 2s 复查落点：漂移就
+    // move 拉回（失败则重投），游戏整个消失也只重投一次（有上限，绝不循环重启游戏）。
+    // 记录随下次 StartApp 带回日志。
+    private static final long GUARD_MS = 45000L;
+    private volatile long mGuardUntil = 0L;
+    private volatile boolean mGuardRunning = false;
+    private final StringBuilder mGuardLog = new StringBuilder();
+
+    private void startDisplayGuard() {
+        mGuardUntil = android.os.SystemClock.uptimeMillis() + GUARD_MS;
+        if (mGuardRunning) return;
+        mGuardRunning = true;
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int tick = 0;
+                boolean relaunched = false;
+                long frames0 = mConsumedCount;   // 帧流基线：45s 内到底有没有新帧进来
+                try {
+                    while (android.os.SystemClock.uptimeMillis() < mGuardUntil) {
+                        Thread.sleep(2000);
+                        tick++;
+                        if (mVdId < 0) break;
+                        int d = getGameTaskDisplayId();
+                        if (d == mVdId || d == -1) continue;
+                        if (d == -2) {
+                            guardNote("#" + tick + " 游戏消失(无task)");
+                            if (!relaunched) {
+                                relaunched = true;
+                                launchOnDisplay(mVdId);
+                                guardNote("#" + tick + " 已重投");
+                            }
+                        } else {
+                            boolean moved = moveGameTaskToDisplay(mVdId);
+                            guardNote("#" + tick + " 漂移disp" + d + (moved ? "→拉回" : "→拉回失败"));
+                            if (!moved) launchOnDisplay(mVdId);
+                        }
+                    }
+                } catch (Throwable t2) {
+                    guardNote("守护异常:" + t2.getClass().getSimpleName());
+                } finally {
+                    // 帧流增量：0 = 虚拟屏全程没有新帧（游戏渲染没起来）；几十/几千 = 画面在动
+                    // ——这是把"黑屏/白屏"和"渲染死掉"分开的决定性判据
+                    guardNote("帧流+" + (mConsumedCount - frames0) + "/" + (tick * 2) + "s");
+                    mGuardRunning = false;
+                }
+            }
+        }, "maawh-display-guard");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void guardNote(String s) {
+        synchronized (mGuardLog) {
+            if (mGuardLog.length() > 400) return;   // 上限，防日志串过长
+            if (mGuardLog.length() > 0) mGuardLog.append(' ');
+            mGuardLog.append(s);
+        }
+    }
+
+    /** 取出并清空守护记录（下次 StartApp 时随返回值带回，或由 takeGuardReport 主动取） */
+    private String takeGuardLog() {
+        synchronized (mGuardLog) {
+            if (mGuardLog.length() == 0) return "";
+            String s = mGuardLog.toString();
+            mGuardLog.setLength(0);
+            return s;
+        }
+    }
+
+    /**
+     * 【显示守护报告】给 App 侧主动取用——任务结束时调一次即可拿到守护期间的帧流/漂移
+     * 记录，不必等到下一次 StartApp 才带得出来（空串 = 期内无异常，App 侧不必打日志）。
+     */
+    @Override
+    public String takeGuardReport() {
+        return takeGuardLog();
+    }
+
+    /**
+     * 让游戏在虚拟屏上真正可 resize（★ 2026-09-28 荣耀 50SE 定位到的根因）。
+     *
+     * 游戏 manifest 声明 `android:resizeableActivity=false`（游戏类 app 常态），部分 ROM
+     * 据此**拒绝把它留在辅助 display 上**：投屏瞬间任务确实落在虚拟屏（pin=ok 成立），随后
+     * 被系统送回物理主屏并弹「该应用不支持分屏」（Android framework 的
+     * `app_not_support_split_screen`）。所以 pin=ok 只是"启动瞬间的假象窗口"——4 秒后
+     * task 已在 disp0、虚拟屏帧全黑、游戏进程被回收。
+     *
+     * 解法 = FORCE_RESIZE_APP compat override（等价开发者选项「强制允许将 Activity 设为可
+     * 调整大小」），让系统忽略该声明。幂等；enable 默认会 kill 该包进程，所以必须放在
+     * force-stop 之前。名称不被识别时回落数字 changeId（FORCE_RESIZE_APP = 174042936）。
+     */
+    private String ensureGameResizableCompat() {
+        String out = runCmd("/system/bin/am", "compat", "enable", "FORCE_RESIZE_APP", GAME_PKG);
+        String used = "ok";
+        if (out != null && out.startsWith("runErr")) {
+            String out2 = runCmd("/system/bin/am", "compat", "enable", "174042936", GAME_PKG);
+            if (out2 == null || !out2.startsWith("runErr")) used = "ok(id)";
+            else return "compat=失败";
+        }
+        return "compat=" + used + "|" + compatVerify();
+    }
+
+    /**
+     * 读回平台 compat 状态：**命令 exit 0 ≠ override 真被系统采纳**——部分 ROM 设了
+     * `PROPERTY_COMPAT_ALLOW_RESIZEABLE_ACTIVITY_OVERRIDES=false` 会静默忽略。
+     * "写进去了但系统不认" 与 "根本没写进去" 的下一步完全不同，所以必须读回。
+     */
+    private String compatVerify() {
+        try {
+            String dump = runCmd("/system/bin/dumpsys", "platform_compat");
+            if (dump != null && !dump.startsWith("runErr")) {
+                for (String ln : dump.split("\n")) {
+                    if (ln.contains(GAME_PKG)) return "已写入";
+                }
+                return "未写入";
+            }
+            return "读不到";
+        } catch (Throwable t) {
+            return "err";
+        }
     }
 
     /** 用 ActivityOptions.launchDisplayId + IActivityManager.startActivityAsUser 把游戏投到虚拟屏 */
     private String launchOnDisplay(int displayId) {
         StringBuilder sb = new StringBuilder();
         try {
+            sb.append(ensureGameResizableCompat()).append(' ');
             runCmd("/system/bin/am", "force-stop", GAME_PKG);
             android.content.Intent intent = new android.content.Intent();
             intent.setClassName(GAME_PKG, MaaConst.GAME_ACT_CLS);
@@ -605,6 +860,16 @@ public class ShellUserService extends IUserService.Stub {
             android.app.ActivityOptions opt = android.app.ActivityOptions.makeBasic();
             if (displayId != android.view.Display.DEFAULT_DISPLAY) {
                 opt.setLaunchDisplayId(displayId);
+            }
+            // 明确要求全屏窗口模式：不指定时部分 ROM 会把"投到辅助 display"当成多窗口场景
+            // 处理（进而弹出「不支持分屏」并把游戏挪回主屏）。反射调用，结果带进日志——
+            // "方法被 ROM 去掉"是判断该机型还能不能救的关键信息。
+            try {
+                opt.getClass().getMethod("setLaunchWindowingMode", int.class)
+                    .invoke(opt, 1 /* WINDOWING_MODE_FULLSCREEN */);
+                sb.append("wm=ok ");
+            } catch (Throwable t) {
+                sb.append("wm=不支持 ");
             }
             android.os.Bundle bOptions = opt.toBundle();
 
@@ -1202,16 +1467,37 @@ public class ShellUserService extends IUserService.Stub {
         }
     }
 
+    /**
+     * 跑 shell 命令返回 stdout（trim 后）；非 0 退出码返回 "runErr=..." 标记串。
+     * ⚠ 读流必须手动循环——`InputStream.readAllBytes()`（Java 9+）在部分 ROM 的 Shizuku
+     * 服务进程里抛 `NoSuchMethodError`（荣耀 50SE / Android 12 实测）：该机上
+     * force-stop / dumpsys / pidof 会**全部静默失败**，表现为 `win=unknown`、落点判断失准。
+     */
     private String runCmd(String... cmd) {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        java.io.ByteArrayOutputStream err = new java.io.ByteArrayOutputStream();
         try {
             Process p = new ProcessBuilder(cmd).start();
-            byte[] out = p.getInputStream().readAllBytes();
-            byte[] err = p.getErrorStream().readAllBytes();
+            drainStream(p.getInputStream(), out);
+            drainStream(p.getErrorStream(), err);
             int code = p.waitFor();
-            return "exit=" + code + " out=" + new String(out).trim()
-                + (err.length == 0 ? "" : " err=" + new String(err).trim());
+            if (code != 0) {
+                String e = err.toString("UTF-8").trim();
+                return "runErr=exit" + code + (e.isEmpty() ? "" : " " + e);
+            }
+            return out.toString("UTF-8").trim();
         } catch (Throwable t) {
             return "runErr=" + t;
+        }
+    }
+
+    private static void drainStream(java.io.InputStream in, java.io.ByteArrayOutputStream out) {
+        byte[] buf = new byte[8192];
+        try {
+            int n;
+            while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+            in.close();
+        } catch (Throwable ignored) {
         }
     }
 

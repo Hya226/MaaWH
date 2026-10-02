@@ -199,6 +199,13 @@ object ShizukuShell {
         null
     }
 
+    /** 显示守护报告（守护期结束后才有内容）；null = 服务不可达 / 期内无异常 */
+    fun takeGuardReport(): String? = try {
+        ensureService().takeGuardReport()?.takeIf { it.isNotEmpty() }
+    } catch (e: Throwable) {
+        null
+    }
+
     /**
      * 仅对游戏静音：appops 按包拒绝其播放音频（PLAY_AUDIO deny，同 maameow 的按包+uid 语义）。
      * 不动系统音量，音量键调节也不影响；appops 状态持久，结束时必须恢复（见 resetGameAudio）。
@@ -584,7 +591,17 @@ object ShizukuShell {
                 //     StartApp 不再 monkey 回物理主屏，改投虚拟屏）
                 // v6: 建屏 flag 阶梯降级（Android 12/12L 无 ADD_TRUSTED_DISPLAY 权限，
                 //     TRUSTED/OWN_DISPLAY_GROUP 会被 DMS 拒 → 自动降到 no-priv 档）
-                .version(6)
+                // v7: 荣耀 50SE 根因三件套——runCmd 修 readAllBytes 的 NoSuchMethodError
+                //     （该机上 force-stop/dumpsys/pidof 一直静默失败）；投屏前
+                //     FORCE_RESIZE_APP compat override（游戏 resizeableActivity=false 被 ROM
+                //     拒绝留在辅助屏、弹「不支持分屏」后送回主屏）；StartApp 落点复查 + 45s
+                //     显示守护（投屏后 ROM 仍可能把游戏搬走/杀掉）
+                // v8: 黑屏定性诊断——虚拟屏帧亮度统计（区分纯黑/有画面）+ logcat 抓
+                //     媒体/图形/游戏自身报错（判断渲染层倒在哪一步）
+                // v9: 帧统计改分通道（R/G/B，白与单色分得清）+ 帧流增量（45s 内有几帧，
+                //     0 = 渲染没起来，这是把"黑屏"和"渲染死"分开的决定性判据）
+                // v10: AIDL 码 19 takeGuardReport——任务结束即取回守护报告，不必跑两次
+                .version(10)
                 .daemon(false)
             args = a
 

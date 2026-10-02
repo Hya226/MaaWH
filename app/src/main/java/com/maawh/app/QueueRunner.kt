@@ -290,6 +290,10 @@ class QueueRunner(
                             else -> LogLevel.ERR
                         }
                     )
+                    // 显示守护报告（StartApp 之后 45s 内的帧流/漂移记录）：守护跑在服务端，
+                    // 任务一结束就取回来打出来，免得要等下一次 StartApp 才带得出来
+                    runCatching { ShizukuShell.takeGuardReport() }
+                        .getOrNull()?.let { cb.onLog("虚拟屏守护: $it", LogLevel.INFO) }
                     if (!r) {
                         // 单个任务失败不再中断整个队列：否则末尾的收尾项（如「关闭游戏」）
                         // 会因为前面任一任务失败而静默不执行——用户勾了却没生效，很难查。

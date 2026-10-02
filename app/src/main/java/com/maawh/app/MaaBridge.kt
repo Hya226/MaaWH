@@ -510,29 +510,21 @@ object MaaBridge {
                 val pkg = i.substringBefore('/')
                 val act: String =
                     if (pkg == MaaConst.GAME_PKG) {
-                        // 游戏进程已在运行则跳过重启：避免「启动已把游戏送进虚拟屏后，
-                        // 刷冬谷币又整包冷启动一遍、重弹公告」。只有进程不在时才拉起来。
-                        val running = try {
-                            val out = ShizukuShell.execBlocking("pidof", pkg)
-                            out.toString(Charsets.UTF_8).trim().isNotEmpty()
-                        } catch (e: Throwable) {
-                            false
-                        }
-                        if (running) {
-                            "skip(already running)"
+                        // 一律交服务端「确保在虚拟屏」收口，**不再在 App 侧按 pidof 判 skip**：
+                        //   进程不在 → 投屏重启
+                        //   进程在但被 ROM 搬到物理主屏 → moveRootTaskToDisplay 拉回
+                        //   已在虚拟屏 → 零操作（= 原 skip 语义：不重启游戏、不重弹公告）
+                        // ⚠ App 侧"有 pid 就 skip"会漏掉「进程活着、游戏却已被搬到主屏」这种
+                        // （荣耀 50SE 实测：日志只有一行 skip，虚拟屏却是全黑的）——服务端的
+                        // compat override / 落点复查 / 守护才是唯一能纠正它的地方。
+                        val r = ShizukuShell.relaunchGameOnVd()
+                        if (r != null && !r.startsWith("vd off")) {
+                            "确保虚拟屏 [$r]"
                         } else {
-                            // monkey/am 没有 display 概念：进程消失多半是 ROM 游戏助手
-                            // （荣耀/华为实测）杀掉了虚拟屏里的游戏实例，裸 monkey 会把
-                            // 游戏直接开回物理主屏（用户看到「游戏跳出虚拟屏」）。
-                            // 虚拟屏活着时一律走服务端投屏重启（launchDisplayId + 落点确认），
-                            // 虚拟屏没开/服务不可达才回退 monkey。
-                            val r = ShizukuShell.relaunchGameOnVd()
-                            if (r != null && !r.startsWith("vd off")) {
-                                "投虚拟屏重启 [$r]"
-                            } else {
-                                ShizukuShell.execBlocking("monkey", "-p", i, "1")
-                                "monkey -p $i 1（虚拟屏不可用，回退默认启动）"
-                            }
+                            // monkey 没有 display 概念，会把游戏开回物理主屏；只有虚拟屏没开
+                            // /服务不可达时才回退（此时本就没有虚拟屏可回）
+                            ShizukuShell.execBlocking("monkey", "-p", i, "1")
+                            "monkey -p $i 1（虚拟屏不可用，回退默认启动）"
                         }
                     } else if (i.contains("/")) {
                         ShizukuShell.execBlocking("am", "start", "-n", i)
