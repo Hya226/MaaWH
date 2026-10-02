@@ -62,25 +62,34 @@ object TaskPack {
     /**
      * 清单合并：current（刚释放的内置版）为基准，把 old（手机旧版，编辑器同步的）里
      * 独有的 task（按 name）/ option（按 key）条目追加进来；同名条目以内置版为准。
+     * 内置版顶层的 "removed": [名字...] 是显式退役名单——命中名单的 old 条目不追加
+     * （否则取消注册的任务会被旧清单合并复活，退役形同虚设）；名单只挡合并，
+     * 不影响内置版自己声明的同名条目（将来恢复注册直接加回 task/option 即可）。
      * 合并失败保留内置原版，不影响释放流程。
      */
     private fun mergeInterface(current: File, old: File) {
         try {
             val cur = JSONObject(current.readText(Charsets.UTF_8))
             val prev = JSONObject(old.readText(Charsets.UTF_8))
+            val removed = HashSet<String>()
+            val removedArr = cur.optJSONArray("removed")
+            if (removedArr != null) {
+                for (i in 0 until removedArr.length()) removed.add(removedArr.optString(i))
+            }
             val curTask = cur.optJSONArray("task") ?: JSONArray()
             val names = HashSet<String>()
             for (i in 0 until curTask.length()) names.add(curTask.getJSONObject(i).optString("name"))
             val oldTask = prev.optJSONArray("task") ?: JSONArray()
             for (i in 0 until oldTask.length()) {
                 val t = oldTask.getJSONObject(i)
-                if (t.optString("name") !in names) curTask.put(t)
+                val n = t.optString("name")
+                if (n !in names && n !in removed) curTask.put(t)
             }
             cur.put("task", curTask)
             val curOpt = cur.optJSONObject("option") ?: JSONObject()
             val oldOpt = prev.optJSONObject("option") ?: JSONObject()
             for (key in oldOpt.keys()) {
-                if (!curOpt.has(key)) curOpt.put(key, oldOpt.getJSONObject(key))
+                if (!curOpt.has(key) && key !in removed) curOpt.put(key, oldOpt.getJSONObject(key))
             }
             cur.put("option", curOpt)
             current.writeText(cur.toString(2))

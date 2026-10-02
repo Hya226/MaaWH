@@ -1,9 +1,13 @@
 {
-
   "interface_version": 2,
   "name": "whmx",
   "label": "物华弥新",
   "version": "0.2.0",
+  "removed": [
+    "刷活动关",
+    "关卡名",
+    "刷取次数"
+  ],
   "description": "MaaWH 的《物华弥新》任务包（Shizuku + 虚拟屏）",
   "controller": [
     {
@@ -188,18 +192,6 @@
       ]
     },
     {
-      "name": "刷活动关",
-      "label": "刷活动关",
-      "entry": "VF_刷活动关",
-      "group": [
-        "tools"
-      ],
-      "option": [
-        "关卡名",
-        "刷取次数"
-      ]
-    },
-    {
       "name": "博物研学",
       "label": "博物研学",
       "entry": "VF_博物研学",
@@ -286,23 +278,6 @@
         }
       },
       "description": "升好感度时点击礼物的次数（1~20）"
-    },
-    "刷取次数": {
-      "type": "input",
-      "label": "刷取次数",
-      "inputs": [
-        {
-          "name": "刷取次数",
-          "label": "刷取次数",
-          "default": "1",
-          "pipeline_type": "int"
-        }
-      ],
-      "pipeline_override": {
-        "VF_刷活动关_07": {
-          "repeat": "{刷取次数}"
-        }
-      }
     },
     "器者1": {
       "type": "input",
@@ -576,46 +551,6 @@
         }
       ],
       "default_case": "2"
-    },
-    "关卡名": {
-      "type": "select",
-      "label": "关卡名",
-      "cases": [
-        {
-          "name": "07",
-          "pipeline_override": {
-            "VF_刷活动关_04": {
-              "expected": "07"
-            },
-            "VF_刷活动关_03_Hit": {
-              "expected": "07"
-            }
-          }
-        },
-        {
-          "name": "08",
-          "pipeline_override": {
-            "VF_刷活动关_04": {
-              "expected": "08"
-            },
-            "VF_刷活动关_03_Hit": {
-              "expected": "08"
-            }
-          }
-        },
-        {
-          "name": "09",
-          "pipeline_override": {
-            "VF_刷活动关_04": {
-              "expected": "09"
-            },
-            "VF_刷活动关_03_Hit": {
-              "expected": "09"
-            }
-          }
-        }
-      ],
-      "default_case": "07"
     },
     "角色名": {
       "type": "input",
