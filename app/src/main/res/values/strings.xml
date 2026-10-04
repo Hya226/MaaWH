@@ -6,6 +6,7 @@
     <string name="tab_log">日志</string>
     <string name="tab_settings">设置</string>
     <string name="tab_gacha">抽卡</string>
+    <string name="tab_timer">定时</string>
     <string name="gacha_run">开始抓取</string>
     <string name="gacha_stop">停止抓取</string>
     <string name="gacha_account_label">账号</string>

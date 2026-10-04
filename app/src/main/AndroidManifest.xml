@@ -18,6 +18,14 @@
     <!-- 拉起系统安装器安装下载的新 APK（用户需在系统设置允许「安装未知应用」） -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- 定时任务（对标 maameow 的定时页，见 ScheduleManager）：统一走 setAlarmClock，
+         无需任何闹钟权限、准点且豁免 Doze（实测 ColorOS 会把 setExactAndAllowWhileIdle
+         按 policy_permission 降级成 1 小时窗口，所以不用精确闹钟 API）。
+         RECEIVE_BOOT_COMPLETED：开机/覆盖安装后重挂闹钟（闹钟不跨重启，见 BootReceiver）；
+         WAKE_LOCK：触发时点亮屏幕（部分 ROM 熄屏把虚拟屏一起断电，帧流会黑屏） -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <!-- Android 11+ 包可见性：不声明这个，本应用查不到 Shizuku 的包信息——
          getPackageInfo 抛 NameNotFoundException、getLaunchIntentForPackage 返回 null，
          于是"Shizuku 已运行但未授权"会被错报成"未安装 Shizuku"，"打开 Shizuku"按钮也点不动 -->
@@ -65,6 +73,20 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="longRunningAutomation" />
         </service>
+
+        <!-- 定时任务：闹钟到期触发（显式 PendingIntent 指名，无需导出/无需 intent-filter） -->
+        <receiver
+            android:name=".ScheduleReceiver"
+            android:exported="false" />
+        <!-- 定时任务：开机/覆盖安装后重挂全部闹钟（系统保护广播，exported=false 即可收到） -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".HistoryActivity"

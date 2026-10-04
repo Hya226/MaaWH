@@ -1,5 +1,7 @@
 package com.maawh.app
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -27,9 +29,12 @@ import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Spinner
+import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -46,8 +51,10 @@ import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 import java.io.File
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 /**
  * MaaWH 控制台（竖屏，任务队列版）
@@ -77,6 +84,10 @@ class MainActivity : AppCompatActivity() {
     private var manifest: TaskPack.Manifest? = null
     /** 清单未就绪时到达的 adb 直达入口：任务包释放完成、清单加载后自动补跑（否则会拿 intent 字面量当 entry，跑错老节点） */
     private var pendingLaunchIntent: Intent? = null
+    /** 清单未就绪时到达的定时触发：同样挂起等任务包释放完成后补跑（与 pendingLaunchIntent 同一机制） */
+    private var pendingScheduleId: String? = null
+    /** 本次队列由定时触发（收尾把结果记回该条目）；null = 手动运行 */
+    private var scheduleRunId: String? = null
 
     @Volatile
     private var muteEnabled = false
@@ -246,6 +257,12 @@ class MainActivity : AppCompatActivity() {
                     log("任务包就绪，补跑挂起的直达入口: ${it.getStringExtra("entry")}")
                     handleLaunchIntent(it)
                 }
+                // 定时触发同样可能等在清单前面（闹钟在任务包释放期间响了）
+                pendingScheduleId?.let {
+                    pendingScheduleId = null
+                    log("任务包就绪，补跑挂起的定时触发")
+                    runScheduled(it)
+                }
             }
         }
 
@@ -284,6 +301,10 @@ class MainActivity : AppCompatActivity() {
         GachaDictionary.names = GachaStore.loadNames(this)
         setupGachaAccounts()
         renderGachaPanel()
+        // 定时页：重挂闹钟（修时钟漂移/上次会话遗留）+ 画列表；「＋ 新建」弹编辑框
+        runCatching { ScheduleManager.armAll(applicationContext) }
+        renderSchedulePanel()
+        binding.btnScheduleNew.setOnClickListener { showScheduleEditDialog(null) }
         buildVdOverlay()
 
         // 视图归位（默认队列视图）；之后不再重置，免得把用户刚点的「编辑配置」撤掉
@@ -884,6 +905,19 @@ class MainActivity : AppCompatActivity() {
      *  - 其余 entry：入队后自动执行；extra vd=true 时先建虚拟屏投游戏再跑该入口
      */
     private fun handleLaunchIntent(intent: Intent?) {
+        // 定时触发（ScheduleReceiver 发的）：intent 一次性消费（防 recreate 重放，同 entry 直达），
+        // 清单未就绪就挂起，等任务包释放完成后自动开跑
+        if (intent?.action == ACTION_RUN_SCHEDULE) {
+            setIntent(Intent(this, MainActivity::class.java))
+            val id = intent.getStringExtra(ScheduleManager.EXTRA_ID)
+            if (manifest == null) {
+                pendingScheduleId = id
+                log("清单未就绪，定时任务将在任务包初始化完成后自动执行")
+            } else {
+                runScheduled(id)
+            }
+            return
+        }
         val entry = intent?.getStringExtra("entry") ?: return
         // 入口 intent 一次性消费：改页面缩放等配置变更会 recreate() 并重投原始 intent，
         // 不清掉的话当初的 --es entry X（adb 直达/编辑器▶同步并运行）会在重建后的主页
@@ -1554,6 +1588,20 @@ class MainActivity : AppCompatActivity() {
                 override fun onQueueStarted() {
                     binding.btnStartQueue.text = getString(R.string.quick_stop)
                 }
+                override fun onQueueResult(ok: Boolean, failed: List<String>, stopped: Boolean) {
+                    // 定时触发的那次运行：把结果记回条目（与任务历史同源），手动运行 scheduleRunId 为 null 零开销
+                    val id = scheduleRunId ?: return
+                    scheduleRunId = null
+                    ScheduleStore.setResult(
+                        applicationContext, id,
+                        when {
+                            stopped -> "已停止"
+                            ok -> "✓ 成功"
+                            else -> "✗ 失败 ${failed.size} 项"
+                        }
+                    )
+                    renderSchedulePanel()
+                }
                 override fun onQueueFinished() {
                     binding.btnStartQueue.isEnabled = true
                     binding.btnStartQueue.text = getString(R.string.btn_start_queue)
@@ -1581,6 +1629,325 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             queueRunner?.run(planTasks, muteEnabled, autoMuteEnabled, closeAfterEnabled)
         }
+    }
+
+    // ==================================================================
+    // 定时任务（对标 MAA-Meow 的定时页）：触发执行 + 列表/编辑 UI
+    // ==================================================================
+
+    /** 定时触发：按条目构建目标配置的队列并开跑（守卫与手动 startQueue 同口径，失败记回条目） */
+    private fun runScheduled(id: String?) {
+        val item = id?.let { ScheduleStore.get(this, it) }
+        if (item == null) {
+            log("定时触发：条目已删除，忽略", LogLevel.WRN)
+            return
+        }
+        fun skip(result: String, detail: String) {
+            ScheduleStore.setResult(applicationContext, item.id, result)
+            log("定时「${item.name}」$detail", LogLevel.ERR)
+            renderSchedulePanel()
+        }
+        if (isTaskRunning) { skip("跳过：已有任务在运行", "触发时已有任务在运行，本次跳过"); return }
+        if (waiqinRunning || gachaRunning) { skip("跳过：小工具在运行", "触发时小工具正在运行，本次跳过"); return }
+
+        // 目标队列：profile 空 = 跟随当前生效配置（与手动开始完全一致，用内存队列）；
+        // 绑定配置 = 按该配置的存档构建（不切 UI 生效配置）
+        val bound = item.profile.takeIf { it.isNotBlank() && profileData.containsKey(it) }
+        val plan: List<TaskItem>
+        val targetText: String
+        if (bound == null) {
+            if (item.profile.isNotBlank()) log("配置「${item.profile}」不存在，回退当前生效配置", LogLevel.WRN)
+            plan = tasks.indices.filter { enabled.getOrElse(it) { false } }.map { tasks[it] }
+            targetText = "当前生效配置「$activeProfile」"
+        } else {
+            val p = profileData[bound]!!
+            plan = p.main.filter { it.enabled }
+                .mapNotNull { s -> manifestItemOf(s.name, s.entry)?.also { applySavedSelection(it, s) } }
+            targetText = "配置「$bound」"
+        }
+        if (plan.isEmpty()) { skip("跳过：队列为空", "目标队列（$targetText）没有勾选任何任务，本次跳过"); return }
+        if (!shizukuRunning()) { skip("失败：Shizuku 未运行", "Shizuku 未运行，任务未执行：请启动 Shizuku 后重试"); return }
+        if (!shizukuReady()) {
+            skip("失败：Shizuku 未授权", "Shizuku 未授权，任务未执行：请在弹出的授权框中允许")
+            requestShizukuPermission()
+            return
+        }
+        ScheduleStore.setResult(applicationContext, item.id, "已触发，执行中…")
+        scheduleRunId = item.id
+        log("⏰ 定时触发「${item.name}」：执行 $targetText，共 ${plan.size} 项", LogLevel.INFO)
+        renderSchedulePanel()
+        runQueue(plan)
+    }
+
+    /** 定时列表：进页/改动后重画（「下次触发」随时间流逝会变，不缓存） */
+    private fun renderSchedulePanel() {
+        val container = binding.llScheduleList
+        container.removeAllViews()
+        val items = ScheduleStore.load(this)
+        if (items.isEmpty()) {
+            container.addView(simpleText("还没有定时任务，点右上「＋ 新建」创建一个", R.color.text_secondary, 12f))
+            return
+        }
+        val now = System.currentTimeMillis()
+        items.sortedWith(
+            compareBy<ScheduleStore.Item> { !it.enabled }
+                .thenBy { ScheduleManager.nextTrigger(it, now) ?: Long.MAX_VALUE }
+        ).forEach { container.addView(scheduleRow(it, now)) }
+    }
+
+    /** 单条定时卡片：名字 + 规则/绑定 + 下次/上次结果 + 启停开关；点卡片编辑 */
+    private fun scheduleRow(item: ScheduleStore.Item, now: Long): View {
+        val dayFmt = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
+        val next = if (item.enabled) ScheduleManager.nextTrigger(item, now) else null
+        val nextText = when {
+            !item.enabled -> "已停用"
+            next == null -> "无下次触发（单次已过期）"
+            else -> "下次 ${dayFmt.format(Date(next))}"
+        }
+        val lastText = if (item.lastRun > 0)
+            "上次 ${dayFmt.format(Date(item.lastRun))}" +
+                (if (item.lastResult.isNotBlank()) " · ${item.lastResult}" else "")
+        else "从未触发"
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(12).toFloat()
+                setColor(getColor(R.color.bg_card))
+            }
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dp(6) }
+            setOnClickListener { showScheduleEditDialog(item) }
+            addView(LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                addView(TextView(this@MainActivity).apply {
+                    text = item.name.ifBlank { ScheduleManager.describeRule(item) }
+                    setTextColor(getColor(if (item.enabled) R.color.text_primary else R.color.text_secondary))
+                    textSize = 14f
+                    paint.isFakeBoldText = true
+                })
+                addView(TextView(this@MainActivity).apply {
+                    text = ScheduleManager.describeRule(item) + " · " +
+                        if (item.profile.isBlank()) "跟随当前生效" else "配置「${item.profile}」"
+                    setTextColor(getColor(R.color.text_secondary))
+                    textSize = 11f
+                })
+                addView(TextView(this@MainActivity).apply {
+                    text = "$nextText\n$lastText"
+                    setTextColor(getColor(R.color.text_secondary))
+                    textSize = 11f
+                })
+            })
+            addView(Switch(this@MainActivity).apply {
+                isChecked = item.enabled
+                setOnCheckedChangeListener { _, on ->
+                    ScheduleStore.setEnabled(applicationContext, item.id, on)
+                    ScheduleManager.armAll(applicationContext)
+                    renderSchedulePanel()
+                }
+            })
+        }
+    }
+
+    /**
+     * 新建/编辑定时的对话框。保存前校验（每周至少一天、单次日期合法），
+     * 名称留空按规则自动取；编辑态给「删除」。所有确认都先落库再重挂闹钟。
+     */
+    private fun showScheduleEditDialog(source: ScheduleStore.Item?) {
+        val isNew = source == null
+        val base = source ?: ScheduleStore.Item(
+            id = UUID.randomUUID().toString(),
+            name = "",
+            enabled = true,
+            repeat = ScheduleStore.REPEAT_DAILY,
+            hour = 4, minute = 30
+        )
+        var repeat = base.repeat
+        var hour = base.hour
+        var minute = base.minute
+        val days = base.days.toMutableSet()
+        var dateIso = base.dateIso.ifBlank {
+            SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        }
+        // 绑定的配置已被删掉：归一回「跟随」，别出现下拉显示跟随、存的却是死配置名的错位
+        var profile = base.profile.takeIf { it.isBlank() || profileData.containsKey(it) } ?: ""
+
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(12), dp(20), dp(4))
+        }
+        box.addView(TextView(this).apply {
+            text = "名称"
+            setTextColor(getColor(R.color.text_secondary)); textSize = 11f
+        })
+        val etName = EditText(this).apply {
+            hint = "留空按规则自动取名"
+            setText(base.name)
+            setSingleLine()
+        }
+        box.addView(etName)
+
+        // 触发时间（点弹 TimePicker）
+        box.addView(TextView(this).apply {
+            text = "触发时间"
+            setTextColor(getColor(R.color.text_secondary)); textSize = 11f
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dp(10) }
+        })
+        val btnTime = TextView(this).apply {
+            textSize = 22f
+            setTextColor(getColor(R.color.text_primary))
+            setPadding(0, dp(2), 0, dp(2))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(8).toFloat()
+                setColor(0x1F888888)
+            }
+        }
+        fun refreshTime() { btnTime.text = String.format(Locale.US, "%02d:%02d", hour, minute) }
+        btnTime.setOnClickListener {
+            TimePickerDialog(this, { _, h, m -> hour = h; minute = m; refreshTime() }, hour, minute, true).show()
+        }
+        refreshTime()
+        box.addView(btnTime)
+
+        // 重复规则
+        box.addView(TextView(this).apply {
+            text = "重复"
+            setTextColor(getColor(R.color.text_secondary)); textSize = 11f
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dp(10) }
+        })
+        val rbDaily = RadioButton(this).apply { text = "每天"; id = View.generateViewId() }
+        val rbWeekly = RadioButton(this).apply { text = "每周"; id = View.generateViewId() }
+        val rbOnce = RadioButton(this).apply { text = "单次"; id = View.generateViewId() }
+        val rgRepeat = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        rgRepeat.addView(rbDaily)
+        rgRepeat.addView(rbWeekly)
+        rgRepeat.addView(rbOnce)
+        when (repeat) {
+            ScheduleStore.REPEAT_WEEKLY -> rbWeekly.isChecked = true
+            ScheduleStore.REPEAT_ONCE -> rbOnce.isChecked = true
+            else -> rbDaily.isChecked = true
+        }
+        box.addView(rgRepeat)
+
+        // 每周：星期勾选行
+        val rowDays = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val dayChecks = LinkedHashMap<Int, CheckBox>()
+        listOf(
+            Calendar.MONDAY to "一", Calendar.TUESDAY to "二", Calendar.WEDNESDAY to "三",
+            Calendar.THURSDAY to "四", Calendar.FRIDAY to "五", Calendar.SATURDAY to "六",
+            Calendar.SUNDAY to "日"
+        ).forEach { (d, label) ->
+            val cb = CheckBox(this).apply { text = label; isChecked = days.contains(d) }
+            cb.setOnCheckedChangeListener { _, c -> if (c) days.add(d) else days.remove(d) }
+            dayChecks[d] = cb
+            rowDays.addView(cb)
+        }
+        box.addView(rowDays)
+
+        // 单次：日期选择
+        val btnDate = TextView(this).apply {
+            textSize = 14f
+            setTextColor(getColor(R.color.accent))
+            setPadding(0, dp(6), 0, dp(6))
+        }
+        fun refreshDate() { btnDate.text = "日期：$dateIso（点修改）" }
+        btnDate.setOnClickListener {
+            val init = runCatching {
+                SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(dateIso)
+            }.getOrNull()
+            val cal = Calendar.getInstance().apply { init?.let { timeInMillis = it.time } }
+            DatePickerDialog(this, { _, y, m, d ->
+                dateIso = String.format(Locale.US, "%04d-%02d-%02d", y, m + 1, d)
+                refreshDate()
+            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
+        }
+        refreshDate()
+        box.addView(btnDate)
+
+        fun refreshVisibility() {
+            rowDays.visibility = if (repeat == ScheduleStore.REPEAT_WEEKLY) View.VISIBLE else View.GONE
+            btnDate.visibility = if (repeat == ScheduleStore.REPEAT_ONCE) View.VISIBLE else View.GONE
+        }
+        rgRepeat.setOnCheckedChangeListener { _, checkedId ->
+            repeat = when (checkedId) {
+                rbWeekly.id -> ScheduleStore.REPEAT_WEEKLY
+                rbOnce.id -> ScheduleStore.REPEAT_ONCE
+                else -> ScheduleStore.REPEAT_DAILY
+            }
+            refreshVisibility()
+        }
+        refreshVisibility()
+
+        // 执行配置：跟随当前生效，或绑定某个配置（列表来自内存配置表）
+        box.addView(TextView(this).apply {
+            text = "执行内容"
+            setTextColor(getColor(R.color.text_secondary)); textSize = 11f
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dp(10) }
+        })
+        val profileNames = profileData.keys.toList()
+        val options = mutableListOf("跟随当前生效配置") + profileNames
+        val spProfile = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, options)
+            setSelection(if (profile.isBlank()) 0 else options.indexOf(profile).coerceAtLeast(0))
+        }
+        spProfile.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                profile = if (pos <= 0) "" else options[pos]
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+        box.addView(spProfile)
+
+        val dlg = AlertDialog.Builder(this)
+            .setTitle(if (isNew) "新建定时" else "编辑定时")
+            .setView(ScrollView(this).apply { addView(box) })
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存", null)
+            .create()
+        if (!isNew) {
+            dlg.setButton(AlertDialog.BUTTON_NEUTRAL, "删除") { _, _ ->
+                ScheduleManager.cancel(applicationContext, base.id)
+                ScheduleStore.remove(applicationContext, base.id)
+                log("已删除定时「${base.name.ifBlank { ScheduleManager.describeRule(base) }}」")
+                renderSchedulePanel()
+            }
+        }
+        dlg.setOnShowListener {
+            dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                if (repeat == ScheduleStore.REPEAT_WEEKLY && days.isEmpty()) {
+                    toast("每周重复至少要勾选一天")
+                    return@setOnClickListener
+                }
+                if (repeat == ScheduleStore.REPEAT_ONCE &&
+                    ScheduleManager.nextTrigger(
+                        ScheduleStore.Item("", "", true, repeat, hour, minute, emptySet(), dateIso),
+                        System.currentTimeMillis()
+                    ) == null
+                ) {
+                    toast("单次时间已过期，请改到未来")
+                    return@setOnClickListener
+                }
+                val ruleText = ScheduleManager.describeRule(
+                    ScheduleStore.Item("", "", true, repeat, hour, minute, days.toSet(), dateIso)
+                )
+                val name = etName.text.toString().trim().ifBlank { ruleText }
+                val saved = base.copy(
+                    name = name, repeat = repeat, hour = hour, minute = minute,
+                    days = days.toSet(), dateIso = dateIso, profile = profile
+                )
+                ScheduleStore.upsert(applicationContext, saved)
+                ScheduleManager.armAll(applicationContext)
+                log("已保存定时「$name」（$ruleText）", LogLevel.SUCCESS)
+                renderSchedulePanel()
+                dlg.dismiss()
+            }
+        }
+        dlg.show()
     }
 
     /**
@@ -2439,6 +2806,11 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item: MenuItem ->
             when (item.itemId) {
                 R.id.nav_home -> switchTo(binding.panelHome)
+                R.id.nav_timer -> {
+                    switchTo(binding.panelTimer)
+                    // 「下次触发」随时间流逝会变，每次进页重画
+                    renderSchedulePanel()
+                }
                 R.id.nav_log -> switchTo(binding.panelLog)
                 R.id.nav_settings -> switchTo(binding.panelSettings)
                 R.id.nav_gacha -> {
@@ -3985,12 +4357,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序：主页/抽卡/日志/设置） */
+    /** 引导跨页时的页面切换（与底部导航选中项联动；页序 = menu 顺序：主页/抽卡/定时/日志/设置） */
     private fun guideShowPage(page: Int) {
         when (page) {
             1 -> switchTo(binding.panelGacha)
-            2 -> switchTo(binding.panelLog)
-            3 -> switchTo(binding.panelSettings)
+            2 -> switchTo(binding.panelTimer)
+            3 -> switchTo(binding.panelLog)
+            4 -> switchTo(binding.panelSettings)
             else -> switchTo(binding.panelHome)
         }
         binding.bottomNav.menu.getItem(page).isChecked = true
@@ -4004,8 +4377,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun switchTo(panel: View) {
-        listOf(binding.panelHome, binding.panelLog, binding.panelSettings, binding.panelGacha)
-            .forEach { it.visibility = if (it === panel) View.VISIBLE else View.GONE }
+        listOf(
+            binding.panelHome, binding.panelTimer, binding.panelLog,
+            binding.panelSettings, binding.panelGacha
+        ).forEach { it.visibility = if (it === panel) View.VISIBLE else View.GONE }
         // 日志页打开即定位到最新一条（日志追加在底部）
         if (panel === binding.panelLog) {
             binding.scrollLog.post { binding.scrollLog.fullScroll(View.FOCUS_DOWN) }
@@ -4322,8 +4697,10 @@ class MainActivity : AppCompatActivity() {
         private const val HOME_MAIN = "main"
         private const val HOME_TOOLS = "tools"
         private const val MATCH_PARENT = -1
-        /** 底部导航「设置」页序号（menu 顺序：主页/抽卡/日志/设置） */
-        private const val NAV_SETTINGS = 3
+        /** 底部导航「设置」页序号（menu 顺序：主页/抽卡/定时/日志/设置） */
+        private const val NAV_SETTINGS = 4
+        /** 定时触发的执行 intent action（ScheduleReceiver → MainActivity，extra = schedule_id） */
+        const val ACTION_RUN_SCHEDULE = "com.maawh.app.action.RUN_SCHEDULE"
         /** 预览高度补算的重试上限（宽度还没量出时）：3 次 × 60ms 覆盖两三帧 */
         private const val ASPECT_RETRY_MAX = 3
         private const val ASPECT_RETRY_MS = 60L

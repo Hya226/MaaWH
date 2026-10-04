@@ -9,6 +9,10 @@
         android:icon="@drawable/ic_gacha"
         android:title="@string/tab_gacha" />
     <item
+        android:id="@+id/nav_timer"
+        android:icon="@drawable/ic_timer"
+        android:title="@string/tab_timer" />
+    <item
         android:id="@+id/nav_log"
         android:icon="@drawable/ic_log"
         android:title="@string/tab_log" />

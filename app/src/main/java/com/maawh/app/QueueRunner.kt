@@ -34,6 +34,8 @@ class QueueRunner(
         fun onQueueStarted()
         /** 队列结束：按钮复位为「开始任务」 */
         fun onQueueFinished()
+        /** 队列收尾结果（与任务历史同源，在 onQueueFinished 前发出）；定时任务用它把结果记回条目，默认空实现 */
+        fun onQueueResult(ok: Boolean, failed: List<String>, stopped: Boolean) {}
         /** 「启动」任务投屏前先置虚拟屏标志（App 内存态） */
         fun onVdFlagSet()
         /** 「启动」任务已投屏（收口前）：刷新预览 + 状态行「游戏已进虚拟屏，收口中…」 */
@@ -365,6 +367,7 @@ class QueueRunner(
                     else -> "失败 ${failed.size}/${planTasks.size} · $totalText"
                 }
             )
+            cb.onQueueResult(ok = ok, failed = failed.toList(), stopped = stopRequested)
 
             notify {
                 running = false
@@ -418,6 +421,7 @@ class QueueRunner(
                 )
             )
             FloatingPanel.update("◼ 队列异常")
+            cb.onQueueResult(ok = false, failed = listOf("队列异常"), stopped = true)
             notify {
                 cb.onQueueFinished()
                 if (!cb.isVdOn()) KeepAliveService.stop(context)
