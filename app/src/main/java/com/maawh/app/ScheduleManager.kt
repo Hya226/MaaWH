@@ -68,7 +68,7 @@ object ScheduleManager {
         )
     }
 
-    /** 下一次触发时刻（严格晚于 fromMs）；单次已过期 / 每周未勾任何天 → null */
+    /** 下一次触发时刻（严格晚于 fromMs）；单次已过期 / 每周未勾任何天 / 间隔非法 → null */
     fun nextTrigger(item: ScheduleStore.Item, fromMs: Long): Long? {
         val base = Calendar.getInstance().apply {
             timeInMillis = fromMs
@@ -79,6 +79,15 @@ object ScheduleManager {
             ScheduleStore.REPEAT_DAILY -> atTime(base, item.hour, item.minute, fromMs, shiftDaysIfPassed = 1)
             ScheduleStore.REPEAT_ONCE -> parseDate(item.dateIso)
                 ?.let { atTime(it, item.hour, item.minute, fromMs, shiftDaysIfPassed = 0) }
+            ScheduleStore.REPEAT_INTERVAL -> {
+                if (item.intervalMin <= 0) return null
+                val step = item.intervalMin * 60_000L
+                val anchor = if (item.anchorMs > 0) item.anchorMs else fromMs
+                if (fromMs < anchor) return anchor
+                // 锚点后第一个严格晚于 fromMs 的网格点；floorDiv 防整除时 k 偏小（那会取到过去时刻）
+                val k = Math.floorDiv(fromMs - anchor, step) + 1
+                anchor + k * step
+            }
             ScheduleStore.REPEAT_WEEKLY -> {
                 if (item.days.isEmpty()) return null
                 // 未来 8 天里找第一个「星期命中且时刻未过」的日子（兜底 8 天防漏，正常 7 天内必命中）
@@ -117,7 +126,7 @@ object ScheduleManager {
         null
     }
 
-    /** 规则的展示文案："每天 04:30" / "每周 一、四 04:30" / "单次 10-05 04:30" */
+    /** 规则的展示文案："每天 04:30" / "每周 一、四 04:30" / "单次 10-05 04:30" / "每 2 小时" */
     fun describeRule(item: ScheduleStore.Item): String {
         val hm = String.format(Locale.US, "%02d:%02d", item.hour, item.minute)
         return when (item.repeat) {
@@ -125,8 +134,17 @@ object ScheduleManager {
             ScheduleStore.REPEAT_WEEKLY -> "每周 ${weekdayText(item.days)} $hm"
             ScheduleStore.REPEAT_ONCE ->
                 if (item.dateIso.length >= 10) "单次 ${item.dateIso.substring(5)} $hm" else "单次 $hm"
+            ScheduleStore.REPEAT_INTERVAL -> intervalText(item.intervalMin)
             else -> hm
         }
+    }
+
+    /** 间隔分钟数 → "每 2 小时" / "每 90 分钟" / "每 1 小时 30 分钟" */
+    private fun intervalText(min: Int): String = when {
+        min <= 0 -> "间隔"
+        min % 60 == 0 -> "每 ${min / 60} 小时"
+        min > 60 -> "每 ${min / 60} 小时 ${min % 60} 分钟"
+        else -> "每 $min 分钟"
     }
 
     /** Calendar.DAY_OF_WEEK 集合 → 「一、四」（按周一起算，符合中文习惯） */

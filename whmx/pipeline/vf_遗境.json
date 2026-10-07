@@ -1,0 +1,230 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-10-06T11:10:08+08:00",
+        "flowFile": "遗境.flow.json",
+        "flowHash": "sha256:f5431a03a516a01f432c0811e27876cc8e37a99e9c4f36659e46cceb891a19ef",
+        "pipelineHash": "sha256:f141168699bfddfcf107b3a90aefadb103b8a0c51ec5fa4d2708814c7cd03a3b",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_遗境": {
+        "next": [
+            "VF_遗境_01"
+        ]
+    },
+    "VF_遗境_01": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_遗境_01_Hit"
+        ],
+        "on_error": [
+            "VF_遗境_02"
+        ]
+    },
+    "VF_遗境_01_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zy_bsyj.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "roi": [
+            1073,
+            305,
+            178,
+            109
+        ],
+        "next": [
+            "VF_遗境_01"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_遗境_02": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_遗境_02_Hit"
+        ],
+        "on_error": [
+            "VF_遗境_03"
+        ]
+    },
+    "VF_遗境_02_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "飞鸽传书"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            426,
+            275,
+            107,
+            34
+        ],
+        "next": [
+            "VF_遗境_02"
+        ],
+        "max_hit": 2,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_遗境_03": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_遗境_03_Hit"
+        ],
+        "on_error": [
+            "VF_遗境_04"
+        ]
+    },
+    "VF_遗境_03_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "列表"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            7,
+            235,
+            86,
+            76
+        ],
+        "next": [
+            "VF_遗境_03"
+        ],
+        "max_hit": 2,
+        "target_offset": [
+            0,
+            -5,
+            0,
+            0
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_遗境_04": {
+        "action": "Click",
+        "target": [
+            245,
+            386
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 2,
+        "repeat_delay": 350,
+        "next": [
+            "VF_遗境_05"
+        ]
+    },
+    "VF_遗境_05": {
+        "action": "Click",
+        "target": [
+            514,
+            214
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 2,
+        "repeat_delay": 350,
+        "next": [
+            "VF_遗境_06"
+        ]
+    },
+    "VF_遗境_06": {
+        "action": "Click",
+        "target": [
+            785,
+            400
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 9,
+        "repeat_delay": 350,
+        "next": [
+            "VF_遗境_07"
+        ]
+    },
+    "VF_遗境_07": {
+        "action": "Click",
+        "target": [
+            1160,
+            184
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 3,
+        "repeat_delay": 350
+    }
+}

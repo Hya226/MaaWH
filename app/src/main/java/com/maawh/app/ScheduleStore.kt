@@ -8,9 +8,11 @@ import org.json.JSONObject
  * 定时任务的持久化（对标 MAA-Meow 的「定时」页）。
  *
  * 一条定时 = 时刻 + 重复规则 + 要执行的队列配置（QueueStore 里的某个配置）：
- *  - REPEAT_DAILY  每天 HH:mm
- *  - REPEAT_WEEKLY 每周勾选的星期 HH:mm
- *  - REPEAT_ONCE   指定日期 HH:mm，触发一次后自动停用
+ *  - REPEAT_DAILY    每天 HH:mm
+ *  - REPEAT_WEEKLY   每周勾选的星期 HH:mm
+ *  - REPEAT_ONCE     指定日期 HH:mm，触发一次后自动停用
+ *  - REPEAT_INTERVAL 间隔循环：自锚点（anchorMs，= 保存该间隔的时刻）起每 intervalMin 分钟
+ *    一个网格点，取严格晚于当前的第一个；重启/重挂不漂移（网格锚在存储的时刻上）
  * profile 为空 = 跟随「当前生效配置」（触发那一刻一键长草里生效的那套队列）。
  *
  * 触发与收尾都会写回 lastRun/lastResult，列表上直接能看到上一次跑成了没有。
@@ -21,6 +23,7 @@ object ScheduleStore {
     const val REPEAT_DAILY = 0
     const val REPEAT_WEEKLY = 1
     const val REPEAT_ONCE = 2
+    const val REPEAT_INTERVAL = 3
 
     data class Item(
         val id: String,
@@ -38,7 +41,11 @@ object ScheduleStore {
         /** 上次触发结果（触发时写「已触发」，队列收尾改写成功/失败/跳过）；空 = 从未触发 */
         val lastResult: String = "",
         /** 上次触发时间（epoch ms）；0 = 从未 */
-        val lastRun: Long = 0
+        val lastRun: Long = 0,
+        /** REPEAT_INTERVAL：间隔分钟数；其他类型 0 */
+        val intervalMin: Int = 0,
+        /** REPEAT_INTERVAL：间隔网格锚点（= 保存该间隔的时刻）；0 = 尚未设置（按当前时刻起算） */
+        val anchorMs: Long = 0
     )
 
     private const val PREF = "maawh_schedule"
@@ -64,7 +71,9 @@ object ScheduleStore {
                 dateIso = o.optString("date", ""),
                 profile = o.optString("profile", ""),
                 lastResult = o.optString("lastResult", ""),
-                lastRun = o.optLong("lastRun", 0L)
+                lastRun = o.optLong("lastRun", 0L),
+                intervalMin = o.optInt("interval", 0),
+                anchorMs = o.optLong("anchor", 0L)
             )
         }
     } catch (e: Throwable) {
@@ -89,6 +98,8 @@ object ScheduleStore {
                     if (t.profile.isNotEmpty()) put("profile", t.profile)
                     if (t.lastResult.isNotEmpty()) put("lastResult", t.lastResult)
                     if (t.lastRun > 0) put("lastRun", t.lastRun)
+                    if (t.intervalMin > 0) put("interval", t.intervalMin)
+                    if (t.anchorMs > 0) put("anchor", t.anchorMs)
                 })
             }
             prefs(ctx).edit().putString(KEY, arr.toString()).apply()

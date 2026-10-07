@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-10-02T13:05:34+08:00",
+        "generatedAt": "2026-10-04T12:20:27+08:00",
         "flowFile": "清体力.flow.json",
-        "flowHash": "sha256:a5ce1b4bbd1bea67734b8c9eec236c6e6f5585cb86573694175aef4eb52696dc",
-        "pipelineHash": "sha256:8c97ffb652cc228db781e83bb8971c886af9cae4281c33945a84895dfdc22b55",
+        "flowHash": "sha256:5d26643c21827dea1e891cb57251e4c85f0a1f01183dbe11ac4b58248ffad2a1",
+        "pipelineHash": "sha256:627c3b744c82c0eddf0dad6d77bc78fcd99a9b498d3cbb75002064551f662d91",
         "frameW": 1280,
         "frameH": 720
     },
@@ -14,22 +14,20 @@
             "VF_清体力_21"
         ]
     },
-    "VF_清体力_09": {
+    "VF_清体力_32": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_清体力_32_Hit"
+        ],
+        "on_error": [
+            "VF_清体力_34"
+        ]
+    },
+    "VF_清体力_32_Hit": {
         "recognition": "OCR",
         "expected": [
             "冬谷币"
-        ],
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 600,
-        "roi": [
-            0,
-            64,
-            232,
-            651
-        ],
-        "next": [
-            "VF_清体力_26"
         ],
         "replace": [
             [
@@ -64,16 +62,48 @@
                 "兔形陶顷",
                 "兔形陶埙"
             ]
-        ]
-    },
-    "VF_清体力_26": {
-        "action": "DoNothing",
-        "timeout": 30000,
+        ],
+        "action": "Click",
+        "roi": [
+            0,
+            64,
+            232,
+            651
+        ],
         "next": [
-            "VF_清体力_26_Hit"
+            "VF_清体力_32"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_清体力_34": {
+        "action": "Swipe",
+        "begin": [
+            456,
+            355
+        ],
+        "end": [
+            662,
+            355
+        ],
+        "duration": 900,
+        "post_delay": 600,
+        "next": [
+            "VF_清体力_33"
         ]
     },
-    "VF_清体力_26_Hit": {
+    "VF_清体力_33": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_清体力_33_Hit"
+        ],
+        "on_error": [
+            "VF_清体力_06"
+        ]
+    },
+    "VF_清体力_33_Hit": {
         "recognition": "OCR",
         "expected": [
             "05"
@@ -113,12 +143,17 @@
             ]
         ],
         "action": "Click",
-        "rate_limit": 600,
-        "pre_delay": 200,
-        "post_delay": 600,
+        "roi": [
+            228,
+            130,
+            1048,
+            579
+        ],
         "next": [
-            "VF_清体力_06"
-        ]
+            "VF_清体力_33"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_清体力_06": {
         "recognition": "TemplateMatch",
@@ -369,13 +404,14 @@
     },
     "VF_清体力_30": {
         "action": "DoNothing",
-        "timeout": 30000,
+        "timeout": 3000,
         "next": [
             "VF_清体力_30_Hit"
         ],
         "on_error": [
             "VF_清体力_25"
-        ]
+        ],
+        "max_hit": 3
     },
     "VF_清体力_30_Hit": {
         "recognition": "OCR",
@@ -424,7 +460,7 @@
             648
         ],
         "next": [
-            "VF_清体力_09"
+            "VF_清体力_32"
         ]
     },
     "VF_清体力_End": {

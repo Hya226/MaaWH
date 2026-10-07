@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-28T12:13:46+08:00",
+        "generatedAt": "2026-10-07T20:35:42+08:00",
         "flowFile": "征集.flow.json",
-        "flowHash": "sha256:24016bca0bcee70028b3063864c18de49387d8af61cb3c70192a102a279eea4e",
-        "pipelineHash": "sha256:4ec560b9f9e893e45481d839074676e8ccfe1ac82879c05fb1f0a21166be926a",
+        "flowHash": "sha256:720ef6c24b02f517fea445d20143f9031dbe5c327b9fd616f2f4c0694bbc51ed",
+        "pipelineHash": "sha256:f7f15d4bc847e82d09e01fea20c38b1b67eb47c2a0238abfcb3eda6a4755b8cd",
         "frameW": 1280,
         "frameH": 720
     },
@@ -238,6 +238,12 @@
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,
+        "roi": [
+            727,
+            313,
+            94,
+            76
+        ],
         "next": [
             "VF_征集_11"
         ]

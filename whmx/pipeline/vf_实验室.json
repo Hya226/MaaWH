@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-28T19:46:31+08:00",
+        "generatedAt": "2026-10-07T20:49:57+08:00",
         "flowFile": "实验室.flow.json",
-        "flowHash": "sha256:a08e89ddf39b7579c804c15921b961b749d0802c26e20f11545438423b4c42e2",
-        "pipelineHash": "sha256:9a590f183b82b888c44b8d021fb42736ea4457b92f985f2649b181bb8ee8be2d",
+        "flowHash": "sha256:db3160952c7c87da0b854ac7767a5f98545fcc59fd6ca333ee85330c6ac95fe4",
+        "pipelineHash": "sha256:749485128c248b162b94a9320878ba5899cbbbc59c59e64fb19d8aa7476d7a54",
         "frameW": 1280,
         "frameH": 720
     },
@@ -326,26 +326,70 @@
         "post_delay": 500,
         "pre_delay": 500,
         "next": [
-            "VF_实验室_11"
+            "VF_实验室_14"
         ]
     },
-    "VF_实验室_11": {
+    "VF_实验室_14": {
         "action": "DoNothing",
-        "timeout": 15000,
+        "timeout": 3000,
         "next": [
-            "VF_实验室_11_Hit"
-        ]
-    },
-    "VF_实验室_11_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "wancheng.png",
-        "threshold": 0.7,
-        "action": "Click",
-        "rate_limit": 600,
-        "post_delay": 600,
-        "next": [
+            "VF_实验室_14_Hit"
+        ],
+        "on_error": [
             "VF_实验室_12"
         ]
+    },
+    "VF_实验室_14_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "完成"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            988,
+            589,
+            248,
+            95
+        ],
+        "next": [
+            "VF_实验室_14"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_实验室_12": {
         "action": "DoNothing",
@@ -362,6 +406,12 @@
         "template": "zhuye1.png",
         "threshold": 0.7,
         "action": "Click",
+        "roi": [
+            187,
+            8,
+            110,
+            52
+        ],
         "next": [
             "VF_实验室_12"
         ],

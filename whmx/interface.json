@@ -1,4 +1,5 @@
 {
+
   "interface_version": 2,
   "name": "whmx",
   "label": "物华弥新",
@@ -6,15 +7,21 @@
   "removed": [
     "刷活动关",
     "关卡名",
-    "刷取次数"
+    "刷取次数",
+    "遗境"
   ],
   "description": "MaaWH 的《物华弥新》任务包（Shizuku + 虚拟屏）",
   "controller": [
     {
       "name": "ShizukuVirtualDisplay",
-      "label": "Shizuku 虚拟屏",
+      "label": "Shizuku 虚拟屏（手机端）",
       "type": "Adb",
       "display_short_side": 720
+    },
+    {
+      "name": "Adb",
+      "label": "ADB（PC 端 / 模拟器）",
+      "type": "Adb"
     }
   ],
   "resource": [
@@ -215,6 +222,18 @@
         "tools"
       ],
       "description": "【蹴鞠】分为两周，目前仅写入【蹴鞠】第一周。运行【蹴鞠】第一周相关队列需要拥有（庞贝、向日葵、李小孩项链、天王石刻、卷云金喇叭）这几位器者。"
+    },
+    {
+      "name": "循环刷征集",
+      "label": "循环刷征集",
+      "entry": "VF_循环刷征集",
+      "group": [
+        "tools"
+      ],
+      "option": [
+        "循环总次数"
+      ],
+      "description": "请先打开征集页面"
     }
   ],
   "option": {
@@ -366,10 +385,10 @@
         {
           "name": "冬谷币",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "冬谷币"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "冬谷币"
             }
           }
@@ -377,10 +396,10 @@
         {
           "name": "装备",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "装备"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "装备"
             }
           }
@@ -388,10 +407,10 @@
         {
           "name": "教材",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "教材"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "教材"
             }
           }
@@ -399,10 +418,10 @@
         {
           "name": "场域",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "场域"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "场域"
             }
           }
@@ -410,10 +429,10 @@
         {
           "name": "宿卫",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "宿卫"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "宿卫"
             }
           }
@@ -421,10 +440,10 @@
         {
           "name": "构术",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "构术"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "构术"
             }
           }
@@ -432,10 +451,10 @@
         {
           "name": "远击",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "远击"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "远击"
             }
           }
@@ -443,10 +462,10 @@
         {
           "name": "轻锐",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "轻锐"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "轻锐"
             }
           }
@@ -454,10 +473,10 @@
         {
           "name": "战略",
           "pipeline_override": {
-            "VF_清体力_09": {
+            "VF_清体力_30_Hit": {
               "expected": "战略"
             },
-            "VF_清体力_30_Hit": {
+            "VF_清体力_32_Hit": {
               "expected": "战略"
             }
           }
@@ -735,7 +754,7 @@
         {
           "name": "01",
           "pipeline_override": {
-            "VF_清体力_26_Hit": {
+            "VF_清体力_33_Hit": {
               "expected": "01"
             }
           }
@@ -743,7 +762,7 @@
         {
           "name": "02",
           "pipeline_override": {
-            "VF_清体力_26_Hit": {
+            "VF_清体力_33_Hit": {
               "expected": "02"
             }
           }
@@ -751,7 +770,7 @@
         {
           "name": "03",
           "pipeline_override": {
-            "VF_清体力_26_Hit": {
+            "VF_清体力_33_Hit": {
               "expected": "03"
             }
           }
@@ -759,7 +778,7 @@
         {
           "name": "04",
           "pipeline_override": {
-            "VF_清体力_26_Hit": {
+            "VF_清体力_33_Hit": {
               "expected": "04"
             }
           }
@@ -767,7 +786,7 @@
         {
           "name": "05",
           "pipeline_override": {
-            "VF_清体力_26_Hit": {
+            "VF_清体力_33_Hit": {
               "expected": "05"
             }
           }
@@ -861,6 +880,2563 @@
         }
       ],
       "default_case": "2"
+    },
+    "循环总次数": {
+      "type": "select",
+      "label": "循环总次数",
+      "cases": [
+        {
+          "name": "1",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L1": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "2",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L2": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "3",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L3": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "4",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L4": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "5",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L5": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "6",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L6": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "7",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L7": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "8",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L8": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "9",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L9": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "10",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L10": {
+              "next": []
+            }
+          }
+        },
+        {
+          "name": "11",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L11": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L12": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "13",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L13": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "14",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L14": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "15",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L15": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "16",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L16": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "17",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L17": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "18",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L18": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "19",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L19": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "20",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L20": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "21",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L21": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L22": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "23",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L23": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "24",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L24": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "25",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L25": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "26",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L26": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "27",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L27": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "28",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L28": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "29",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L29": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "30",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L30": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "31",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L31": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "32",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L32": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "33",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L33": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "34",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L34": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "35",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L35": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "36",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L36": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "37",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L37": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "38",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L38": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "39",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L39": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "40",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L40": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "41",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L41": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "42",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L42": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "43",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L43": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "44",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L44": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "45",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L45": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "46",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L46": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "47",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L47": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "48",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L48": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "49",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L49": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "50",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L50": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "51",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L51": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "52",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L52": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "53",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L53": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "54",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L54": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "55",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L55": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "56",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L56": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "57",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L57": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "58",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L58": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "59",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L59": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "60",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L60": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "61",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L61": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "62",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L62": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "63",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L63": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "64",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L64": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "65",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L65": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "66",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L66": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "67",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L67": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "68",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L68": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "69",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L69": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "70",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L70": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "71",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L71": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "72",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L72": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "73",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L73": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "74",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L74": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "75",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L75": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "76",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L76": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "77",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L77": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "78",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L78": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "79",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L79": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "80",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L80": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "81",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L81": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "82",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L82": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "83",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L83": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "84",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L84": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "85",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L85": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "86",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L86": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "87",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L87": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "88",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L88": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "89",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L89": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "90",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L90": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "91",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L91": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "92",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L92": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "93",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L93": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "94",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L94": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "95",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L95": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "96",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L96": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "97",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L97": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "98",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L98": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "99",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L99": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "100",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L100": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "101",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L101": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "102",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L102": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "103",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L103": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "104",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L104": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "105",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L105": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "106",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L106": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "107",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L107": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "108",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L108": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "109",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L109": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "110",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L110": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "111",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L111": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "112",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L112": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "113",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L113": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "114",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L114": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "115",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L115": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "116",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L116": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "117",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L117": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "118",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L118": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "119",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L119": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "120",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L120": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "121",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L121": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "122",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L122": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "123",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L123": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "124",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L124": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "125",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L125": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "126",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L126": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "127",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L127": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "128",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L128": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "129",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L129": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "130",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L130": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "131",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L131": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "132",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L132": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "133",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L133": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "134",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L134": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "135",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L135": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "136",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L136": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "137",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L137": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "138",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L138": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "139",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L139": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "140",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L140": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "141",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L141": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "142",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L142": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "143",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L143": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "144",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L144": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "145",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L145": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "146",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L146": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "147",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L147": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "148",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L148": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "149",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L149": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "150",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L150": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "151",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L151": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "152",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L152": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "153",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L153": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "154",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L154": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "155",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L155": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "156",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L156": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "157",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L157": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "158",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L158": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "159",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L159": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "160",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L160": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "161",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L161": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "162",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L162": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "163",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L163": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "164",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L164": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "165",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L165": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "166",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L166": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "167",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L167": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "168",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L168": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "169",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L169": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "170",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L170": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "171",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L171": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "172",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L172": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "173",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L173": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "174",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L174": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "175",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L175": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "176",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L176": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "177",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L177": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "178",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L178": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "179",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L179": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "180",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L180": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "181",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L181": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "182",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L182": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "183",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L183": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "184",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L184": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "185",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L185": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "186",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L186": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "187",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L187": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "188",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L188": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "189",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L189": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "190",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L190": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "191",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L191": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "192",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L192": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "193",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L193": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "194",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L194": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "195",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L195": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "196",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L196": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "197",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L197": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "198",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L198": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "199",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L199": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        },
+        {
+          "name": "200",
+          "pipeline_override": {
+            "VF_循环刷征集_12_L200": {
+              "next": []
+            },
+            "VF_循环刷征集_12_L10": {
+              "next": [
+                "VF_循环刷征集_01_L11"
+              ]
+            }
+          }
+        }
+      ],
+      "default_case": "10"
     }
   }
 }

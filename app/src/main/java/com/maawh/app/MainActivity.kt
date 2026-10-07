@@ -1819,19 +1819,48 @@ class MainActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                 .apply { topMargin = dp(10) }
         })
-        val rbDaily = RadioButton(this).apply { text = "每天"; id = View.generateViewId() }
-        val rbWeekly = RadioButton(this).apply { text = "每周"; id = View.generateViewId() }
-        val rbOnce = RadioButton(this).apply { text = "单次"; id = View.generateViewId() }
+        // minWidth 置 0：默认 88dp/个，四个选项在窄屏对话框里会挤换行
+        val rbDaily = RadioButton(this).apply { text = "每天"; id = View.generateViewId(); minWidth = 0 }
+        val rbWeekly = RadioButton(this).apply { text = "每周"; id = View.generateViewId(); minWidth = 0 }
+        val rbOnce = RadioButton(this).apply { text = "单次"; id = View.generateViewId(); minWidth = 0 }
+        val rbInterval = RadioButton(this).apply { text = "间隔"; id = View.generateViewId(); minWidth = 0 }
         val rgRepeat = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
         rgRepeat.addView(rbDaily)
         rgRepeat.addView(rbWeekly)
         rgRepeat.addView(rbOnce)
+        rgRepeat.addView(rbInterval)
         when (repeat) {
             ScheduleStore.REPEAT_WEEKLY -> rbWeekly.isChecked = true
             ScheduleStore.REPEAT_ONCE -> rbOnce.isChecked = true
+            ScheduleStore.REPEAT_INTERVAL -> rbInterval.isChecked = true
             else -> rbDaily.isChecked = true
         }
         box.addView(rgRepeat)
+
+        // 间隔循环：数值 + 单位（分钟/小时）；存 intervalMin，锚点 = 保存该间隔的时刻
+        val rowInterval = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val etInterval = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setSingleLine()
+            minWidth = dp(72)
+            setText(
+                when {
+                    base.intervalMin <= 0 -> "2"
+                    base.intervalMin % 60 == 0 -> (base.intervalMin / 60).toString()
+                    else -> base.intervalMin.toString()
+                }
+            )
+        }
+        val spUnit = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, mutableListOf("小时", "分钟"))
+            setSelection(if (base.intervalMin > 0 && base.intervalMin % 60 != 0) 1 else 0)
+        }
+        rowInterval.addView(etInterval, LinearLayout.LayoutParams(dp(88), ViewGroup.LayoutParams.WRAP_CONTENT))
+        rowInterval.addView(spUnit, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        box.addView(rowInterval)
 
         // 每周：星期勾选行
         val rowDays = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -1871,11 +1900,13 @@ class MainActivity : AppCompatActivity() {
         fun refreshVisibility() {
             rowDays.visibility = if (repeat == ScheduleStore.REPEAT_WEEKLY) View.VISIBLE else View.GONE
             btnDate.visibility = if (repeat == ScheduleStore.REPEAT_ONCE) View.VISIBLE else View.GONE
+            rowInterval.visibility = if (repeat == ScheduleStore.REPEAT_INTERVAL) View.VISIBLE else View.GONE
         }
         rgRepeat.setOnCheckedChangeListener { _, checkedId ->
             repeat = when (checkedId) {
                 rbWeekly.id -> ScheduleStore.REPEAT_WEEKLY
                 rbOnce.id -> ScheduleStore.REPEAT_ONCE
+                rbInterval.id -> ScheduleStore.REPEAT_INTERVAL
                 else -> ScheduleStore.REPEAT_DAILY
             }
             refreshVisibility()
@@ -1923,6 +1954,15 @@ class MainActivity : AppCompatActivity() {
                     toast("每周重复至少要勾选一天")
                     return@setOnClickListener
                 }
+                // 间隔输入：数值×单位换算成分钟（非法/过小挡下——间隔比队列时长还短会一直"跳过"）
+                val ivVal = etInterval.text.toString().trim().toIntOrNull() ?: 0
+                val intervalMin =
+                    if (repeat != ScheduleStore.REPEAT_INTERVAL) 0
+                    else if (spUnit.selectedItemPosition == 0) ivVal * 60 else ivVal
+                if (repeat == ScheduleStore.REPEAT_INTERVAL && intervalMin < 5) {
+                    toast("间隔至少 5 分钟")
+                    return@setOnClickListener
+                }
                 if (repeat == ScheduleStore.REPEAT_ONCE &&
                     ScheduleManager.nextTrigger(
                         ScheduleStore.Item("", "", true, repeat, hour, minute, emptySet(), dateIso),
@@ -1933,12 +1973,17 @@ class MainActivity : AppCompatActivity() {
                     return@setOnClickListener
                 }
                 val ruleText = ScheduleManager.describeRule(
-                    ScheduleStore.Item("", "", true, repeat, hour, minute, days.toSet(), dateIso)
+                    ScheduleStore.Item("", "", true, repeat, hour, minute, days.toSet(), dateIso, intervalMin = intervalMin)
                 )
                 val name = etName.text.toString().trim().ifBlank { ruleText }
+                // 锚点只在新建成间隔、或间隔值/类型改动了才重置为现在——只改名字等不该挪动触发网格
+                val anchor = if (repeat == ScheduleStore.REPEAT_INTERVAL &&
+                    (base.repeat != ScheduleStore.REPEAT_INTERVAL || base.intervalMin != intervalMin)
+                ) System.currentTimeMillis() else base.anchorMs
                 val saved = base.copy(
                     name = name, repeat = repeat, hour = hour, minute = minute,
-                    days = days.toSet(), dateIso = dateIso, profile = profile
+                    days = days.toSet(), dateIso = dateIso, profile = profile,
+                    intervalMin = intervalMin, anchorMs = anchor
                 )
                 ScheduleStore.upsert(applicationContext, saved)
                 ScheduleManager.armAll(applicationContext)
