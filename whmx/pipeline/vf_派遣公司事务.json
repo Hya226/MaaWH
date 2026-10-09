@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-27T11:49:20+08:00",
+        "generatedAt": "2026-10-10T07:24:10+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:4feb5693ea234813318079fb9bbdb2b49381b0657b98b86c157f91e945aa1408",
-        "pipelineHash": "sha256:7a272687b52f5c6a35fa887ff5821fb62c979056a9ddc1deec66602542f170f9",
+        "flowHash": "sha256:94a06a1d4761da50ea231c16ab5e734b28c2214b307062becb725026005e67fb",
+        "pipelineHash": "sha256:15966aa34174f664d792115220911e8e9869233cba7835bb8e9574e8f213f5df",
         "frameW": 1280,
         "frameH": 720
     },
@@ -342,9 +342,9 @@
     "VF_派遣公司事务_20": {
         "recognition": "TemplateMatch",
         "template": "tea_qipao.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "Click",
-        "timeout": 8000,
+        "timeout": 35000,
         "post_delay": 800,
         "rate_limit": 200,
         "next": [

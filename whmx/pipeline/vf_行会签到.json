@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-27T11:49:23+08:00",
+        "generatedAt": "2026-10-10T07:28:23+08:00",
         "flowFile": "行会签到.flow.json",
-        "flowHash": "sha256:b172fb0c7a14e19869a0d3ffd4b4b4b13e9b9134d9a37ad27605f579daeb2080",
-        "pipelineHash": "sha256:073720acffaa5cbb50ee801d7d63c88ad88d35ba9995043c663b2068bce7a067",
+        "flowHash": "sha256:261e55b3343170bee66aac16553a817499d08842934eee598901e899a2860d4a",
+        "pipelineHash": "sha256:c172e95fb05775e0862844fe9b4cd703c677d8939ce16e949b7e4021e8f70015",
         "frameW": 1280,
         "frameH": 720
     },
@@ -34,15 +34,39 @@
         "post_delay": 1000,
         "pre_delay": 200,
         "next": [
-            "VF_行会签到_02"
+            "VF_行会签到_04"
         ]
     },
-    "VF_行会签到_02": {
+    "VF_行会签到_04": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_行会签到_04_Hit"
+        ],
+        "on_error": [
+            "VF_行会签到_End"
+        ]
+    },
+    "VF_行会签到_04_Hit": {
         "recognition": "TemplateMatch",
         "template": "hanghui_fanhui.png",
-        "threshold": 0.6,
+        "threshold": 0.7,
         "action": "Click",
-        "timeout": 3000,
-        "post_delay": 1000
+        "roi": [
+            0,
+            0,
+            217,
+            59
+        ],
+        "next": [
+            "VF_行会签到_04"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_行会签到_End": {
+        "action": "DoNothing",
+        "next": []
     }
 }

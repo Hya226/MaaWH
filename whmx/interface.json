@@ -3,7 +3,7 @@
   "interface_version": 2,
   "name": "whmx",
   "label": "物华弥新",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "removed": [
     "刷活动关",
     "关卡名",
