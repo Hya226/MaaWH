@@ -18,7 +18,14 @@ class ScheduleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ScheduleManager.ACTION_TRIGGER) return
         val id = intent.getStringExtra(ScheduleManager.EXTRA_ID) ?: return
-        val item = ScheduleStore.get(context, id) ?: return  // 已删除条目的残留闹钟：静默吞掉
+        val item = ScheduleStore.get(context, id)
+        if (item == null) {
+            // 读不到条目：已删除条目的残留闹钟，或存储坏数据回落空表（save 是整 key 覆写，
+            // 坏一次全没）。两者区分不了，统一走有上限的重试链（60s×3，对已删除条目是幂等
+            // 空操作）；用尽转 30 分钟后整批重排——调度链不在这里静默断掉。
+            ScheduleManager.scheduleRetry(context, id, intent.getIntExtra(ScheduleManager.EXTRA_RETRY, 0))
+            return
+        }
 
         // 先续约再执行：调度链不能被执行侧的任何失败打断
         // （单次 → 触发即停用并落账；循环 → lastRun 落账 + 挂下一次）
@@ -27,7 +34,10 @@ class ScheduleReceiver : BroadcastReceiver() {
             ScheduleStore.setEnabled(context, id, false)
         } else {
             ScheduleStore.recordTrigger(context, item)
-            ScheduleManager.armItem(context, item)
+            if (ScheduleManager.armItem(context, item) == ScheduleManager.ArmResult.FAILED) {
+                // 闹钟被系统全拒（理论上 set() 兜底后到不了这）：挂个重排兜底，别让链条断掉
+                ScheduleManager.scheduleResync(context)
+            }
         }
 
         // 点亮屏幕（不解锁）：部分 ROM 熄屏会把虚拟屏一起断电，帧流黑屏任务必挂；

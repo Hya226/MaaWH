@@ -1,7 +1,6 @@
 package com.maawh.app
 
 import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -1057,6 +1056,8 @@ class MainActivity : AppCompatActivity() {
         binding.imageShot.post { applyPreviewAspect() }
         // 缩放卡片按存档重刷一次（小球位置/按钮可见性以 prefs 为准，别被视图状态恢复带歪）
         renderScaleLabel()
+        // 从「闹钟和提醒」授权页回来：重画定时页（权限提示卡显隐与闹钟降级状态随授权变化）
+        if (binding.panelTimer.visibility == View.VISIBLE) renderSchedulePanel()
         // 从「安装未知应用」授权页回来：自动继续拉起待安装的更新包
         if (pendingInstallApk != null) tryInstallPending()
         // 虚拟屏是服务端权威状态(app 重启/切后台会丢内存标志)，回前台自动同步 UI
@@ -1683,6 +1684,14 @@ class MainActivity : AppCompatActivity() {
     private fun renderSchedulePanel() {
         val container = binding.llScheduleList
         container.removeAllViews()
+        // 精确闹钟权限提示卡（对标 maameow 定时页健康卡的 EXACT_ALARM 项）：被拒时闹钟已
+        // 降级为非精确（到点可能延迟），引导去系统设置授权，授权广播回来自动恢复准点。
+        // API 31 以下没有这个权限机制（setAlarmClock 无权限概念），不显示。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            !ScheduleManager.canScheduleExact(applicationContext)
+        ) {
+            container.addView(schedulePermissionCard())
+        }
         val items = ScheduleStore.load(this)
         if (items.isEmpty()) {
             container.addView(simpleText("还没有定时任务，点右上「＋ 新建」创建一个", R.color.text_secondary, 12f))
@@ -1691,14 +1700,14 @@ class MainActivity : AppCompatActivity() {
         val now = System.currentTimeMillis()
         items.sortedWith(
             compareBy<ScheduleStore.Item> { !it.enabled }
-                .thenBy { ScheduleManager.nextTrigger(it, now) ?: Long.MAX_VALUE }
+                .thenBy { ScheduleManager.nextTriggerFromNow(it, now) ?: Long.MAX_VALUE }
         ).forEach { container.addView(scheduleRow(it, now)) }
     }
 
     /** 单条定时卡片：名字 + 规则/绑定 + 下次/上次结果 + 启停开关；点卡片编辑 */
     private fun scheduleRow(item: ScheduleStore.Item, now: Long): View {
         val dayFmt = SimpleDateFormat("MM-dd HH:mm", Locale.getDefault())
-        val next = if (item.enabled) ScheduleManager.nextTrigger(item, now) else null
+        val next = if (item.enabled) ScheduleManager.nextTriggerFromNow(item, now) else null
         val nextText = when {
             !item.enabled -> "已停用"
             next == null -> "无下次触发（单次已过期）"
@@ -1749,6 +1758,96 @@ class MainActivity : AppCompatActivity() {
                 }
             })
         }
+    }
+
+    /** 精确闹钟权限被拒时的提示卡（对标 maameow 定时页健康卡的 EXACT_ALARM 项） */
+    private fun schedulePermissionCard(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(12).toFloat()
+                setColor(0x26F57C00)  // 半透明橙：警示但不到 ERROR 的红
+            }
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dp(6) }
+            addView(TextView(this@MainActivity).apply {
+                text = "缺「闹钟和提醒」权限，定时到点可能延迟或不触发"
+                setTextColor(0xFFF5B041.toInt())
+                textSize = 12f
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply { marginEnd = dp(8) }
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "去授权"
+                setTextColor(getColor(R.color.accent))
+                textSize = 13f
+                paint.isFakeBoldText = true
+                setPadding(dp(8), dp(6), dp(8), dp(6))
+                setOnClickListener { openExactAlarmSettings() }
+            })
+        }
+    }
+
+    /** 跳系统「闹钟和提醒」开关页（API 31+ 才有，调用方已判版本）；没有该页的 ROM 退到应用详情 */
+    private fun openExactAlarmSettings() {
+        val opened = runCatching {
+            startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }.isSuccess
+        if (!opened) runCatching {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$packageName")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }.onFailure { toast("无法打开系统设置，请手动到系统设置里搜索「闹钟和提醒」") }
+    }
+
+    /**
+     * 滚轮时间选择对话框（对标 maameow 定时编辑的「选择时间」，替代系统转盘 TimePicker）：
+     * 小时/分钟两列循环滚轮，中心行垫深蓝胶囊高亮、向上下渐隐；24h 制（本 App 语义一直是 24h，
+     * 截图里的 12h/24h 切换不做）。确定时取两列 currentValue（snap 动画未完也取目标刻度）。
+     */
+    private fun showWheelTimePicker(h0: Int, m0: Int, onPicked: (Int, Int) -> Unit) {
+        val itemH = dp(52)
+        val wheelH = itemH * 5   // 可见 5 行：中心选中 + 上下各两行渐隐
+        val hourWheel = WheelView(this).apply { count = 24; setValue(h0) }
+        val minWheel = WheelView(this).apply { count = 60; setValue(m0) }
+        val colon = TextView(this).apply {
+            text = ":"
+            textSize = 21f
+            setTextColor(getColor(R.color.text_primary))
+            gravity = Gravity.CENTER
+        }
+        val wheelRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(hourWheel, LinearLayout.LayoutParams(0, wheelH, 1f))
+            addView(colon, LinearLayout.LayoutParams(dp(28), wheelH))
+            addView(minWheel, LinearLayout.LayoutParams(0, wheelH, 1f))
+        }
+        val capsule = View(this).apply {
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(14).toFloat()
+                setColor(0xFF254D9E.toInt())  // 选中行胶囊（maameow 截图同款深蓝）
+            }
+        }
+        val wrap = FrameLayout(this).apply {
+            addView(capsule, FrameLayout.LayoutParams(MATCH_PARENT, itemH).apply {
+                gravity = Gravity.CENTER
+                marginStart = dp(12); marginEnd = dp(12)
+            })
+            addView(wheelRow, FrameLayout.LayoutParams(MATCH_PARENT, wheelH))
+        }
+        AlertDialog.Builder(this)
+            .setTitle("选择时间")
+            .setView(wrap)
+            .setNegativeButton("取消", null)
+            .setPositiveButton("确定") { _, _ -> onPicked(hourWheel.currentValue(), minWheel.currentValue()) }
+            .create()
+            .show()
     }
 
     /**
@@ -1807,7 +1906,7 @@ class MainActivity : AppCompatActivity() {
         }
         fun refreshTime() { btnTime.text = String.format(Locale.US, "%02d:%02d", hour, minute) }
         btnTime.setOnClickListener {
-            TimePickerDialog(this, { _, h, m -> hour = h; minute = m; refreshTime() }, hour, minute, true).show()
+            showWheelTimePicker(hour, minute) { h, m -> hour = h; minute = m; refreshTime() }
         }
         refreshTime()
         box.addView(btnTime)
@@ -1986,8 +2085,14 @@ class MainActivity : AppCompatActivity() {
                     intervalMin = intervalMin, anchorMs = anchor
                 )
                 ScheduleStore.upsert(applicationContext, saved)
-                ScheduleManager.armAll(applicationContext)
+                val armFailed = ScheduleManager.armAll(applicationContext)
                 log("已保存定时「$name」（$ruleText）", LogLevel.SUCCESS)
+                // 数据已落盘、保存已成立；闹钟挂载问题只提示不失败（对标 maameow：注册失败 ≠ 保存失败）
+                if (!ScheduleManager.canScheduleExact(applicationContext)) {
+                    toast("已保存。缺「闹钟和提醒」权限，到点可能延迟——可在本页顶部去授权")
+                } else if (armFailed.isNotEmpty()) {
+                    toast("已保存，但「${armFailed.first()}」的闹钟挂载失败")
+                }
                 renderSchedulePanel()
                 dlg.dismiss()
             }

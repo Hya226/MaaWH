@@ -102,7 +102,10 @@ object ScheduleStore {
                     if (t.anchorMs > 0) put("anchor", t.anchorMs)
                 })
             }
-            prefs(ctx).edit().putString(KEY, arr.toString()).apply()
+            // commit 而非 apply：apply 是异步落盘，保存后紧跟的系统调用若把进程崩了
+            // （2026-10 实测：某 ROM 拒 setAlarmClock 抛 SecurityException），这次写入就丢了，
+            // 表现为「任务存不上」。本表数据量极小，同步写无性能顾虑。
+            prefs(ctx).edit().putString(KEY, arr.toString()).commit()
         } catch (e: Throwable) {
             // 存档失败不打断使用，下次编辑会再试
         }
