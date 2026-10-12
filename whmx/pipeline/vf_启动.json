@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-27T21:28:14+08:00",
+        "generatedAt": "2026-10-12T19:47:19+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:3eebeeee80660789091e541695d1fcf9822b76ecbc785c86ccd6bbd1833d3836",
-        "pipelineHash": "sha256:9d84e4fefc165429c757489cffa55a1f956a1cbc5fe058cf0c7d678d62cfe89b",
+        "flowHash": "sha256:26576a11091c31b74e32bcf84ae3209f61a832980b4debc9789cb128aa991339",
+        "pipelineHash": "sha256:91de9fdc43074d55a7333a665a08612c48d31f357adeba8794a8c01f6531ccd8",
         "frameW": 1280,
         "frameH": 720
     },
@@ -32,7 +32,7 @@
     "VF_启动_12": {
         "recognition": "TemplateMatch",
         "template": "ks_cha.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "DoNothing",
         "timeout": 60000,
         "roi": [
@@ -67,8 +67,36 @@
             62
         ],
         "next": [
+            "VF_启动_17"
+        ]
+    },
+    "VF_启动_17": {
+        "action": "DoNothing",
+        "timeout": 2000,
+        "next": [
+            "VF_启动_17_Hit"
+        ],
+        "on_error": [
             "VF_启动_11"
         ]
+    },
+    "VF_启动_17_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "ks_cha.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "roi": [
+            988,
+            29,
+            288,
+            125
+        ],
+        "next": [
+            "VF_启动_17"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_启动_11": {
         "action": "Click",
