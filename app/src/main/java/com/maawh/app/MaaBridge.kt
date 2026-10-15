@@ -186,6 +186,7 @@ object MaaBridge {
     object MaaMsg {
         const val TASK_STARTING = "Tasker.Task.Starting"
         const val NODE_STARTING = "Node.PipelineNode.Starting"
+        const val NODE_RECO_SUCCEEDED = "Node.Recognition.Succeeded"
         const val CTRL_FAILED = "Controller.Action.Failed"
     }
 

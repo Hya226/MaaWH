@@ -64,6 +64,21 @@ class QueueRunner(
     /** 最近一次上报到状态行的节点名（同节点不重复刷） */
     private var lastNode: String? = null
 
+    // ---- OCR记录（【OCR记录】节点，2026-10-15 加）----
+    // 引擎识别成功事件（Node.Recognition.Succeeded）的 details 里带 reco_details，
+    // OCR 时有识别出的文本明细 —— 这是"识别文本出引擎"的唯一通道（协议本身没有
+    // 变量/返回值概念，也没注册 Custom Action）。清单 type=record 参数声明了
+    // 「记录节点生成名 → 参数名」，App 靠它把文本归属到参数。
+    /** 节点生成名 → 参数名（run 开头现读清单；构造传入的 manifest 可能是旧版） */
+    @Volatile
+    private var recordVars: Map<String, String> = emptyMap()
+
+    /** 当前任务的记录值（引擎线程写、队列线程收尾读），同名参数后值覆盖前值 */
+    private val taskRecords = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /** 整个队列的记录（任务名 → (参数名 → 值)），收尾一次性输出 + 进任务历史 */
+    private val queueRecords = java.util.LinkedHashMap<String, Map<String, String>>()
+
     /** 进程/帧流守护线程的退出旗标（见 startGameWatchdog） */
     @Volatile
     private var watchdogStop = false
@@ -90,12 +105,49 @@ class QueueRunner(
                 // 状态行显示当前节点（running 检查防收尾结算态被迟到事件覆盖）
                 notify { if (running) cb.onRunState("执行中: $label · 节点 $n", R.color.accent) }
             }
+            MaaBridge.MaaMsg.NODE_RECO_SUCCEEDED -> {
+                // 【OCR记录】：识别命中 → 抠出 OCR 文本记入参数（实时打一行）。
+                // 没配记录节点时 map 为空，这里第一个判断就出去，零开销
+                if (recordVars.isEmpty()) return
+                // 排障三件套之二：映射非空却始终不见这行 = 事件根本没到 App
+                //（sink/引擎侧问题）；这行有、📋 行没有 = 事件里的节点名对不上映射
+                cb.onLog("📡 识别事件: ${ev.nodeName ?: "?"}", LogLevel.TRACE)
+                var n = ev.nodeName ?: return
+                if (n !in recordVars) {
+                    // 循环体里的记录节点只有展开份名（VF_x_03_L2_Hit）——剥 _L<k> 再查
+                    n = n.replace(Regex("(_L\\d+)+(?=_Hit$|$)"), "")
+                }
+                val label = recordVars[n] ?: return
+                val text = ocrTextOf(ev.details)
+                taskRecords[label] = text
+                cb.onLog("📋 $label = ${text.ifBlank { "（未识别到文本）" }}", LogLevel.INFO)
+            }
             MaaBridge.MaaMsg.CTRL_FAILED ->
                 cb.onLog("控制器动作失败（截图/点击/滑动注入，详见引擎日志）", LogLevel.WRN)
             MaaBridge.MaaMsg.TASK_STARTING ->
                 cb.onLog("引擎任务开始: ${ev.entry ?: ev.nodeName ?: "?"}", LogLevel.TRACE)
         }
     }
+
+    /**
+     * 从识别成功事件 details 里抠 OCR 文本：reco_details.detail.all[] 里取分数最高、
+     * 文本非空的一条（与 EngineLog.recoSummary 同一张明细表）。明细形状随引擎版本
+     * 可能变化，任何一步取不到都返回 ""，绝不抛异常（这里跑在引擎线程）。
+     */
+    private fun ocrTextOf(detailsJson: String): String = runCatching {
+        val reco = JSONObject(detailsJson).optJSONObject("reco_details") ?: return ""
+        val all = reco.optJSONObject("detail")?.optJSONArray("all") ?: return ""
+        var best: JSONObject? = null
+        var bestScore = Double.NEGATIVE_INFINITY
+        for (i in 0 until all.length()) {
+            val o = all.optJSONObject(i) ?: continue
+            val t = o.optString("text", "")
+            if (t.isBlank()) continue
+            val s = o.optDouble("score", 0.0)
+            if (best == null || s >= bestScore) { best = o; bestScore = s }
+        }
+        best?.optString("text", "") ?: ""
+    }.getOrDefault("")
 
     fun requestStop() {
         stopRequested = true
@@ -146,6 +198,20 @@ class QueueRunner(
             }
         }
 
+        // OCR记录映射：现读清单（构造传入的 manifest 是 App 启动时的旧版，编辑器刚
+        // 「同步到手机」的记录节点不重启也要生效）；读取失败回退构造传入版
+        recordVars = (runCatching { TaskPack.load(whmxDir) }.getOrNull() ?: manifest)
+            ?.recordVars ?: emptyMap()
+        queueRecords.clear()
+        // 排障三件套之一：这行不出现 = 清单里没有 record 参数/解析失败（映射为空，
+        // 后面的识别事件会被第一个判断全部放走）
+        if (recordVars.isNotEmpty()) {
+            cb.onLog(
+                "OCR记录：清单映射 ${recordVars.size} 个节点（参数：" +
+                    recordVars.values.toSortedSet().joinToString("、") + "）",
+                LogLevel.INFO
+            )
+        }
         // 订阅引擎实时事件（finally 里必须摘掉：Tasker 每任务重建，但监听器按队列生命周期走）
         MaaBridge.addEngineEventListener(engineListener)
         try {
@@ -181,6 +247,7 @@ class QueueRunner(
                     }
                     currentLabel = item.label
                     lastNode = null
+                    taskRecords.clear()     // 记录值按任务隔离：上一个任务的残留不带到这一个
                     // 日志 hint 的 override 感知每任务重置：「启动/关闭游戏」这类
                     // 不带参数的分支不残留上一个任务的参数（EngineLog.hintFor 用）
                     EngineLog.liveOverride = null
@@ -295,6 +362,16 @@ class QueueRunner(
                             else -> LogLevel.ERR
                         }
                     )
+                    // OCR记录收尾汇总（用户要求的三路输出之二；实时行在上面事件里已打）。
+                    // 只列本任务真命中过的参数——声明了但没识别到的，App 不知道它该出现，
+                    // 不冒充"（未识别到）"
+                    if (taskRecords.isNotEmpty()) {
+                        cb.onLog("—— ${item.label} 记录汇总 ——", LogLevel.INFO)
+                        for ((label, text) in taskRecords) {
+                            cb.onLog("📋 $label = ${text.ifBlank { "（未识别到）" }}", LogLevel.INFO)
+                        }
+                        queueRecords[item.label] = taskRecords.toMap()
+                    }
                     // 显示守护报告（StartApp 之后 45s 内的帧流/漂移记录）：守护跑在服务端，
                     // 任务一结束就取回来打出来，免得要等下一次 StartApp 才带得出来
                     runCatching { ShizukuShell.takeGuardReport() }
@@ -356,7 +433,7 @@ class QueueRunner(
                 )
             }
 
-            // 队列历史：落盘一条（时间/任务数/失败名单/是否停止/耗时），重启可查（files/history.json）
+            // 队列历史：落盘一条（时间/任务数/失败名单/是否停止/耗时/OCR记录），重启可查
             val totalText = costText(queueStart)
             HistoryStore.append(
                 context,
@@ -365,15 +442,16 @@ class QueueRunner(
                     planCount = planTasks.size,
                     failed = failed.toList(),
                     stopped = stopRequested,
-                    costText = totalText
+                    costText = totalText,
+                    records = queueRecords.toMap()
                 )
             )
             RunLogStore.end(
-                when {
+                (when {
                     stopRequested -> "已停止 · $totalText"
                     ok -> "全部完成 · $totalText"
                     else -> "失败 ${failed.size}/${planTasks.size} · $totalText"
-                }
+                } + recordsDigest())
             )
             cb.onQueueResult(ok = ok, failed = failed.toList(), stopped = stopRequested)
 
@@ -425,7 +503,8 @@ class QueueRunner(
                     planCount = planTasks.size,
                     failed = listOf("队列异常"),
                     stopped = true,
-                    costText = costText(queueStart)
+                    costText = costText(queueStart),
+                    records = queueRecords.toMap()
                 )
             )
             FloatingPanel.update("◼ 队列异常")
@@ -650,6 +729,17 @@ class QueueRunner(
 
     private fun costText(startMs: Long): String =
         String.format(Locale.getDefault(), "%.2fs", (android.os.SystemClock.elapsedRealtime() - startMs) / 1000.0)
+
+    /** 记录摘要（收尾行用）：` ｜ 记录：启动：体力=156/240、金币=1234`；没记录返回空串 */
+    private fun recordsDigest(): String {
+        if (queueRecords.isEmpty()) return ""
+        val body = queueRecords.entries.joinToString("；") { (task, recs) ->
+            task + "：" + recs.entries.joinToString("、") { (k, v) ->
+                if (v.isBlank()) "$k=未识别" else "$k=$v"
+            }
+        }
+        return " ｜ 记录：$body"
+    }
 
     companion object {
         /** 当前队列执行器：通知栏「停止任务」按钮没有 Activity 引用，走静态入口 */

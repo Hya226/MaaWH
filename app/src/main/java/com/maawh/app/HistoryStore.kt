@@ -23,7 +23,9 @@ object HistoryStore {
         val planCount: Int,        // 计划任务数
         val failed: List<String>,  // 失败任务名；空 + 未停止 = 全部成功
         val stopped: Boolean,      // 用户主动停止 / 队列异常中断
-        val costText: String       // "44.9s"
+        val costText: String,      // "44.9s"
+        /** 【OCR记录】的值：任务名 → (参数名 → 识别文本)。空 = 本队列没配记录节点 */
+        val records: Map<String, Map<String, String>> = emptyMap()
     ) {
         val ok: Boolean get() = !stopped && failed.isEmpty()
 
@@ -40,6 +42,13 @@ object HistoryStore {
                 }
             )
             append(" · ").append(costText)
+        }
+
+        /** 记录的几行展示文本（每任务一行），没记录返回空列表 */
+        fun recordLines(): List<String> = records.map { (task, recs) ->
+            "  📋 $task：" + recs.entries.joinToString("、") { (k, v) ->
+                if (v.isBlank()) "$k=未识别" else "$k=$v"
+            }
         }
     }
 
@@ -58,6 +67,13 @@ object HistoryStore {
                         put("failed", JSONArray(x.failed))
                         put("stopped", x.stopped)
                         put("cost", x.costText)
+                        if (x.records.isNotEmpty()) {
+                            val recs = JSONObject()
+                            for ((task, rec) in x.records) {
+                                recs.put(task, JSONObject(rec))
+                            }
+                            put("records", recs)
+                        }
                     })
                 }
                 File(ctx.filesDir, FILE).writeText(arr.toString())
@@ -73,21 +89,34 @@ object HistoryStore {
             val fails = ArrayList<String>()
             val fa = o.optJSONArray("failed") ?: JSONArray()
             for (j in 0 until fa.length()) fails.add(fa.optString(j))
+            val records = LinkedHashMap<String, Map<String, String>>()
+            o.optJSONObject("records")?.let { recs ->
+                for (task in recs.keys()) {
+                    val rec = recs.optJSONObject(task) ?: continue
+                    val m = LinkedHashMap<String, String>()
+                    for (k in rec.keys()) m[k] = rec.optString(k)
+                    records[task] = m
+                }
+            }
             Entry(
                 time = o.optString("time"),
                 planCount = o.optInt("count"),
                 failed = fails,
                 stopped = o.optBoolean("stopped"),
-                costText = o.optString("cost")
+                costText = o.optString("cost"),
+                records = records
             )
         }
     } catch (e: Throwable) {
         emptyList()
     }
 
-    /** 弹窗展示用文本（最近的在前） */
+    /** 弹窗展示用文本（最近的在前）；带记录的条目把记录行跟在摘要后 */
     fun summary(ctx: Context, max: Int = 40): String {
         val list = load(ctx).take(max)
-        return if (list.isEmpty()) "暂无历史记录" else list.joinToString("\n") { it.line() }
+        if (list.isEmpty()) return "暂无历史记录"
+        return list.joinToString("\n") { e ->
+            (listOf(e.line()) + e.recordLines()).joinToString("\n")
+        }
     }
 }

@@ -12,7 +12,8 @@ import java.io.File
  *  - 参数（option）用 cases + pipeline_override 表达，选中值直接生成引擎的 pipeline_override
  *  - input 类型用 {占位符} 模板替换，避免宿主复制模板文件这类 hack
  *
- * 只实现本项目实际用到的子集：select / switch / input 三种 option。
+ * 只实现本项目实际用到的子集：select / switch / input / record 四种 option
+ * （record = 【OCR记录】的输出声明，不是可编辑参数）。
  */
 object TaskPack {
 
@@ -131,12 +132,12 @@ object TaskPack {
     /** 一个 option 的声明 */
     data class OptionDef(
         val key: String,
-        val type: String,          // select | switch | input
+        val type: String,          // select | switch | input | record
         val label: String,
         val defaultCase: String,
         val cases: List<CaseDef> = emptyList(),
         val inputs: List<InputDef> = emptyList(),
-        /** input 类型的模板 override（含 {占位符}） */
+        /** input 类型的模板 override（含 {占位符}）；record 类型 = 记录节点生成名 → {} */
         val pipelineOverride: JSONObject? = null
     )
 
@@ -160,6 +161,22 @@ object TaskPack {
         val options: Map<String, OptionDef>
     ) {
         fun option(key: String): OptionDef? = options[key]
+
+        /**
+         * OCR记录（type=record）参数的「节点生成名 → 参数名」映射（全包并集，节点名
+         * 全局唯一所以不区分任务）。引擎的识别成功事件里只有节点名，App 靠这张表
+         * 把识别到的文本归属到参数名。循环体里的记录节点只有展开份名
+         * （VF_x_03_L2_Hit…），查询方负责剥 _L<k> 后缀。不是输入参数：
+         * buildOverride 不消费它，编辑面板只渲染只读说明。
+         */
+        val recordVars: Map<String, String> = options.values
+            .filter { it.type == "record" }
+            .flatMap { o ->
+                (o.pipelineOverride ?: JSONObject()).keys().asSequence()
+                    .filter { it.isNotBlank() }
+                    .map { it to o.label }
+            }
+            .toMap()
     }
 
     /** 解析 interface.json；失败返回 null（宿主回退到内置默认清单） */

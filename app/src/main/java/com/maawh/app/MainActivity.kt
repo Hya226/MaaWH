@@ -1416,10 +1416,23 @@ class MainActivity : AppCompatActivity() {
             when (o.type) {
                 "input" -> renderInputOption(container, item, o)
                 "switch" -> renderSwitchOption(container, item, o)
+                // 【OCR记录】的输出声明：不是可编辑参数，给行只读说明
+                // （不接住会落进 else 被当 select 渲染成空下拉）
+                "record" -> renderRecordOption(container, o)
                 else -> renderSelectOption(container, item, o)
             }
         }
         return true
+    }
+
+    /** record（【OCR记录】输出声明）：只读一行，告诉用户这个任务会输出哪些记录值 */
+    private fun renderRecordOption(parent: LinearLayout, o: TaskPack.OptionDef) {
+        parent.addView(TextView(this).apply {
+            text = "📋 记录输出：${o.label}（运行时识别，结果看日志与历史）"
+            setTextColor(getColorCompat(R.color.text_secondary))
+            textSize = 12f
+            setPadding(0, dp(10), 0, 0)
+        })
     }
 
     /** 单击任务行：右侧按 interface.json 的 option 动态渲染编辑面板 */
