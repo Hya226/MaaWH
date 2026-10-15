@@ -68,7 +68,14 @@ object QueueStore {
          * 游戏还挂在虚拟屏里就保持。与手动「关闭游戏声音」是两个独立开关。
          * 老存档缺字段默认关。
          */
-        val autoMute: Boolean = false
+        val autoMute: Boolean = false,
+        /**
+         * 「任务运行失败后是否继续运行其它任务」（设置页·功能）：
+         * 开 = 单个任务失败只记汇总、跑完队列（收尾项如「关闭游戏」照常执行）；
+         * 关 = 首个失败立即中止，不再执行后面的任务。虚拟屏死亡始终中止（操作错屏）。
+         * 老存档缺字段默认关（用户拍板：默认失败即中止）。
+         */
+        val continueOnFail: Boolean = false
     )
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
@@ -134,7 +141,8 @@ object QueueStore {
             closeAfter = root.optBoolean("closeAfter", false),
             home = toMap(root.optJSONObject("home")),
             pipOn = root.optBoolean("pipOn", false),
-            autoMute = root.optBoolean("autoMute", false)
+            autoMute = root.optBoolean("autoMute", false),
+            continueOnFail = root.optBoolean("continueOnFail", false)
         )
     }
 
@@ -147,7 +155,8 @@ object QueueStore {
         tools = parseList(root.optJSONArray("tools")),
         tab = if (root.optBoolean("tabTools", false)) "tools" else "oneclick",
         mute = root.optBoolean("mute", false),
-        closeAfter = root.optBoolean("closeAfter", false)
+        closeAfter = root.optBoolean("closeAfter", false),
+        continueOnFail = false
     )
 
     private fun parseList(arr: JSONArray?): List<SavedTask> {
@@ -201,6 +210,7 @@ object QueueStore {
         put("closeAfter", state.closeAfter)
         put("autoMute", state.autoMute)
         put("pipOn", state.pipOn)
+        put("continueOnFail", state.continueOnFail)
         put("profiles", JSONArray().apply {
             state.profiles.forEach { p ->
                 put(JSONObject().apply {

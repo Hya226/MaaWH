@@ -99,6 +99,9 @@ class MainActivity : AppCompatActivity() {
     @Volatile
     private var pipEnabled = false
 
+    /** 「任务运行失败后是否继续运行其它任务」（设置·功能，默认关 = 首个失败中止）：QueueRunner 每次运行开头读存档，这里只管 UI 与落盘 */
+    private var continueOnFail = false
+
     private var vdOn = false
 
     /** 当前队列执行器（null = 本此 App 启动还没跑过队列）；运行状态以它为准 */
@@ -233,6 +236,17 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+        // 任务失败策略（默认开 = 历史行为「失败只记汇总、跑完队列」）；QueueRunner 每次 run 开头读存档
+        binding.switchFailContinue.isChecked = continueOnFail
+        binding.switchFailContinue.setOnCheckedChangeListener { _, checked ->
+            continueOnFail = checked
+            scheduleSave()
+            log(
+                if (checked) "已开启「失败后继续运行其它任务」"
+                else "已关闭「失败后继续运行其它任务」：某个任务失败将立即中止队列",
+                LogLevel.INFO
+            )
         }
 
         // 内置任务包释放（首次安装/覆盖升级时拷 assets/whmx，平时零开销）；
@@ -526,6 +540,8 @@ class MainActivity : AppCompatActivity() {
         closeAfterEnabled = saved.closeAfter
         pipEnabled = saved.pipOn
         binding.switchPip.isChecked = saved.pipOn
+        continueOnFail = saved.continueOnFail
+        binding.switchFailContinue.isChecked = saved.continueOnFail
         // 启动固定归位「一键长草」（上次所在 tab 不恢复——挂机/测试后重开都从主队列开始）
         switchTab(HomeTab.ONECLICK)
         // 旧存档里的 tab="config"（配置曾是与两个 tab 平级的分区）→ 落到一键长草的队列视图。
@@ -659,6 +675,7 @@ class MainActivity : AppCompatActivity() {
                 autoMute = autoMuteEnabled,
                 closeAfter = closeAfterEnabled,
                 pipOn = pipEnabled,
+                continueOnFail = continueOnFail,
                 home = HashMap(homeOf)
             ))
         } catch (e: Throwable) {

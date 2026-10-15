@@ -155,6 +155,9 @@ class QueueRunner(
             val failed = ArrayList<String>()
             // 虚拟屏没建起来（如 Android 12 上带 TRUSTED 被拒）：后续任务会操作物理屏，必须中止
             var vdDead = false
+            // 设置页·功能「任务运行失败后是否继续运行其它任务」：开 = 失败只记汇总跑完队列；
+            // 关（默认）= 首个失败立即中止。run 开头读一次即可（设置页改开关只影响下一次运行）
+            val continueOnFail = runCatching { QueueStore.load(context)?.continueOnFail ?: false }.getOrDefault(false)
             // 跟读引擎日志：把"识别失败 / 超时 / 节点失败 / 包校验失败"按性质打进日志区
             val stopTail = startEngineLogTail()
             // 进程/帧流守护：远端用户报"游戏进虚拟屏一瞬间就没然后了"时，识别超时日志分不清
@@ -297,19 +300,24 @@ class QueueRunner(
                     runCatching { ShizukuShell.takeGuardReport() }
                         .getOrNull()?.let { cb.onLog("虚拟屏守护: $it", LogLevel.INFO) }
                     if (!r) {
-                        // 单个任务失败不再中断整个队列：否则末尾的收尾项（如「关闭游戏」）
-                        // 会因为前面任一任务失败而静默不执行——用户勾了却没生效，很难查。
-                        // 用户主动停止不算失败，也不提示"继续执行"（后面本来就不跑了）
+                        // 失败策略（设置页·功能「任务运行失败后是否继续运行其它任务」）：
+                        // 开（默认）= 只记汇总、跑完队列——否则末尾的收尾项（如「关闭游戏」）
+                        //   会因前面任一任务失败而静默不执行，用户勾了却没生效，很难查；
+                        // 关 = 首个失败立即中止。用户主动停止不算失败，也不提示"继续执行"
                         ok = false
                         if (!stopRequested) {
                             failed += item.label
-                            // 虚拟屏死了是唯一例外：后面的任务会操作错屏，不提示"继续执行"
-                            if (!vdDead) {
-                                cb.onLog("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）", LogLevel.WRN)
+                            when {
+                                // 虚拟屏死了是唯一强制中止的例外：后面的任务会操作错屏，不提示"继续执行"
+                                vdDead -> Unit
+                                continueOnFail ->
+                                    cb.onLog("↷ ${item.label} 失败，继续执行后续任务（失败的会在结束时汇总）", LogLevel.WRN)
+                                else ->
+                                    cb.onLog("■ ${item.label} 失败，按设置中止队列（可在设置·功能里改回「失败后继续」）", LogLevel.WRN)
                             }
                         }
                     }
-                    if (vdDead) break
+                    if (vdDead || (!r && !stopRequested && !continueOnFail)) break
                 }
             } finally {
                 stopTail()          // 收尾：把折叠掉的重复次数与归类小结打出来
