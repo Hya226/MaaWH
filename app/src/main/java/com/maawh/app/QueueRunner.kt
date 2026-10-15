@@ -79,6 +79,25 @@ class QueueRunner(
     /** 整个队列的记录（任务名 → (参数名 → 值)），收尾一次性输出 + 进任务历史 */
     private val queueRecords = java.util.LinkedHashMap<String, Map<String, String>>()
 
+    /**
+     * 体力类记录值（「当前/上限」形）的回满预计后缀：`预计 HH:mm 回满`，跨天带日期。
+     * 按 MAA 的口径（MaaAssistantArknights FightSettings：识别值 + 6min/点 从识别时刻
+     * 外推）计算；非 a/b 形、已满或异常值返回 null（原样显示）。
+     */
+    private fun sanityEtaSuffix(text: String): String? = runCatching {
+        val m = Regex("""^(\d{1,5})\s*/\s*(\d{1,5})$""").find(text.trim()) ?: return null
+        val cur = m.groupValues[1].toLong()
+        val max = m.groupValues[2].toLong()
+        if (max <= 0L || cur >= max) return null
+        val minutes = (max - cur) * SANITY_REGEN_MIN_PER_POINT
+        val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.MINUTE, minutes.toInt()) }
+        val fmt = java.text.SimpleDateFormat(
+            if (minutes >= 24 * 60) "M月d日HH:mm" else "HH:mm",
+            Locale.getDefault()
+        )
+        "预计 ${fmt.format(cal.time)} 回满"
+    }.getOrNull()
+
     /** 进程/帧流守护线程的退出旗标（见 startGameWatchdog） */
     @Volatile
     private var watchdogStop = false
@@ -119,8 +138,12 @@ class QueueRunner(
                 }
                 val label = recordVars[n] ?: return
                 val text = ocrTextOf(ev.details)
-                taskRecords[label] = text
-                cb.onLog("📋 $label = ${text.ifBlank { "（未识别到文本）" }}", LogLevel.INFO)
+                // 「当前/上限」形的体力值在命中时就固化回满预计（实时/汇总/结束行/历史
+                // 四处显示同一串）；单值（如主页体力 999）原样
+                val shown = if (text.isBlank()) "（未识别到文本）"
+                else text + (sanityEtaSuffix(text)?.let { "（$it）" } ?: "")
+                taskRecords[label] = shown
+                cb.onLog("📋 $label = $shown", LogLevel.INFO)
             }
             MaaBridge.MaaMsg.CTRL_FAILED ->
                 cb.onLog("控制器动作失败（截图/点击/滑动注入，详见引擎日志）", LogLevel.WRN)
@@ -748,6 +771,9 @@ class QueueRunner(
     }
 
     companion object {
+        /** 体力自然恢复速率：6 分钟 / 1 点（与方舟一致，2026-10-15 用户拍板；物华若有官方值再改） */
+        private const val SANITY_REGEN_MIN_PER_POINT = 6L
+
         /** 当前队列执行器：通知栏「停止任务」按钮没有 Activity 引用，走静态入口 */
         @Volatile
         private var current: QueueRunner? = null
