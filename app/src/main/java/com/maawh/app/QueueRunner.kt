@@ -362,14 +362,9 @@ class QueueRunner(
                             else -> LogLevel.ERR
                         }
                     )
-                    // OCR记录收尾汇总（用户要求的三路输出之二；实时行在上面事件里已打）。
-                    // 只列本任务真命中过的参数——声明了但没识别到的，App 不知道它该出现，
-                    // 不冒充"（未识别到）"
+                    // 记录值按任务登记进 queueRecords（输出统一在队列收尾、报错归类
+                    // 的下面，2026-10-15 用户要求的位置）；实时行在命中时已打过
                     if (taskRecords.isNotEmpty()) {
-                        cb.onLog("—— ${item.label} 记录汇总 ——", LogLevel.INFO)
-                        for ((label, text) in taskRecords) {
-                            cb.onLog("📋 $label = ${text.ifBlank { "（未识别到）" }}", LogLevel.INFO)
-                        }
                         queueRecords[item.label] = taskRecords.toMap()
                     }
                     // 显示守护报告（StartApp 之后 45s 内的帧流/漂移记录）：守护跑在服务端，
@@ -399,6 +394,17 @@ class QueueRunner(
             } finally {
                 stopTail()          // 收尾：把折叠掉的重复次数与归类小结打出来
                 stopWatchdog()
+            }
+            // OCR记录汇总（2026-10-15 用户要求放在报错归类下面）：实时行在命中时已打过，
+            // 这里把整轮队列记录到的参数一次性列出（多任务队列也统一在收尾看）。
+            // 只列真命中过的参数——声明了但没识别到的，App 不知道它该出现，不冒充
+            if (queueRecords.isNotEmpty()) {
+                for ((task, recs) in queueRecords) {
+                    cb.onLog("—— $task 记录汇总 ——", LogLevel.INFO)
+                    for ((label, text) in recs) {
+                        cb.onLog("📋 $label = ${text.ifBlank { "（未识别到）" }}", LogLevel.INFO)
+                    }
+                }
             }
             // 任务结束：勾选「游戏启动后关闭游戏声音」时，
             // 若游戏仍在运行（虚拟屏未退出）则保持静音效果，不主动恢复声音；
