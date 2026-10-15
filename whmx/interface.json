@@ -234,6 +234,17 @@
         "循环总次数"
       ],
       "description": "请先打开征集页面"
+    },
+    {
+      "name": "OCR记录测试",
+      "label": "OCR记录测试",
+      "entry": "VF_OCR记录测试",
+      "group": [
+        "tools"
+      ],
+      "option": [
+        "测试文本"
+      ]
     }
   ],
   "option": {
@@ -3437,6 +3448,13 @@
         }
       ],
       "default_case": "10"
+    },
+    "测试文本": {
+      "type": "record",
+      "label": "测试文本",
+      "pipeline_override": {
+        "VF_OCR记录测试_01_Hit": {}
+      }
     }
   }
 }
