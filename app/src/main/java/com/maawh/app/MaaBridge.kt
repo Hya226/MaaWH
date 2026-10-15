@@ -64,6 +64,12 @@ interface MaaLibrary : Library {
 
     // ---------- tasker 实时事件（MaaTasker.h：MaaSinkId MaaTaskerAddSink(tasker, sink, trans_arg)）----------
     fun MaaTaskerAddSink(tasker: Pointer, sink: MaaEventSink, transArg: Pointer?): Long
+
+    // ★ 节点级事件（Node.PipelineNode/Recognition/Action/NextList.*）走【ContextSink】通道，
+    //   全局 Sink 只收任务级事件（Tasker.Task.*）——2026-10-15 真机探针实锤：只注册
+    //   AddSink 时 72s 任务只到 2 条 Tasker.Task.*，节点级一条不来（pip 绑定同款划分：
+    //   Tasker.add_sink / add_context_sink，ContextEventSink 的回调就是 on_node_recognition）。
+    fun MaaTaskerAddContextSink(tasker: Pointer, sink: MaaEventSink, transArg: Pointer?): Long
 }
 
 /**
@@ -458,7 +464,12 @@ object MaaBridge {
             lib.MaaTaskerBindResource(taskerHandle, resource)
             lib.MaaTaskerBindController(taskerHandle, controller)
             // 实时事件 Sink（节点/动作/任务的 Starting/Succeeded/Failed 都推给 listeners）
-            lib.MaaTaskerAddSink(taskerHandle, eventSink, null)
+            val sinkId = lib.MaaTaskerAddSink(taskerHandle, eventSink, null)
+            val ctxSinkId = lib.MaaTaskerAddContextSink(taskerHandle, eventSink, null)
+            // 两个 sink 都要挂（见上）；id<=0 = 注册失败，节点级/任务级事件会分别瞎掉
+            if (sinkId <= 0 || ctxSinkId <= 0) {
+                android.util.Log.w("MaaWH-sink", "sink 注册异常 AddSink=$sinkId AddContextSink=$ctxSinkId")
+            }
             onLog("Tasker inited=${lib.MaaTaskerInited(taskerHandle).toInt()}")
 
             // 4) 跑任务（pipeline_override 传空 JSON，引擎不允许 NULL 覆盖串）
