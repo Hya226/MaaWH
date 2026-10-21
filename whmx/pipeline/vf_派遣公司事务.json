@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-10-10T07:24:10+08:00",
+        "generatedAt": "2026-10-21T17:54:06+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:94a06a1d4761da50ea231c16ab5e734b28c2214b307062becb725026005e67fb",
-        "pipelineHash": "sha256:15966aa34174f664d792115220911e8e9869233cba7835bb8e9574e8f213f5df",
+        "flowHash": "sha256:b1938311b5e058d1f4b0d734dfb6aab943da8ebd16744db15f13366a47d6e7e8",
+        "pipelineHash": "sha256:e9aec2a09b498879c6cb292bdc475d467d1b502509632be7f3266167b08b4bce",
         "frameW": 1280,
         "frameH": 720
     },
@@ -44,70 +44,39 @@
         ],
         "post_delay": 2000,
         "pre_delay": 200,
+        "repeat": 2,
+        "repeat_delay": 350,
         "next": [
-            "VF_派遣公司事务_41"
+            "VF_派遣公司事务_62"
         ]
     },
-    "VF_派遣公司事务_41": {
-        "recognition": "OCR",
-        "expected": [
-            "获取"
-        ],
+    "VF_派遣公司事务_62": {
+        "recognition": "TemplateMatch",
+        "template": "huoqu.png",
+        "threshold": 0.6,
         "action": "Click",
         "timeout": 8000,
         "post_delay": 1000,
         "roi": [
-            959,
-            611,
-            114,
-            49
+            934,
+            605,
+            133,
+            90
         ],
         "next": [
-            "VF_派遣公司事务_05"
-        ],
-        "replace": [
-            [
-                "汉漠拉比法典",
-                "汉谟拉比法典"
-            ],
-            [
-                "少虞剑",
-                "少虡剑"
-            ],
-            [
-                "云雷纹大饶",
-                "云雷纹大铙"
-            ],
-            [
-                "乌音山水钟",
-                "鸟音山水钟"
-            ],
-            [
-                "虎贝",
-                "庞贝"
-            ],
-            [
-                "秦公鎛",
-                "秦公镈"
-            ],
-            [
-                "免形陶[顷埙]",
-                "兔形陶埙"
-            ],
-            [
-                "兔形陶顷",
-                "兔形陶埙"
-            ]
+            "VF_派遣公司事务_63"
         ]
     },
-    "VF_派遣公司事务_05": {
+    "VF_派遣公司事务_63": {
         "action": "Click",
         "target": [
-            1186,
+            1086,
             400
         ],
-        "post_delay": 1000,
+        "post_delay": 2000,
         "pre_delay": 200,
+        "repeat": 2,
+        "repeat_delay": 350,
         "next": [
             "VF_派遣公司事务_48"
         ]
@@ -708,7 +677,7 @@
             "VF_派遣公司事务_56_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_58"
+            "VF_派遣公司事务_60"
         ]
     },
     "VF_派遣公司事务_56_Hit": {
@@ -733,7 +702,7 @@
             "VF_派遣公司事务_57_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_58"
+            "VF_派遣公司事务_60"
         ]
     },
     "VF_派遣公司事务_57_Hit": {
@@ -752,6 +721,68 @@
         ],
         "rate_limit": 200,
         "post_delay": 600
+    },
+    "VF_派遣公司事务_60_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "\\d+"
+        ],
+        "action": "DoNothing",
+        "focus": true,
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "roi": [
+            135,
+            653,
+            110,
+            27
+        ],
+        "rate_limit": 200,
+        "next": [
+            "VF_派遣公司事务_58"
+        ]
+    },
+    "VF_派遣公司事务_60": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_60_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_58"
+        ]
     },
     "VF_派遣公司事务_58": {
         "recognition": "OCR",
@@ -812,7 +843,7 @@
             "VF_派遣公司事务_53_Hit"
         ],
         "on_error": [
-            "VF_派遣公司事务_End"
+            "VF_派遣公司事务_61"
         ]
     },
     "VF_派遣公司事务_53_Hit": {
@@ -825,6 +856,66 @@
         ],
         "rate_limit": 200,
         "post_delay": 600
+    },
+    "VF_派遣公司事务_61_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "\\d+"
+        ],
+        "action": "DoNothing",
+        "focus": true,
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "roi": [
+            1122,
+            240,
+            70,
+            40
+        ],
+        "rate_limit": 200,
+        "next": []
+    },
+    "VF_派遣公司事务_61": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_派遣公司事务_61_Hit"
+        ],
+        "on_error": [
+            "VF_派遣公司事务_End"
+        ]
     },
     "VF_派遣公司事务_40": {
         "action": "Click",

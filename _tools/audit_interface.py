@@ -125,6 +125,12 @@ for okey, o in opt_defs.items():
             if ph not in declared:
                 fails.append(f"option '{okey}' 的占位符 {{{ph}}} 未在 inputs 中声明")
         check_ov(o.get('pipeline_override'), "")
+    elif typ == 'record':
+        # record：宿主零 override，仅用 pipeline_override 键（记录节点 _Hit 生成名）登记映射
+        ov = o.get('pipeline_override') or {}
+        if not ov:
+            fails.append(f"option '{okey}'（record）没有 pipeline_override 键")
+        check_ov(ov, "")
     else:
         warns.append(f"option '{okey}' 类型 '{typ}' 未在本项目实现（宿主会忽略）")
 

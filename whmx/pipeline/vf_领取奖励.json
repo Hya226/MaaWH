@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-28T12:22:18+08:00",
+        "generatedAt": "2026-10-21T17:55:07+08:00",
         "flowFile": "领取奖励.flow.json",
-        "flowHash": "sha256:d912921b94add88b57fc4f2b088223c6016f4e92e31197197105badd4b22f017",
-        "pipelineHash": "sha256:b31dc36faf72bdf5222ce22e010510e1c08309968c4abf261604a56ba275906b",
+        "flowHash": "sha256:813b22b7e58c8e5e4a7a0e00d359b7daa3ddbcacc81865a393a860722184db79",
+        "pipelineHash": "sha256:a076ce863ba88c6506d16dd87d5fbc218e1e99ea60bfa41533a6a75ae0b28869",
         "frameW": 1280,
         "frameH": 720
     },
@@ -67,6 +67,8 @@
         "post_delay": 100,
         "pre_delay": 200,
         "timeout": 3000,
+        "repeat": 2,
+        "repeat_delay": 350,
         "next": [
             "VF_领取奖励_13"
         ]
@@ -130,7 +132,7 @@
     "VF_领取奖励_17": {
         "recognition": "TemplateMatch",
         "template": "wu.png",
-        "threshold": 0.8,
+        "threshold": 0.7,
         "action": "DoNothing",
         "timeout": 10000,
         "roi": [
@@ -152,6 +154,8 @@
         "post_delay": 500,
         "pre_delay": 200,
         "timeout": 3000,
+        "repeat": 2,
+        "repeat_delay": 350,
         "next": [
             "VF_领取奖励_14"
         ]

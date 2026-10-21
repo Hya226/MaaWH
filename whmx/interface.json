@@ -3,12 +3,14 @@
   "interface_version": 2,
   "name": "whmx",
   "label": "物华弥新",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "removed": [
     "刷活动关",
     "关卡名",
     "刷取次数",
-    "遗境"
+    "遗境",
+    "OCR记录测试",
+    "测试文本"
   ],
   "description": "MaaWH 的《物华弥新》任务包（Shizuku + 虚拟屏）",
   "controller": [
@@ -140,7 +142,9 @@
       "option": [
         "办公室物资购买",
         "喝茶",
-        "顿舍体力领取"
+        "顿舍体力领取",
+        "顿舍体力",
+        "主页体力"
       ]
     },
     {
@@ -234,17 +238,6 @@
         "循环总次数"
       ],
       "description": "请先打开征集页面"
-    },
-    {
-      "name": "OCR记录测试",
-      "label": "OCR记录测试",
-      "entry": "VF_OCR记录测试",
-      "group": [
-        "tools"
-      ],
-      "option": [
-        "测试文本"
-      ]
     }
   ],
   "option": {
@@ -3449,11 +3442,18 @@
       ],
       "default_case": "10"
     },
-    "测试文本": {
+    "顿舍体力": {
       "type": "record",
-      "label": "测试文本",
+      "label": "顿舍体力",
       "pipeline_override": {
-        "VF_OCR记录测试_01_Hit": {}
+        "VF_派遣公司事务_60_Hit": {}
+      }
+    },
+    "主页体力": {
+      "type": "record",
+      "label": "主页体力",
+      "pipeline_override": {
+        "VF_派遣公司事务_61_Hit": {}
       }
     }
   }
