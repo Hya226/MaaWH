@@ -310,6 +310,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
         binding.btnNewProfile.setOnClickListener { createProfile() }
         binding.btnGachaRun.setOnClickListener { startGachaCrawl() }
+        binding.btnGachaFull.setOnClickListener { startGachaCrawl(full = true) }
         binding.btnWaiqinRun.setOnClickListener { startWaiqinScan() }
         GachaDictionary.names = GachaStore.loadNames(this)
         setupGachaAccounts()
@@ -3943,7 +3944,7 @@ class MainActivity : AppCompatActivity() {
         if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
     }
 
-    private fun startGachaCrawl() {
+    private fun startGachaCrawl(full: Boolean = false) {
         if (gachaRunning) {
             stopGachaCrawl()
             return
@@ -3951,33 +3952,62 @@ class MainActivity : AppCompatActivity() {
         if (isTaskRunning) { toast("任务队列运行中，不能同时抓取"); return }
         if (waiqinRunning) { toast("外勤见闻识别运行中，不能同时抓取"); return }
         if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并把游戏打开到「招集记录」页"); return }
+        if (!full) {
+            launchGachaCrawl(full = false)
+            return
+        }
+        // 完整扫描耗时长（全池翻页 + 逐行 OCR），先确认再跑
+        AlertDialog.Builder(this)
+            .setTitle("完整扫描")
+            .setMessage(
+                "将跳过增量截断，逐池翻到最早记录，用于核对历史数据、补齐此前漏掉的记录" +
+                    "（已入库的记录原样保留，收口按 uid 去重合并）。\n\n" +
+                    "全池翻页 + 逐行识别耗时约几分钟到十几分钟，期间请保持游戏停在「招集记录」页。\n\n确认开始？"
+            )
+            .setPositiveButton("开始") { _, _ -> launchGachaCrawl(full = true) }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun launchGachaCrawl(full: Boolean) {
+        // 守卫：确认弹窗开着时用户仍可点【开始抓取】先跑普通抓取，此后弹窗的
+        // 「开始」若不拦会覆盖 gachaJob 引用——旧协程既没取消也停不掉，两个爬虫
+        // 并发注入虚拟屏。宁可这次点击无效，也绝不并发跑两个爬虫。
+        if (gachaRunning) return
         gachaRunning = true
         binding.btnGachaRun.text = getString(R.string.gacha_stop)
+        binding.btnGachaFull.isEnabled = false
         binding.tvGachaStatus.text = "准备…"
         if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
         // 主页底部状态行同步：识别期间替换残留的队列结算文案，进度实时跟随（用户反馈）
-        setRunState("抽卡识别中…", R.color.accent)
+        setRunState(if (full) "抽卡完整扫描中…" else "抽卡识别中…", R.color.accent)
         // 通知/悬浮窗联动：状态行显示识别中，■停止按钮换为停止抓取（结束后恢复默认）
-        keepAlive("抽卡记录识别中")
+        keepAlive(if (full) "抽卡完整扫描中" else "抽卡记录识别中")
         FloatingPanel.stopCallback = { stopGachaCrawl() }
-        FloatingPanel.update("▶ 抽卡记录识别中")
+        FloatingPanel.update(if (full) "▶ 抽卡完整扫描中" else "▶ 抽卡记录识别中")
         gachaJob = lifecycleScope.launch {
             var runSummary = ""
             try {
-                RunLogStore.begin(applicationContext, "抽卡抓取", -1)
+                RunLogStore.begin(applicationContext, if (full) "抽卡完整扫描" else "抽卡抓取", -1)
                 val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
                 val crawler = GachaCrawler(applicationContext, ocr) { m, lv -> log(m, lv) }
-                val report = crawler.crawl { p ->
+                val report = crawler.crawl({ p ->
                     runOnUiThread {
                         binding.tvGachaStatus.text = p
                         setRunState("▶ 抽卡识别：$p", R.color.accent)
                     }
                     keepAlive("▶ 抽卡识别：$p")
                     FloatingPanel.update("▶ 抽卡识别：$p")
-                }
-                runSummary = "新增 ${report.added} 条"
-                binding.tvGachaStatus.text = "✓ 新增 ${report.added} 条"
-                setRunState("✓ 抽卡识别完成：新增 ${report.added} 条", R.color.ok_green)
+                }, fullScan = full)
+                runSummary = if (full) "扫描 ${report.scanned} 条，补齐+新增 ${report.added} 条"
+                else "新增 ${report.added} 条"
+                binding.tvGachaStatus.text = if (full) "✓ 扫描 ${report.scanned} 条，补齐+新增 ${report.added} 条"
+                else "✓ 新增 ${report.added} 条"
+                setRunState(
+                    if (full) "✓ 抽卡完整扫描完成：扫描 ${report.scanned} 条，补齐+新增 ${report.added} 条"
+                    else "✓ 抽卡识别完成：新增 ${report.added} 条",
+                    R.color.ok_green
+                )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 runSummary = "已停止"
                 binding.tvGachaStatus.text = "◼ 已停止"
@@ -3993,6 +4023,7 @@ class MainActivity : AppCompatActivity() {
                 gachaRunning = false
                 gachaJob = null
                 binding.btnGachaRun.text = getString(R.string.gacha_run)
+                binding.btnGachaFull.isEnabled = true
                 if (homeTab == HomeTab.TOOLBOX) {
                     binding.btnStartQueue.text = getString(R.string.btn_start_queue)
                 }

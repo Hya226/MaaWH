@@ -475,6 +475,15 @@ app:cornerRadius="8dp"
                                 android:text="@string/gacha_run"
                                 app:cornerRadius="8dp" />
 
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnGachaFull"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/gacha_full"
+                                app:cornerRadius="8dp" />
+
                             <TextView
                                 android:id="@+id/tvGachaStatus"
                                 android:layout_width="0dp"

@@ -27,6 +27,10 @@ import kotlin.math.min
  * 停止条件三重保险：锚点命中 / 空页（连续两帧无行带）/ 翻页后表格区域画面不变
  * （= 最后一页）。锚点截断失败（记录过期 >30 天）自然退化为全量抓取，commitCrawl
  * 按 uid 去重合并。
+ *
+ * fullScan（完整扫描）：跳过锚点截断，逐池翻到最早记录——用于核对历史数据、
+ * 补齐增量抓取漏掉的行（单行 OCR 失败被跳过的行下次增量不会再经过）。收口仍是
+ * uid 去重合并，已入库的记录原样保留，只补缺失；翻页到底的其余保险全部照常。
  */
 class GachaCrawler(
     private val ctx: Context,
@@ -36,7 +40,10 @@ class GachaCrawler(
 
     class CrawlException(msg: String) : Exception(msg)
 
-    data class Report(val added: Int, val perPool: Map<String, Int>)
+    data class Report(val added: Int, val scanned: Int, val perPool: Map<String, Int>)
+
+    /** 单池结果：added=新增（未入库）条数；scanned=本次翻页经过的行数（含已入库） */
+    data class PoolResult(val added: Int, val scanned: Int)
 
     // ---------------- points.json ----------------
 
@@ -134,19 +141,21 @@ class GachaCrawler(
 
     // ---------------- 主流程 ----------------
 
-    suspend fun crawl(onProgress: (String) -> Unit): Report = withContext(Dispatchers.IO) {
+    suspend fun crawl(onProgress: (String) -> Unit, fullScan: Boolean = false): Report = withContext(Dispatchers.IO) {
         val pts = Points.load(ctx)
         if (!ShizukuShell.isVdAlive()) {
             throw CrawlException("虚拟屏未启动：请先启动虚拟屏，并把游戏打开到「招募记录」页")
         }
-        onLog("抽卡记录抓取开始（OCR = ${ocr.javaClass.simpleName}）", LogLevel.INFO)
+        onLog("抽卡记录抓取开始（OCR = ${ocr.javaClass.simpleName}${if (fullScan) "，完整扫描" else ""}）", LogLevel.INFO)
+        if (fullScan) onLog("完整扫描：跳过锚点截断，逐池翻到最早记录，收口按 uid 去重补齐缺失", LogLevel.INFO)
         // 不做"当前页必须有行"的预检：当前池子可能是空的。页面正确性由
         // switchPool 后的 verifyPool（OCR 下拉框文字）把关，行扫描只管取数。
 
         val cfg = GachaStore.loadConfig(ctx)
-        if (cfg.isFirstRun) onLog("首次运行（无锚点）：全量抓取所有池子", LogLevel.INFO)
+        if (!fullScan && cfg.isFirstRun) onLog("首次运行（无锚点）：全量抓取所有池子", LogLevel.INFO)
         val fresh = HashMap<String, MutableList<GachaStore.Record>>()
         val perPool = HashMap<String, Int>()
+        var scanned = 0
         // banner 纠错参照集：库内已知写法 + 本会话增量。招集列没有字典纠错，
         // 「万嶂烟峦」OCR 错一字成「万蟑烟峦」会在面板裂成两个卡池，就地归并。
         val bannerDict = HashMap<String, MutableSet<String>>()
@@ -159,31 +168,37 @@ class GachaCrawler(
             onProgress("切换：$pool")
             switchPool(pool, pts)
             verifyPool(pool, pts)
-            val n = crawlPool(pool, pts, cfg, fresh, bannerDict, onProgress)
-            perPool[pool] = n
-            onLog("池[$pool] 完成：新增 $n 条", LogLevel.SUCCESS)
+            val res = crawlPool(pool, pts, cfg, fullScan, fresh, bannerDict, onProgress)
+            perPool[pool] = res.added
+            scanned += res.scanned
+            onLog("池[$pool] 完成：扫描 ${res.scanned} 条，新增 ${res.added} 条", LogLevel.SUCCESS)
         }
 
         val added = GachaStore.commitCrawl(ctx, fresh)
-        onLog("抓取收口：新增 $added 条，${perPool.entries.joinToString("，") { "${it.key} +${it.value}" }}", LogLevel.SUCCESS)
-        Report(added, perPool)
+        onLog(
+            "抓取收口：扫描 $scanned 条，新增 $added 条，${perPool.entries.joinToString("，") { "${it.key} +${it.value}" }}",
+            LogLevel.SUCCESS
+        )
+        Report(added, scanned, perPool)
     }
 
-    /** 一个池子：翻页循环 + 锚点截断，返回新增条数 */
+    /** 一个池子：翻页循环 + 锚点截断（fullScan 时跳过锚点，翻到最早记录），返回结果 */
     private suspend fun crawlPool(
         pool: String,
         pts: Points,
         cfg: GachaStore.Config,
+        fullScan: Boolean,
         fresh: HashMap<String, MutableList<GachaStore.Record>>,
         bannerDict: MutableMap<String, MutableSet<String>>,
         onProgress: (String) -> Unit
-    ): Int = withContext(Dispatchers.IO) {
+    ): PoolResult = withContext(Dispatchers.IO) {
         val anchors = cfg.anchors[pool] ?: emptyList()
         val seqMap = HashMap<Long, Int>()
         val seenPages = ArrayList<List<GachaStore.Record>>()
         var lastPage: List<GachaStore.Record>? = null
         var missed = 0
         var added = 0
+        var scanned = 0
         while (true) {
             ensureActive()
             // banner 在入库前就近归并（uid 不含 banner，copy 不动 uid）
@@ -217,7 +232,8 @@ class GachaCrawler(
             missed = 0
             var hit = false
             for (r in rows) {
-                if (!cfg.isFirstRun && hitsAnchor(r, anchors)) {
+                scanned++
+                if (!fullScan && !cfg.isFirstRun && hitsAnchor(r, anchors)) {
                     onLog("池[$pool] 命中锚点（${r.time} ${r.name}），停止翻页", LogLevel.TRACE)
                     hit = true
                     break
@@ -227,13 +243,17 @@ class GachaCrawler(
             }
             if (hit) break
             if (seenPages.size >= MAX_PAGES) {
-                onLog("池[$pool] 已扫 ${seenPages.size} 页仍未命中锚点（30 天前的记录已过期？），按全量收尾", LogLevel.WRN)
+                if (fullScan) {
+                    onLog("池[$pool] 已扫 ${seenPages.size} 页仍未到底（单池上限 ${MAX_PAGES} 页），按上限收尾", LogLevel.WRN)
+                } else {
+                    onLog("池[$pool] 已扫 ${seenPages.size} 页仍未命中锚点（30 天前的记录已过期？），按全量收尾", LogLevel.WRN)
+                }
                 break
             }
             clickNextPage(pts)
             onProgress("$pool：第 ${seenPages.size} 页")
         }
-        added
+        PoolResult(added, scanned)
     }
 
     /** 页面指纹比对：行数一致，且每行时间、稀有度相同，名字编辑距离 ≤2 */

@@ -9,6 +9,7 @@
     <string name="tab_timer">定时</string>
     <string name="gacha_run">开始抓取</string>
     <string name="gacha_stop">停止抓取</string>
+    <string name="gacha_full">完整扫描</string>
     <string name="gacha_account_label">账号</string>
     <string name="gacha_account_arrow">▾</string>
     <string name="gacha_btn_edit">编辑</string>
