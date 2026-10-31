@@ -9,7 +9,7 @@
     },
     "刷谷段1": {
         "action": "StartApp",
-        "package": "com.cipaishe.wuhua.bilibili",
+        "package": "com.cipaishe.laigu",
         "post_delay": 1000,
         "next": [
             "StageHome"

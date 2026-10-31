@@ -6,7 +6,7 @@
     },
     "VF_示例流程_01": {
         "action": "StartApp",
-        "package": "com.cipaishe.wuhua.bilibili",
+        "package": "com.cipaishe.laigu",
         "post_delay": 1000,
         "next": [
             "VF_示例流程_02"

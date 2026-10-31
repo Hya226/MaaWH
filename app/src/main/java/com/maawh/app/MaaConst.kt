@@ -10,11 +10,15 @@ package com.maawh.app
  */
 object MaaConst {
 
-    /** 《物华弥新》游戏包名（Shizuku/引擎的所有命令只针对它） */
-    const val GAME_PKG = "com.cipaishe.wuhua.bilibili"
+    /**
+     * 《物华弥新》游戏包名（Shizuku/引擎的所有命令只针对它）。
+     * 2026-10-31 全线从 B 服渠道（com.cipaishe.wuhua.bilibili / ONESDK）切到自建官服；
+     * 官服 APK 带梆梆加固（com.secneo.apkwrapper.AW），虚拟屏兼容性以真机【启动】为准。
+     */
+    const val GAME_PKG = "com.cipaishe.laigu"
 
-    /** 游戏 Activity 全类名（UserService 里 setClassName 用） */
-    const val GAME_ACT_CLS = "com.cipaishe.wuhua.bilibili.activity.ONESDKLaunchActivity"
+    /** 游戏 Activity 全类名（UserService 里 setClassName 用；官服 launcher = 视频闪屏页） */
+    const val GAME_ACT_CLS = "com.cipaishe.laigu.VideoSplashActivity"
 
     /** 虚拟屏基准尺寸：必须与 whmx 模板/坐标基准帧一致（标准 16:9 720p），不可单独改 */
     const val VD_W = 1280

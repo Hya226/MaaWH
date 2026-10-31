@@ -1083,7 +1083,7 @@ public class ShellUserService extends IUserService.Stub {
     /**
      * 在 dumpsys window 输出里找游戏 task/窗口的边界，返回 {x1,y1,x2,y2}；找不到 null。
      * 形态一（Android 13+ 实测 ColorOS14）：游戏 Task 行的下一行是 bounds=[x,y][w,h]：
-     *   * Task{... A=10208:com.cipaishe.wuhua.bilibili ... mode=fullscreen ...}
+     *   * Task{... A=10208:com.cipaishe.laigu ... mode=fullscreen ...}
      *     bounds=[0,0][1280,720]
      *   注意 mPreferredTopFocusableRootTask=Task{...} 这类引用行也含包名，但它们的
      *   后续行没有行首 bounds=，逐行尝试即可天然跳过；overrideConfig 里的

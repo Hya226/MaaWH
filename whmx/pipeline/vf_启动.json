@@ -16,7 +16,7 @@
     },
     "VF_启动_01": {
         "action": "StartApp",
-        "package": "com.cipaishe.wuhua.bilibili",
+        "package": "com.cipaishe.laigu",
         "post_delay": 15000,
         "next": [
             "VF_启动_12_W"
