@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-10-12T19:47:19+08:00",
+        "generatedAt": "2026-10-31T09:14:01+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:26576a11091c31b74e32bcf84ae3209f61a832980b4debc9789cb128aa991339",
-        "pipelineHash": "sha256:91de9fdc43074d55a7333a665a08612c48d31f357adeba8794a8c01f6531ccd8",
+        "flowHash": "sha256:dd33676800fdb5d8ff0448848a1546825f0c65dcd3e2fd2d009047e2a0908aee",
+        "pipelineHash": "sha256:88b18dcd6c3741e64329d6741cf1ed53a92d8b440d7b4296dc3b379756d67a1d",
         "frameW": 1280,
         "frameH": 720
     },
@@ -109,8 +109,134 @@
         "repeat": 3,
         "repeat_delay": 350,
         "next": [
+            "VF_启动_19"
+        ]
+    },
+    "VF_启动_19": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_启动_19_Hit"
+        ],
+        "on_error": [
+            "VF_启动_20"
+        ]
+    },
+    "VF_启动_19_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "登录已有角色"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            561,
+            542,
+            146,
+            35
+        ],
+        "next": [
+            "VF_启动_19"
+        ],
+        "max_hit": 2,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_启动_20": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_启动_20_Hit"
+        ],
+        "on_error": [
             "VF_启动_03"
         ]
+    },
+    "VF_启动_20_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "登录已有角色"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            686,
+            447,
+            156,
+            39
+        ],
+        "next": [
+            "VF_启动_20"
+        ],
+        "max_hit": 2,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_启动_03": {
         "action": "Click",
