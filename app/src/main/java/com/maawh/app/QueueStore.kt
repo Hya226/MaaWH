@@ -95,9 +95,15 @@ object QueueStore {
         }
     }
 
+    /**
+     * 写盘必须 commit() 同步落盘，不能用 apply()——apply 只把写盘任务排进后台队列，
+     * 保存后进程若被 LMKD 杀掉（保存后立即锁屏/切走正是常见操作），写入整体丢失，
+     * 表现为「新建的配置过几天消失」（反馈实锤；ScheduleStore 2026-10-10 同坑同修法）。
+     * 存档是单 key 一段 JSON（几 KB~几十 KB），主线程 commit 开销 <5ms，无性能顾虑。
+     */
     fun save(ctx: Context, state: State) {
         try {
-            prefs(ctx).edit().putString(KEY, toJson(state).toString()).apply()
+            prefs(ctx).edit().putString(KEY, toJson(state).toString()).commit()
         } catch (e: Throwable) {
             // 存档失败不打断使用，下次编辑会再试
         }
@@ -105,7 +111,7 @@ object QueueStore {
 
     fun clear(ctx: Context) {
         try {
-            prefs(ctx).edit().remove(KEY).apply()
+            prefs(ctx).edit().remove(KEY).commit()
         } catch (e: Throwable) {
         }
     }
