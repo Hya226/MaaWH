@@ -70,6 +70,21 @@ class HistoryActivity : AppCompatActivity() {
         refresh()
     }
 
+    /**
+     * 禁用关闭过渡动画：系统默认关闭动画的几百 ms 窗口期内，底层 MainActivity 的
+     * 第一次触摸被系统吞掉，返回后手快点【历史】要「点两次才能点开」（真机复现实锤）。
+     * 进入动画已由 showHistory() 的 ActivityOptions(0,0) 禁用。
+     */
+    override fun finish() {
+        super.finish()
+        if (android.os.Build.VERSION.SDK_INT >= 34) {
+            overrideActivityTransition(android.app.Activity.OVERRIDE_TRANSITION_CLOSE, 0, 0)
+        } else {
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
+        }
+    }
+
     private fun refresh() {
         listContainer.removeAllViews()
         listContainer.addView(emptyHint)

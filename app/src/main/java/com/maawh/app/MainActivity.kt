@@ -1570,7 +1570,13 @@ class MainActivity : AppCompatActivity() {
 
     /** 任务历史弹窗：队列级记录（何时跑的/几项/成败/耗时），跨重启保留在 files/history.json */
     private fun showHistory() {
-        startActivity(Intent(this, HistoryActivity::class.java))
+        // 进入过渡动画禁用：HistoryActivity 瞬间呈现。退出动画在 HistoryActivity.finish()
+        // 里禁——系统默认关闭过渡的几百 ms 窗口期内，底层 MainActivity 的第一次触摸会被
+        // 系统吞掉，返回后手快点【历史】就是「要点两次才能点开」（真机复现实锤）
+        startActivity(
+            Intent(this, HistoryActivity::class.java),
+            android.app.ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle()
+        )
     }
 
     // ==================================================================
