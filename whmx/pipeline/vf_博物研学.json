@@ -2,16 +2,16 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-10-07T14:42:53+08:00",
+        "generatedAt": "2026-11-14T14:15:48+08:00",
         "flowFile": "博物研学.flow.json",
-        "flowHash": "sha256:3fd64af93bc388d9125b9f7745a4446341692c3b0f53994a6383bcf8e9ec5c01",
-        "pipelineHash": "sha256:e2020a3225eea4f024f28bc6ea87273323df8ebddaa5b59cf8f8c1c0ebab4e12",
+        "flowHash": "sha256:7904c9c280e1fa6b69ba20b81e505601c98963dc37a5eaf5597714dd86832593",
+        "pipelineHash": "sha256:b58ddbd6c0ee17fc1ed70169dbdd49b3924f8ebff90195dc41a7f2df8f85a855",
         "frameW": 1280,
         "frameH": 720
     },
     "VF_博物研学": {
         "next": [
-            "VF_博物研学_225"
+            "VF_博物研学_227"
         ]
     },
     "VF_博物研学_56": {
@@ -4633,57 +4633,29 @@
         "rate_limit": 200,
         "post_delay": 800
     },
-    "VF_博物研学_225": {
+    "VF_博物研学_227": {
         "action": "DoNothing",
         "timeout": 3000,
         "next": [
-            "VF_博物研学_225_Hit"
-        ],
-        "on_error": [
-            "VF_博物研学_226"
-        ]
-    },
-    "VF_博物研学_225_Hit": {
-        "recognition": "TemplateMatch",
-        "template": "yanxun.png",
-        "threshold": 0.65,
-        "action": "Click",
-        "roi": [
-            866,
-            233,
-            226,
-            114
-        ],
-        "next": [
-            "VF_博物研学_225"
-        ],
-        "max_hit": 3,
-        "rate_limit": 200,
-        "post_delay": 600
-    },
-    "VF_博物研学_226": {
-        "action": "DoNothing",
-        "timeout": 5000,
-        "next": [
-            "VF_博物研学_226_Hit"
+            "VF_博物研学_227_Hit"
         ],
         "on_error": [
             "VF_博物研学_56"
         ]
     },
-    "VF_博物研学_226_Hit": {
+    "VF_博物研学_227_Hit": {
         "recognition": "TemplateMatch",
-        "template": "bowuyanxue1.png",
-        "threshold": 0.65,
+        "template": "bowuyanxue_rukou.png",
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
-            65,
-            141,
-            242,
-            133
+            1054,
+            298,
+            220,
+            128
         ],
         "next": [
-            "VF_博物研学_226"
+            "VF_博物研学_227"
         ],
         "max_hit": 3,
         "rate_limit": 200,
