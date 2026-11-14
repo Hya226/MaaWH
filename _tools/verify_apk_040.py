@@ -50,7 +50,14 @@ ri = open(os.path.join(ROOT, "whmx", "interface.json"), "rb").read()
 ai = zread("assets/whmx/interface.json")
 check(hashlib.md5(ri).hexdigest() == hashlib.md5(ai).hexdigest(), "interface.json 与仓库一致")
 s0 = ai.decode("utf-8")
-check('"version": "0.2.4"' in s0, "bundle version 0.2.4")
+# bundle version 不写死具体值：PC 端打包/编辑器会 bump（0.2.2→0.2.3→0.2.4 每次升级
+# 旧断言都过期 FAIL 一次），改为「格式合法 + APK 内与仓库一致」的动态校验
+_rv = re.search(r'"version":\s*"([^"]+)"', ri.decode("utf-8"))
+_av = re.search(r'"version":\s*"([^"]+)"', s0)
+check(_av is not None and re.match(r'^\d+\.\d+\.\d+$', _av.group(1)) is not None,
+      "bundle version 格式合法 (apk=%s)" % (_av.group(1) if _av else "缺失"))
+check(_rv is not None and _av is not None and _av.group(1) == _rv.group(1),
+      "bundle version 与仓库一致 (repo=%s, apk=%s)" % (_rv.group(1) if _rv else "缺失", _av.group(1) if _av else "缺失"))
 check('"OCR记录测试"' in s0.split('"task"')[0], "removed 名单含 OCR记录测试")
 
 # 4 image 目录数量
