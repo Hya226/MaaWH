@@ -238,6 +238,19 @@
         "循环总次数"
       ],
       "description": "请先打开征集页面"
+    },
+    {
+      "name": "刷活动关",
+      "label": "刷活动关",
+      "entry": "VF_刷活动关",
+      "group": [
+        "tools"
+      ],
+      "option": [
+        "关卡名",
+        "刷取次数"
+      ],
+      "description": "【无渡风花】"
     }
   ],
   "option": {
@@ -3455,6 +3468,232 @@
       "pipeline_override": {
         "VF_派遣公司事务_61_Hit": {}
       }
+    },
+    "关卡名": {
+      "type": "select",
+      "label": "关卡名",
+      "cases": [
+        {
+          "name": "01",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "01"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "01"
+            }
+          }
+        },
+        {
+          "name": "02",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "02"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "02"
+            }
+          }
+        },
+        {
+          "name": "03",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "03"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "03"
+            }
+          }
+        },
+        {
+          "name": "04",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "04"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "04"
+            }
+          }
+        },
+        {
+          "name": "05",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "05"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "05"
+            }
+          }
+        },
+        {
+          "name": "06",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "06"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "06"
+            }
+          }
+        },
+        {
+          "name": "07",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "07"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "07"
+            }
+          }
+        },
+        {
+          "name": "08",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "08"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "08"
+            }
+          }
+        },
+        {
+          "name": "09",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "09"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "09"
+            }
+          }
+        },
+        {
+          "name": "10",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "10"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "10"
+            }
+          }
+        },
+        {
+          "name": "11",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "11"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "11"
+            }
+          }
+        },
+        {
+          "name": "12",
+          "pipeline_override": {
+            "VF_刷活动关_04": {
+              "expected": "12"
+            },
+            "VF_刷活动关_03_Hit": {
+              "expected": "12"
+            }
+          }
+        }
+      ],
+      "default_case": "01"
+    },
+    "刷取次数": {
+      "type": "select",
+      "label": "刷取次数",
+      "cases": [
+        {
+          "name": "2",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 1
+            }
+          }
+        },
+        {
+          "name": "3",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 2
+            }
+          }
+        },
+        {
+          "name": "4",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 3
+            }
+          }
+        },
+        {
+          "name": "5",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 4
+            }
+          }
+        },
+        {
+          "name": "6",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 5
+            }
+          }
+        },
+        {
+          "name": "7",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 6
+            }
+          }
+        },
+        {
+          "name": "8",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 7
+            }
+          }
+        },
+        {
+          "name": "9",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 8
+            }
+          }
+        },
+        {
+          "name": "10",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "repeat": 9
+            }
+          }
+        },
+        {
+          "name": "最大",
+          "pipeline_override": {
+            "VF_刷活动关_07": {
+              "template": "zuida.png"
+            }
+          }
+        }
+      ],
+      "default_case": "2"
     }
   }
 }
