@@ -85,23 +85,48 @@ class HistoryActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 数据准备全部在后台线程：日志文件会长期积累（本机实测 700+ 个），此前在主线程
+     * 同步「枚举目录 + 逐文件读首行」，打开历史页要等数秒（反馈：「要等一会才能打开」）。
+     * 主线程只做 View 渲染；先显示「正在加载…」秒开，数据好了再填充。
+     */
     private fun refresh() {
         listContainer.removeAllViews()
-        listContainer.addView(emptyHint)
-        renderArchiveEvents()
-        val files = RunLogStore.list(this)
-        emptyHint.visibility = if (files.isEmpty()) View.VISIBLE else View.GONE
-        for (f in files) listContainer.addView(buildRow(f))
+        listContainer.addView(TextView(this).apply {
+            text = "正在加载…"
+            setTextColor(getColor(R.color.text_secondary))
+            textSize = 13f
+            setPadding(dp(10), dp(20), dp(10), 0)
+        })
+        Thread {
+            val errors = runCatching {
+                HistoryStore.load(this).filter { it.type == HistoryStore.TYPE_SAVE_ERROR }.take(10)
+            }.getOrDefault(emptyList())
+            val files = runCatching { RunLogStore.list(this) }.getOrDefault(emptyList())
+            val rows = files.map { f ->
+                f to runCatching { f.useLines { it.firstOrNull() ?: "" } }
+                    .getOrDefault("").removePrefix("=== ").removeSuffix(" ===")
+            }
+            runOnUiThread {
+                if (isDestroyed || isFinishing) return@runOnUiThread
+                listContainer.removeAllViews()
+                renderArchiveEvents(errors)
+                if (rows.isEmpty()) {
+                    emptyHint.visibility = View.VISIBLE
+                    listContainer.addView(emptyHint)
+                } else {
+                    emptyHint.visibility = View.GONE
+                }
+                for ((f, header) in rows) listContainer.addView(buildRow(f, header))
+            }
+        }.start()
     }
 
     /**
      * 存档持久化事件（写盘失败/解析失败，跨会话）。日志页是内存环形缓冲重启即清，
      * 「第二天发现配置/定时丢了」时这里就是唯一的现场记录。有记录才显示。
      */
-    private fun renderArchiveEvents() {
-        val errors = HistoryStore.load(this)
-            .filter { it.type == HistoryStore.TYPE_SAVE_ERROR }
-            .take(10)
+    private fun renderArchiveEvents(errors: List<HistoryStore.Entry>) {
         if (errors.isEmpty()) return
         listContainer.addView(TextView(this).apply {
             text = "存档事件"
@@ -124,10 +149,8 @@ class HistoryActivity : AppCompatActivity() {
         }
     }
 
-    private fun buildRow(f: File): View {
+    private fun buildRow(f: File, header: String): View {
         val sizeKb = (f.length() / 1024).coerceAtLeast(1)
-        val header = runCatching { f.useLines { it.firstOrNull() ?: "" } }.getOrDefault("")
-            .removePrefix("=== ").removeSuffix(" ===")
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = getDrawable(R.drawable.bg_card)
