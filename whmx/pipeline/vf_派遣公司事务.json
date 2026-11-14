@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-10-21T17:54:06+08:00",
+        "generatedAt": "2026-11-14T14:35:57+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:b1938311b5e058d1f4b0d734dfb6aab943da8ebd16744db15f13366a47d6e7e8",
-        "pipelineHash": "sha256:e9aec2a09b498879c6cb292bdc475d467d1b502509632be7f3266167b08b4bce",
+        "flowHash": "sha256:e018e9da85dfd2d64cf1252f1d22b106e47086a5d03207cf8617bb6da13bd888",
+        "pipelineHash": "sha256:7282b60e4e74ee9b6d0e6811658c6c22feec2b636f77beef1c6add95377c7eb8",
         "frameW": 1280,
         "frameH": 720
     },
@@ -42,7 +42,7 @@
             1086,
             400
         ],
-        "post_delay": 2000,
+        "post_delay": 3000,
         "pre_delay": 200,
         "repeat": 2,
         "repeat_delay": 350,
@@ -73,7 +73,7 @@
             1086,
             400
         ],
-        "post_delay": 2000,
+        "post_delay": 3000,
         "pre_delay": 200,
         "repeat": 2,
         "repeat_delay": 350,
@@ -900,9 +900,9 @@
         ],
         "roi": [
             1122,
-            240,
+            264,
             70,
-            40
+            35
         ],
         "rate_limit": 200,
         "next": []
