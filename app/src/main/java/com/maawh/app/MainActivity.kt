@@ -2007,15 +2007,27 @@ class MainActivity : AppCompatActivity() {
         rowInterval.addView(spUnit, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
         box.addView(rowInterval)
 
-        // 每周：星期勾选行
-        val rowDays = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        // 每周：星期勾选行。用 FlowLayout + 紧凑 CheckBox：固定单行 LinearLayout 塞 7 个
+        // 默认尺寸（Material minWidth 48dp）的 CheckBox，窄屏/页面缩放下超出对话框宽度，
+        // 最后一个「日」的文字被静默裁掉只剩框（反馈截图实锤）；换行兜底 + 紧凑化都稳。
+        val rowDays = FlowLayout(this)
         val dayChecks = LinkedHashMap<Int, CheckBox>()
         listOf(
             Calendar.MONDAY to "一", Calendar.TUESDAY to "二", Calendar.WEDNESDAY to "三",
             Calendar.THURSDAY to "四", Calendar.FRIDAY to "五", Calendar.SATURDAY to "六",
             Calendar.SUNDAY to "日"
         ).forEach { (d, label) ->
-            val cb = CheckBox(this).apply { text = label; isChecked = days.contains(d) }
+            val cb = CheckBox(this).apply {
+                text = label
+                isChecked = days.contains(d)
+                minWidth = 0
+                minHeight = 0
+                minimumWidth = 0
+                minimumHeight = 0
+                includeFontPadding = false
+                textSize = 13f
+                setPadding(dp(4), dp(2), dp(4), dp(2))
+            }
             cb.setOnCheckedChangeListener { _, c -> if (c) days.add(d) else days.remove(d) }
             dayChecks[d] = cb
             rowDays.addView(cb)
