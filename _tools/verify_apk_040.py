@@ -50,7 +50,7 @@ ri = open(os.path.join(ROOT, "whmx", "interface.json"), "rb").read()
 ai = zread("assets/whmx/interface.json")
 check(hashlib.md5(ri).hexdigest() == hashlib.md5(ai).hexdigest(), "interface.json 与仓库一致")
 s0 = ai.decode("utf-8")
-check('"version": "0.2.3"' in s0, "bundle version 0.2.3")
+check('"version": "0.2.4"' in s0, "bundle version 0.2.4")
 check('"OCR记录测试"' in s0.split('"task"')[0], "removed 名单含 OCR记录测试")
 
 # 4 image 目录数量

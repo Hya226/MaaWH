@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-11-14T14:35:57+08:00",
+        "generatedAt": "2026-11-14T15:00:59+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:e018e9da85dfd2d64cf1252f1d22b106e47086a5d03207cf8617bb6da13bd888",
-        "pipelineHash": "sha256:7282b60e4e74ee9b6d0e6811658c6c22feec2b636f77beef1c6add95377c7eb8",
+        "flowHash": "sha256:a72e3d3702c83fb561a9246c9b4fea5294a5e1b8867c6697a5550b7881144f1d",
+        "pipelineHash": "sha256:3d7d70af24f9a22ba9b774dd507b8b50a3509e20b9223b35af7fa8222e1c962a",
         "frameW": 1280,
         "frameH": 720
     },
@@ -42,7 +42,7 @@
             1086,
             400
         ],
-        "post_delay": 3000,
+        "post_delay": 2500,
         "pre_delay": 200,
         "repeat": 2,
         "repeat_delay": 350,
@@ -53,7 +53,7 @@
     "VF_派遣公司事务_62": {
         "recognition": "TemplateMatch",
         "template": "huoqu.png",
-        "threshold": 0.6,
+        "threshold": 0.55,
         "action": "Click",
         "timeout": 8000,
         "post_delay": 1000,
@@ -63,6 +63,9 @@
             133,
             90
         ],
+        "rate_limit": 100,
+        "repeat": 2,
+        "repeat_delay": 350,
         "next": [
             "VF_派遣公司事务_63"
         ]
@@ -73,7 +76,7 @@
             1086,
             400
         ],
-        "post_delay": 3000,
+        "post_delay": 1500,
         "pre_delay": 200,
         "repeat": 2,
         "repeat_delay": 350,
