@@ -80,7 +80,9 @@ object QueueStore {
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
 
-    /** 读存档；没有存档 / 版本不认识 / 损坏 → null，宿主回退清单默认队列 */
+    /** 读存档；没有存档（首次使用）/ 版本不认识 / 损坏 → null，宿主回退清单默认队列。
+     *  后两种不是正常态——损坏回退之后用户一勾选就会把默认态覆盖回磁盘（「配置突然丢失」
+     *  的真实成因之一），必须计入历史留痕，否则第二天回查无线索。 */
     fun load(ctx: Context): State? {
         return try {
             val raw = prefs(ctx).getString(KEY, null) ?: return null
@@ -88,9 +90,13 @@ object QueueStore {
             when (root.optInt("schema", 0)) {
                 SCHEMA -> parse(root)
                 1 -> migrateV1(root)
-                else -> null
+                else -> {
+                    HistoryStore.appendError(ctx, "配置存档版本不认识（schema=${root.optInt("schema", 0)}），已按无存档处理")
+                    null
+                }
             }
         } catch (e: Throwable) {
+            HistoryStore.appendError(ctx, "配置存档解析失败（可能损坏：${e.javaClass.simpleName}），已按无存档处理，再勾选任务将以默认队列覆盖")
             null
         }
     }
@@ -105,9 +111,13 @@ object QueueStore {
      * 调用方必须检查并让用户可见——静默失败正是「配置消失」难以定位的原因。
      */
     fun save(ctx: Context, state: State): Boolean = try {
-        prefs(ctx).edit().putString(KEY, toJson(state).toString()).commit()
+        prefs(ctx).edit().putString(KEY, toJson(state).toString()).commit().also { ok ->
+            // 计入跨会话历史（日志页内存态重启即清）：失败时「第二天回查无线索」
+            if (!ok) HistoryStore.appendError(ctx, "配置存档写入失败（磁盘水位或 IO 异常？），当次修改未保存")
+        }
     } catch (e: Throwable) {
         // 存档失败不打断使用；失败经由返回值上报给调用方提示用户
+        HistoryStore.appendError(ctx, "配置存档写入异常（${e.javaClass.simpleName}），当次修改未保存")
         false
     }
 

@@ -77,6 +77,8 @@ object ScheduleStore {
             )
         }
     } catch (e: Throwable) {
+        // 坏数据静默回落空表 = 用户视角「定时任务突然全没了」，必须留痕（跨会话历史）
+        HistoryStore.appendError(ctx, "定时任务存档解析失败（可能损坏：${e.javaClass.simpleName}），已按空表处理")
         emptyList()
     }
 
@@ -110,9 +112,12 @@ object ScheduleStore {
                     if (t.anchorMs > 0) put("anchor", t.anchorMs)
                 })
             }
-            prefs(ctx).edit().putString(KEY, arr.toString()).commit()
+            prefs(ctx).edit().putString(KEY, arr.toString()).commit().also { ok ->
+                if (!ok) HistoryStore.appendError(ctx, "定时任务存档写入失败（磁盘水位或 IO 异常？），当次修改未保存")
+            }
         } catch (e: Throwable) {
             // 存档失败不打断使用；失败经由返回值上报给调用方提示用户
+            HistoryStore.appendError(ctx, "定时任务存档写入异常（${e.javaClass.simpleName}），当次修改未保存")
             false
         }
     }

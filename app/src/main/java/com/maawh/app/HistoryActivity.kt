@@ -73,9 +73,40 @@ class HistoryActivity : AppCompatActivity() {
     private fun refresh() {
         listContainer.removeAllViews()
         listContainer.addView(emptyHint)
+        renderArchiveEvents()
         val files = RunLogStore.list(this)
         emptyHint.visibility = if (files.isEmpty()) View.VISIBLE else View.GONE
         for (f in files) listContainer.addView(buildRow(f))
+    }
+
+    /**
+     * 存档持久化事件（写盘失败/解析失败，跨会话）。日志页是内存环形缓冲重启即清，
+     * 「第二天发现配置/定时丢了」时这里就是唯一的现场记录。有记录才显示。
+     */
+    private fun renderArchiveEvents() {
+        val errors = HistoryStore.load(this)
+            .filter { it.type == HistoryStore.TYPE_SAVE_ERROR }
+            .take(10)
+        if (errors.isEmpty()) return
+        listContainer.addView(TextView(this).apply {
+            text = "存档事件"
+            setTextColor(getColor(R.color.text_primary))
+            textSize = 15f
+            paint.isFakeBoldText = true
+            setPadding(dp(2), dp(10), dp(2), dp(2))
+        })
+        for (e in errors) {
+            listContainer.addView(TextView(this).apply {
+                text = e.line()
+                setTextColor(getColor(R.color.err_red))
+                textSize = 12f
+                background = getDrawable(R.drawable.bg_card)
+                setPadding(dp(10), dp(8), dp(10), dp(8))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(6) }
+            })
+        }
     }
 
     private fun buildRow(f: File): View {

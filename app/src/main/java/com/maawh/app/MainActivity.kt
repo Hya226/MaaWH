@@ -1735,10 +1735,40 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val now = System.currentTimeMillis()
+        // 绑定配置缺失警示卡：触发时会静默回退当前生效配置，行内红字容易被忽略，
+        // 页面级卡片把这类「定时在跑但跑的不是你绑的队列」提到最显眼处
+        val missingBound = items.any { it.profile.isNotBlank() && !profileData.containsKey(it.profile) }
+        if (missingBound) container.addView(scheduleBoundMissingCard())
         items.sortedWith(
             compareBy<ScheduleStore.Item> { !it.enabled }
                 .thenBy { ScheduleManager.nextTriggerFromNow(it, now) ?: Long.MAX_VALUE }
         ).forEach { container.addView(scheduleRow(it, now)) }
+    }
+
+    /** 「存在绑定配置缺失」的页面级警示卡（样式对齐 schedulePermissionCard 的警示语言） */
+    private fun scheduleBoundMissingCard(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(12).toFloat()
+                setColor(0x26F57C00)  // 半透明橙：警示但不到 ERROR 的红
+            }
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dp(6) }
+            addView(TextView(this@MainActivity).apply {
+                text = "⚠ 有定时任务绑定的配置已不存在"
+                setTextColor(0xFFF57C00.toInt())
+                textSize = 13f
+                paint.isFakeBoldText = true
+            })
+            addView(TextView(this@MainActivity).apply {
+                text = "触发时将回退当前生效配置（跑的可能不是你绑的队列）——点对应条目重新绑定，或在配置管理里重建该配置"
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 11f
+                setPadding(0, dp(2), 0, 0)
+            })
+        }
     }
 
     /** 单条定时卡片：名字 + 规则/绑定 + 下次/上次结果 + 启停开关；点卡片编辑 */
