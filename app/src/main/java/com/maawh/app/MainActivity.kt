@@ -661,7 +661,7 @@ class MainActivity : AppCompatActivity() {
             )
         }
         try {
-            QueueStore.save(this, QueueStore.State(
+            val ok = QueueStore.save(this, QueueStore.State(
                 pack = m.name,
                 manifestVersion = m.version,
                 active = activeProfile,
@@ -679,8 +679,14 @@ class MainActivity : AppCompatActivity() {
                 continueOnFail = continueOnFail,
                 home = HashMap(homeOf)
             ))
+            if (!ok) {
+                // commit 写失败（磁盘水位/IO 异常）不抛异常只返回 false——静默的话就是
+                // 反馈的「新建的配置过几天消失」：当场看着保存成功，磁盘上从来没有
+                log("⚠ 配置存档写入失败（磁盘空间不足或存储异常？），本次修改可能未保存", LogLevel.ERR)
+                toast("⚠ 配置保存失败，请检查平板/手机存储空间")
+            }
         } catch (e: Throwable) {
-            log("保存配置失败: $e")
+            log("保存配置失败: $e", LogLevel.ERR)
         }
     }
 
@@ -1774,6 +1780,15 @@ class MainActivity : AppCompatActivity() {
                     setTextColor(getColor(R.color.text_secondary))
                     textSize = 11f
                 })
+                // 绑定的配置已被删除/丢失时必须可见：触发时静默回退当前生效配置（runScheduled），
+                // 行上不标注的话用户看到「✓ 成功」会误以为跑的就是绑定的队列（0.4.0 反馈实例）
+                if (item.profile.isNotBlank() && !profileData.containsKey(item.profile)) {
+                    addView(TextView(this@MainActivity).apply {
+                        text = "⚠ 绑定的配置「${item.profile}」已不存在，触发时回退当前生效配置"
+                        setTextColor(getColor(R.color.err_red))
+                        textSize = 11f
+                    })
+                }
                 addView(TextView(this@MainActivity).apply {
                     text = "$nextText\n$lastText"
                     setTextColor(getColor(R.color.text_secondary))
@@ -2115,7 +2130,12 @@ class MainActivity : AppCompatActivity() {
                     days = days.toSet(), dateIso = dateIso, profile = profile,
                     intervalMin = intervalMin, anchorMs = anchor
                 )
-                ScheduleStore.upsert(applicationContext, saved)
+                if (!ScheduleStore.upsert(applicationContext, saved)) {
+                    // 写盘失败不关对话框，用户可直接重试；静默的话就是「任务存不上」的又一次无声丢失
+                    log("⚠ 定时任务存档写入失败（磁盘空间不足或存储异常？）", LogLevel.ERR)
+                    toast("⚠ 定时任务保存失败，请检查存储空间")
+                    return@setOnClickListener
+                }
                 val armFailed = ScheduleManager.armAll(applicationContext)
                 log("已保存定时「$name」（$ruleText）", LogLevel.SUCCESS)
                 // 数据已落盘、保存已成立；闹钟挂载问题只提示不失败（对标 maameow：注册失败 ≠ 保存失败）

@@ -82,8 +82,16 @@ object ScheduleStore {
 
     fun get(ctx: Context, id: String): Item? = load(ctx).firstOrNull { it.id == id }
 
-    fun save(ctx: Context, items: List<Item>) {
-        try {
+    /**
+     * commit 而非 apply：apply 是异步落盘，保存后紧跟的系统调用若把进程崩了
+     * （2026-10 实测：某 ROM 拒 setAlarmClock 抛 SecurityException），这次写入就丢了，
+     * 表现为「任务存不上」。本表数据量极小，同步写无性能顾虑。
+     *
+     * 返回落盘结果：commit 写失败（磁盘水位/IO 异常）**不抛异常只返回 false**，
+     * 调用方必须检查并让用户可见——静默失败就是「任务存不上」难以定位的原因。
+     */
+    fun save(ctx: Context, items: List<Item>): Boolean {
+        return try {
             val arr = JSONArray()
             items.forEach { t ->
                 arr.put(JSONObject().apply {
@@ -102,20 +110,18 @@ object ScheduleStore {
                     if (t.anchorMs > 0) put("anchor", t.anchorMs)
                 })
             }
-            // commit 而非 apply：apply 是异步落盘，保存后紧跟的系统调用若把进程崩了
-            // （2026-10 实测：某 ROM 拒 setAlarmClock 抛 SecurityException），这次写入就丢了，
-            // 表现为「任务存不上」。本表数据量极小，同步写无性能顾虑。
             prefs(ctx).edit().putString(KEY, arr.toString()).commit()
         } catch (e: Throwable) {
-            // 存档失败不打断使用，下次编辑会再试
+            // 存档失败不打断使用；失败经由返回值上报给调用方提示用户
+            false
         }
     }
 
-    fun upsert(ctx: Context, item: Item) {
+    fun upsert(ctx: Context, item: Item): Boolean {
         val cur = load(ctx).toMutableList()
         val i = cur.indexOfFirst { it.id == item.id }
         if (i >= 0) cur[i] = item else cur.add(item)
-        save(ctx, cur)
+        return save(ctx, cur)
     }
 
     fun remove(ctx: Context, id: String) = save(ctx, load(ctx).filter { it.id != id })

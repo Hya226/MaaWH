@@ -100,13 +100,15 @@ object QueueStore {
      * 保存后进程若被 LMKD 杀掉（保存后立即锁屏/切走正是常见操作），写入整体丢失，
      * 表现为「新建的配置过几天消失」（反馈实锤；ScheduleStore 2026-10-10 同坑同修法）。
      * 存档是单 key 一段 JSON（几 KB~几十 KB），主线程 commit 开销 <5ms，无性能顾虑。
+     *
+     * 返回 commit 的落盘结果：commit 写失败（磁盘水位/IO 异常）**不抛异常只返回 false**，
+     * 调用方必须检查并让用户可见——静默失败正是「配置消失」难以定位的原因。
      */
-    fun save(ctx: Context, state: State) {
-        try {
-            prefs(ctx).edit().putString(KEY, toJson(state).toString()).commit()
-        } catch (e: Throwable) {
-            // 存档失败不打断使用，下次编辑会再试
-        }
+    fun save(ctx: Context, state: State): Boolean = try {
+        prefs(ctx).edit().putString(KEY, toJson(state).toString()).commit()
+    } catch (e: Throwable) {
+        // 存档失败不打断使用；失败经由返回值上报给调用方提示用户
+        false
     }
 
     fun clear(ctx: Context) {
