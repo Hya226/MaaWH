@@ -490,6 +490,20 @@ object ShizukuShell {
         return "input swipe $x1,$y1->$x2,$y2"
     }
 
+    /** 向虚拟屏注入 Android 按键（keycode，4=BACK）。引擎 ClickKey 动作的 VD 通道。 */
+    fun injectKeyVD(keycode: Int): String = try {
+        ensureService().injectKeyVD(keycode) ?: "(null)"
+    } catch (e: Throwable) {
+        "按键注入失败: $e"
+    }
+
+    /** 按当前目标屏按键（vdMode=true → 虚拟屏，否则默认屏）。 */
+    fun keyEventOnTarget(keycode: Int): String {
+        if (vdMode) return injectKeyVD(keycode)
+        execBlocking("input", "keyevent", keycode.toString())
+        return "input keyevent $keycode"
+    }
+
     /** 在 Application/Activity 启动时注入 context（取 applicationContext 即可）。 */
     fun init(context: Context) {
         appContext = context.applicationContext
@@ -601,7 +615,7 @@ object ShizukuShell {
                 // v9: 帧统计改分通道（R/G/B，白与单色分得清）+ 帧流增量（45s 内有几帧，
                 //     0 = 渲染没起来，这是把"黑屏"和"渲染死"分开的决定性判据）
                 // v10: AIDL 码 19 takeGuardReport——任务结束即取回守护报告，不必跑两次
-                .version(10)
+                .version(11)
                 .daemon(false)
             args = a
 

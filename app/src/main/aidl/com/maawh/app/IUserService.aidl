@@ -69,4 +69,8 @@ interface IUserService {
     // 守护在 StartApp 之后跑 45s，期间 App 无从得知；任务结束时取一次即可拿到，
     // 不必等到下一次 StartApp（2026-09-29）。
     String takeGuardReport() = 19;
+
+    // 【返回键】向虚拟屏注入 Android 按键（keycode，4=BACK）。引擎 ClickKey 动作的
+    // 底层通道：KeyEvent 走与触摸同一套 setDisplayId + injectInputEvent 定向（2026-11-17）
+    String injectKeyVD(int keycode) = 20;
 }

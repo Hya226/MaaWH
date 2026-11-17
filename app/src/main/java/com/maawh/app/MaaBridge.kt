@@ -630,6 +630,20 @@ object MaaBridge {
 
         cb.inactive = MaaCustomControllerCallbacks.InactiveCb { _ -> 1 }
 
+        // 引擎 ClickKey 动作（流程【返回键】节点）：getFeatures 返回 0（无
+        // UseKeyboardDownAndUpInsteadOfClick 位）→ 引擎走 click_key 单回调。
+        // ★ 必须有实现：回调表留 NULL = 引擎调用空指针（2026-11-17 加）。
+        cb.clickKey = MaaCustomControllerCallbacks.ClickKeyCb { keycode, _ ->
+            try {
+                val r = ShizukuShell.keyEventOnTarget(keycode)
+                onLog("引擎按键 ($keycode) => $r")
+                1
+            } catch (e: Throwable) {
+                onLog("按键回调失败: $e")
+                0
+            }
+        }
+
         cb.getInfo = MaaCustomControllerCallbacks.GetInfoCb { _, buffer ->
             try {
                 lib.MaaStringBufferSet(buffer!!, "{\"platform\":\"android\",\"impl\":\"maawh-shizuku\"}")

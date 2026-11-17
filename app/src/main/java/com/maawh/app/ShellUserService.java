@@ -1324,6 +1324,30 @@ public class ShellUserService extends IUserService.Stub {
         }
     }
 
+    /** 向虚拟屏注入 Android 按键（keycode，4=BACK）。引擎 ClickKey 动作的底层通道。
+     *  KeyEvent 与触摸同一套 setDisplayId + injectInputEvent 定向；DOWN 用 ASYNC(0)
+     *  与 injectTapVD 同口径（WAIT_FOR_FINISH 返回 true 但事件不生效）。 */
+    @Override
+    public String injectKeyVD(int keycode) {
+        try {
+            if (mVdId < 0) return "vd off";
+            long now = android.os.SystemClock.uptimeMillis();
+            android.view.KeyEvent down = new android.view.KeyEvent(
+                now, now, android.view.KeyEvent.ACTION_DOWN, keycode, 0);
+            android.view.KeyEvent up = new android.view.KeyEvent(
+                now, now + 50, android.view.KeyEvent.ACTION_UP, keycode, 0);
+            boolean sd = setEventDisplay(down, mVdId);
+            boolean su = setEventDisplay(up, mVdId);
+            boolean r1 = injectInput(down, 0);
+            Thread.sleep(40);
+            boolean r2 = injectInput(up, 0);
+            return "key " + keycode + " dispSet=" + sd + "/" + su
+                + " down=" + r1 + " up=" + r2;
+        } catch (Throwable t) {
+            return "inject_err=" + t;
+        }
+    }
+
     @Override
     public int getStreamVolume(int stream) {
         try {
