@@ -34,7 +34,7 @@ repo_files = sorted(f for f in os.listdir(repo_pl) if f.endswith(".json"))
 apk_pl = {n[len("assets/whmx/pipeline/"):] for n in names if n.startswith("assets/whmx/pipeline/")}
 # 数量不写死（任务包会加流程），以「集一致」为准
 check(apk_pl == set(repo_files), f"pipeline 集一致 (repo={len(repo_files)}, apk={len(apk_pl)})")
-check("vf_OCR记录测试.json" not in apk_pl, "测试流程 vf_OCR记录测试.json 已不进包")
+check("vf_OCR记录测试.json" in apk_pl, "vf_OCR记录测试.json 已恢复上架进包（2026-11-17 回归，旧下架断言过期）")
 bad = []
 for f in repo_files:
     a = hashlib.md5(zread("assets/whmx/pipeline/" + f)).hexdigest()
