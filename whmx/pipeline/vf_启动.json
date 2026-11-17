@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-10-31T09:14:01+08:00",
+        "generatedAt": "2026-11-17T17:19:45+08:00",
         "flowFile": "启动.flow.json",
-        "flowHash": "sha256:dd33676800fdb5d8ff0448848a1546825f0c65dcd3e2fd2d009047e2a0908aee",
-        "pipelineHash": "sha256:88b18dcd6c3741e64329d6741cf1ed53a92d8b440d7b4296dc3b379756d67a1d",
+        "flowHash": "sha256:6b48f8c59aa5d47b7ddc4daea6da1c5a07c8618a26def13808030dce49a7e3d6",
+        "pipelineHash": "sha256:41bc964815e45f63c5b76ddf23f088730c042419a245995d5487a9014e63f55c",
         "frameW": 1280,
         "frameH": 720
     },
@@ -67,8 +67,20 @@
             62
         ],
         "next": [
-            "VF_启动_17"
+            "VF_启动_18"
         ]
+    },
+    "VF_启动_18": {
+        "action": "ClickKey",
+        "key": [
+            4
+        ],
+        "pre_delay": 200,
+        "post_delay": 500,
+        "next": [
+            "VF_启动_11"
+        ],
+        "max_hit": 1
     },
     "VF_启动_17": {
         "action": "DoNothing",
@@ -77,7 +89,7 @@
             "VF_启动_17_Hit"
         ],
         "on_error": [
-            "VF_启动_11"
+            "VF_启动_End"
         ]
     },
     "VF_启动_17_Hit": {
@@ -106,137 +118,11 @@
         ],
         "post_delay": 500,
         "pre_delay": 200,
-        "repeat": 3,
+        "repeat": 2,
         "repeat_delay": 350,
         "next": [
-            "VF_启动_19"
-        ]
-    },
-    "VF_启动_19": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_启动_19_Hit"
-        ],
-        "on_error": [
-            "VF_启动_20"
-        ]
-    },
-    "VF_启动_19_Hit": {
-        "recognition": "OCR",
-        "expected": [
-            "登录已有角色"
-        ],
-        "replace": [
-            [
-                "汉漠拉比法典",
-                "汉谟拉比法典"
-            ],
-            [
-                "少虞剑",
-                "少虡剑"
-            ],
-            [
-                "云雷纹大饶",
-                "云雷纹大铙"
-            ],
-            [
-                "乌音山水钟",
-                "鸟音山水钟"
-            ],
-            [
-                "虎贝",
-                "庞贝"
-            ],
-            [
-                "秦公鎛",
-                "秦公镈"
-            ],
-            [
-                "免形陶[顷埙]",
-                "兔形陶埙"
-            ],
-            [
-                "兔形陶顷",
-                "兔形陶埙"
-            ]
-        ],
-        "action": "Click",
-        "roi": [
-            561,
-            542,
-            146,
-            35
-        ],
-        "next": [
-            "VF_启动_19"
-        ],
-        "max_hit": 2,
-        "rate_limit": 200,
-        "post_delay": 600
-    },
-    "VF_启动_20": {
-        "action": "DoNothing",
-        "timeout": 3000,
-        "next": [
-            "VF_启动_20_Hit"
-        ],
-        "on_error": [
             "VF_启动_03"
         ]
-    },
-    "VF_启动_20_Hit": {
-        "recognition": "OCR",
-        "expected": [
-            "登录已有角色"
-        ],
-        "replace": [
-            [
-                "汉漠拉比法典",
-                "汉谟拉比法典"
-            ],
-            [
-                "少虞剑",
-                "少虡剑"
-            ],
-            [
-                "云雷纹大饶",
-                "云雷纹大铙"
-            ],
-            [
-                "乌音山水钟",
-                "鸟音山水钟"
-            ],
-            [
-                "虎贝",
-                "庞贝"
-            ],
-            [
-                "秦公鎛",
-                "秦公镈"
-            ],
-            [
-                "免形陶[顷埙]",
-                "兔形陶埙"
-            ],
-            [
-                "兔形陶顷",
-                "兔形陶埙"
-            ]
-        ],
-        "action": "Click",
-        "roi": [
-            686,
-            447,
-            156,
-            39
-        ],
-        "next": [
-            "VF_启动_20"
-        ],
-        "max_hit": 2,
-        "rate_limit": 200,
-        "post_delay": 600
     },
     "VF_启动_03": {
         "action": "Click",
@@ -309,8 +195,20 @@
         "post_delay": 600,
         "pre_delay": 200,
         "next": [
-            "VF_启动_07"
+            "VF_启动_19"
         ]
+    },
+    "VF_启动_19": {
+        "action": "ClickKey",
+        "key": [
+            4
+        ],
+        "pre_delay": 200,
+        "post_delay": 500,
+        "next": [
+            "VF_启动_08"
+        ],
+        "max_hit": 1
     },
     "VF_启动_07": {
         "recognition": "TemplateMatch",
@@ -325,10 +223,7 @@
             561,
             380
         ],
-        "post_wait_freezes": 100,
-        "next": [
-            "VF_启动_08"
-        ]
+        "post_wait_freezes": 100
     },
     "VF_启动_08": {
         "action": "DoNothing",
@@ -347,8 +242,20 @@
         "action": "DoNothing",
         "rate_limit": 200,
         "next": [
-            "VF_启动_09"
+            "VF_启动_20"
         ]
+    },
+    "VF_启动_20": {
+        "action": "ClickKey",
+        "key": [
+            4
+        ],
+        "pre_delay": 200,
+        "post_delay": 500,
+        "next": [
+            "VF_启动_08"
+        ],
+        "max_hit": 1
     },
     "VF_启动_09": {
         "recognition": "TemplateMatch",
@@ -357,10 +264,7 @@
         "action": "Click",
         "timeout": 8000,
         "post_delay": 800,
-        "rate_limit": 200,
-        "next": [
-            "VF_启动_08"
-        ]
+        "rate_limit": 200
     },
     "VF_启动_End": {
         "action": "DoNothing",

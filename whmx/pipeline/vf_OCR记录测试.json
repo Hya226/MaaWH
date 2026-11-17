@@ -1,0 +1,81 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-11-17T15:03:31+08:00",
+        "flowFile": "OCR记录测试.flow.json",
+        "flowHash": "sha256:b5557878899ad5fdbeaa7ff743e42fe647be44ad34b78affaa45ce061eb296c1",
+        "pipelineHash": "sha256:af2f34f67d4697a1b5d1aa6265550380816e3e47c9457e44a4a25c3e3cd9e58d",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_OCR记录测试": {
+        "next": [
+            "VF_OCR记录测试_01"
+        ]
+    },
+    "VF_OCR记录测试_01_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "\\d+"
+        ],
+        "action": "DoNothing",
+        "focus": true,
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "roi": [
+            1118,
+            240,
+            80,
+            36
+        ],
+        "rate_limit": 200,
+        "next": []
+    },
+    "VF_OCR记录测试_01": {
+        "action": "DoNothing",
+        "timeout": 5000,
+        "next": [
+            "VF_OCR记录测试_01_Hit"
+        ],
+        "on_error": [
+            "VF_OCR记录测试_End"
+        ]
+    },
+    "VF_OCR记录测试_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

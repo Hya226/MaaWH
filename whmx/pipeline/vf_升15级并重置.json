@@ -1,0 +1,611 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-11-17T15:03:32+08:00",
+        "flowFile": "升15级并重置.flow.json",
+        "flowHash": "sha256:51b27a7f84ca43200581d3c35efbe63ba7eb4f8bcc9cf2e0bbe817ab131f548b",
+        "pipelineHash": "sha256:72b788c8ea2d5927d5b6d8b66cea5de34b87b50e4310e8c4c2500c667b5d815f",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_升15级并重置": {
+        "next": [
+            "VF_升15级并重置_15"
+        ]
+    },
+    "VF_升15级并重置_02": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_02_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_04"
+        ]
+    },
+    "VF_升15级并重置_02_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "批量关心"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "DoNothing",
+        "roi": [
+            672,
+            14,
+            88,
+            30
+        ],
+        "next": [
+            "VF_升15级并重置_03"
+        ]
+    },
+    "VF_升15级并重置_04": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_04_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_05"
+        ]
+    },
+    "VF_升15级并重置_04_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "等级"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            1017,
+            13,
+            46,
+            33
+        ],
+        "next": [
+            "VF_升15级并重置_04"
+        ],
+        "max_hit": 1,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_05": {
+        "action": "Click",
+        "target": [
+            83,
+            166
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 2,
+        "repeat_delay": 350,
+        "next": [
+            "VF_升15级并重置_06"
+        ]
+    },
+    "VF_升15级并重置_06": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_06_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_07"
+        ]
+    },
+    "VF_升15级并重置_06_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "jiahao.png",
+        "threshold": 0.75,
+        "action": "Click",
+        "roi": [
+            1174,
+            71,
+            82,
+            83
+        ],
+        "next": [
+            "VF_升15级并重置_06"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_07": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_07_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_08"
+        ]
+    },
+    "VF_升15级并重置_07_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "一键选择"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            919,
+            646,
+            101,
+            36
+        ],
+        "next": [
+            "VF_升15级并重置_07"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_08": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_08_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_09"
+        ]
+    },
+    "VF_升15级并重置_08_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "等级提升"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            1076,
+            645,
+            131,
+            38
+        ],
+        "next": [
+            "VF_升15级并重置_08"
+        ],
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_09": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_09_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_10"
+        ]
+    },
+    "VF_升15级并重置_09_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "升级"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            126,
+            15,
+            58,
+            36
+        ],
+        "next": [
+            "VF_升15级并重置_09"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_10": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_10_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_11"
+        ]
+    },
+    "VF_升15级并重置_10_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "chongzhi.png",
+        "threshold": 0.65,
+        "action": "Click",
+        "roi": [
+            17,
+            256,
+            74,
+            59
+        ],
+        "next": [
+            "VF_升15级并重置_10"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_11": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_11_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_12"
+        ]
+    },
+    "VF_升15级并重置_11_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "确认"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            728,
+            547,
+            103,
+            50
+        ],
+        "next": [
+            "VF_升15级并重置_11"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_12": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_12_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_13"
+        ]
+    },
+    "VF_升15级并重置_12_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "duigou.png",
+        "threshold": 0.6,
+        "action": "Click",
+        "roi": [
+            711,
+            405,
+            122,
+            50
+        ],
+        "next": [
+            "VF_升15级并重置_12"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_13": {
+        "action": "Click",
+        "target": [
+            721,
+            563
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 3,
+        "repeat_delay": 350,
+        "next": [
+            "VF_升15级并重置_14"
+        ]
+    },
+    "VF_升15级并重置_14": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_14_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_End"
+        ]
+    },
+    "VF_升15级并重置_14_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "zhuye1.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "roi": [
+            201,
+            13,
+            73,
+            51
+        ],
+        "next": [
+            "VF_升15级并重置_14"
+        ],
+        "max_hit": 3,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_03": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_升15级并重置_03_Hit"
+        ],
+        "on_error": [
+            "VF_升15级并重置_02"
+        ]
+    },
+    "VF_升15级并重置_03_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "关心"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            799,
+            14,
+            49,
+            32
+        ],
+        "next": [
+            "VF_升15级并重置_03"
+        ],
+        "max_hit": 1,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_升15级并重置_15": {
+        "recognition": "TemplateMatch",
+        "template": "qizhe.png",
+        "threshold": 0.72,
+        "action": "Click",
+        "timeout": 5000,
+        "post_delay": 800,
+        "order_by": "Score",
+        "post_wait_freezes": 1200,
+        "next": [
+            "VF_升15级并重置_02"
+        ]
+    },
+    "VF_升15级并重置_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}

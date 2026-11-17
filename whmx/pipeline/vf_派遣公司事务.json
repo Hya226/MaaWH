@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-11-14T15:00:59+08:00",
+        "generatedAt": "2026-11-17T15:03:50+08:00",
         "flowFile": "派遣公司事务.flow.json",
-        "flowHash": "sha256:a72e3d3702c83fb561a9246c9b4fea5294a5e1b8867c6697a5550b7881144f1d",
-        "pipelineHash": "sha256:3d7d70af24f9a22ba9b774dd507b8b50a3509e20b9223b35af7fa8222e1c962a",
+        "flowHash": "sha256:51dcbcf1aea4ddce47ac529b0584ff0de2d435a4a49c81ae6c8290981e8a701e",
+        "pipelineHash": "sha256:6e3fc8f596438d9f81fcbe1913bf6f7c277a4c3f5f4a889b72db8a81d54cf9fb",
         "frameW": 1280,
         "frameH": 720
     },
@@ -39,8 +39,8 @@
     "VF_派遣公司事务_03": {
         "action": "Click",
         "target": [
-            1086,
-            400
+            1214,
+            391
         ],
         "post_delay": 2500,
         "pre_delay": 200,
@@ -73,8 +73,8 @@
     "VF_派遣公司事务_63": {
         "action": "Click",
         "target": [
-            1086,
-            400
+            1214,
+            407
         ],
         "post_delay": 1500,
         "pre_delay": 200,

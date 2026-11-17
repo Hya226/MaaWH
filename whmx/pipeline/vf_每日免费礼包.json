@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-09-28T12:14:45+08:00",
+        "generatedAt": "2026-11-17T15:03:49+08:00",
         "flowFile": "每日免费礼包.flow.json",
-        "flowHash": "sha256:f3cd3f8f84f8f28aaf3e1298d54875a5a9c1b08cacd5cb5af33064f647acdc16",
-        "pipelineHash": "sha256:3b30a1a970fa59d66677c5398904cf29e8b64d6b012826d5c6ae949f635fe888",
+        "flowHash": "sha256:561bd769b8869f9feb60eb48e292fa4ab806a0747bba8a7fae9288e0796c43f1",
+        "pipelineHash": "sha256:22b31ce77643c5d32ddd5a8145270c9ecd770807b22c93b31afd56d636eaa779",
         "frameW": 1280,
         "frameH": 720
     },
@@ -195,7 +195,7 @@
     "VF_每日免费礼包_11_Hit": {
         "recognition": "TemplateMatch",
         "template": "zhuye.png",
-        "threshold": 0.65,
+        "threshold": 0.7,
         "action": "Click",
         "roi": [
             203,

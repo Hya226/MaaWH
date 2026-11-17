@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-11-14T16:06:24+08:00",
+        "generatedAt": "2026-11-17T16:30:55+08:00",
         "flowFile": "刷活动关.flow.json",
-        "flowHash": "sha256:1cf47879994fbe269861b2515e635755297de66014ef93196395fd23d8709079",
-        "pipelineHash": "sha256:0a91df3b0f99921fb5679fcf393d894cac1b1b21d3c71d8953f24bbbf36980e3",
+        "flowHash": "sha256:051f88a3785cf52bc981d91aa79d5eed9900af17cfd45da9f1038db4f23ba48b",
+        "pipelineHash": "sha256:40c9d0ecd096a32c84a6f709718aba4f2435f8e5da047a5e28a613cbdaa2a428",
         "frameW": 1280,
         "frameH": 720
     },
@@ -93,7 +93,7 @@
         "timeout": 8000,
         "post_delay": 2000,
         "next": [
-            "VF_刷活动关_22"
+            "VF_刷活动关_21"
         ],
         "replace": [
             [
@@ -130,16 +130,27 @@
             ]
         ]
     },
-    "VF_刷活动关_22": {
-        "recognition": "TemplateMatch",
-        "template": "st.png",
-        "threshold": 0.8,
-        "action": "Click",
-        "timeout": 8000,
-        "post_delay": 800,
+    "VF_刷活动关_21": {
+        "action": "DoNothing",
+        "timeout": 3000,
         "next": [
+            "VF_刷活动关_21_Hit"
+        ],
+        "on_error": [
             "VF_刷活动关_07"
         ]
+    },
+    "VF_刷活动关_21_Hit": {
+        "recognition": "TemplateMatch",
+        "template": "sutong.png",
+        "threshold": 0.7,
+        "action": "Click",
+        "next": [
+            "VF_刷活动关_21"
+        ],
+        "max_hit": 1,
+        "rate_limit": 200,
+        "post_delay": 600
     },
     "VF_刷活动关_07": {
         "recognition": "TemplateMatch",
@@ -267,12 +278,6 @@
         "template": "wdfh.png",
         "threshold": 0.7,
         "action": "Click",
-        "roi": [
-            2,
-            86,
-            241,
-            77
-        ],
         "next": [
             "VF_刷活动关_13"
         ],
@@ -294,12 +299,6 @@
         "template": "hd2.png",
         "threshold": 0.7,
         "action": "Click",
-        "roi": [
-            1012,
-            412,
-            257,
-            104
-        ],
         "next": [
             "VF_刷活动关_17"
         ],

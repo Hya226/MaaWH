@@ -10,7 +10,8 @@
     "刷取次数",
     "遗境",
     "OCR记录测试",
-    "测试文本"
+    "测试文本",
+    "测试流程"
   ],
   "description": "MaaWH 的《物华弥新》任务包（Shizuku + 虚拟屏）",
   "controller": [
@@ -244,13 +245,22 @@
       "label": "刷活动关",
       "entry": "VF_刷活动关",
       "group": [
-        "tools"
+        "daily"
       ],
       "option": [
         "关卡名",
         "刷取次数"
       ],
       "description": "【无渡风花】"
+    },
+    {
+      "name": "升15级并重置",
+      "label": "升15级并重置",
+      "entry": "VF_升15级并重置",
+      "group": [
+        "daily"
+      ],
+      "description": "选择等级最低的一名器者"
     }
   ],
   "option": {
