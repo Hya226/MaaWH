@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-11-17T15:03:32+08:00",
+        "generatedAt": "2026-11-21T12:35:49+08:00",
         "flowFile": "升15级并重置.flow.json",
-        "flowHash": "sha256:51b27a7f84ca43200581d3c35efbe63ba7eb4f8bcc9cf2e0bbe817ab131f548b",
-        "pipelineHash": "sha256:72b788c8ea2d5927d5b6d8b66cea5de34b87b50e4310e8c4c2500c667b5d815f",
+        "flowHash": "sha256:3038479a5c474104c3e5b10fa3b06933d1f9d62e01b5733e383bef83e62afe6e",
+        "pipelineHash": "sha256:39688352712c1ecb996bef83f65ef907a6ecf9d51371a2f4976198aa22c6478e",
         "frameW": 1280,
         "frameH": 720
     },
@@ -163,14 +163,14 @@
     },
     "VF_升15级并重置_06_Hit": {
         "recognition": "TemplateMatch",
-        "template": "jiahao.png",
-        "threshold": 0.75,
+        "template": "jiahao3.png",
+        "threshold": 0.65,
         "action": "Click",
         "roi": [
-            1174,
-            71,
-            82,
-            83
+            1190,
+            87,
+            47,
+            46
         ],
         "next": [
             "VF_升15级并重置_06"
