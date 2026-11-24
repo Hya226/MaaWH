@@ -292,7 +292,19 @@ class QueueRunner(
                             }
                             notify { cb.onGameEnteredVd() }
                             if (ShizukuShell.syncVdMode()) {
-                                val rr = MaaBridge.runTask(whmxDir, item.entry, logDir, "{}") { msg ->
+                                // ★ 与通用分支同款：现读清单构建 override——「启动」流程
+                                //   加了【开关】/【输入】参数后（切换账号/手机号），此前这里
+                                //   硬编码 "{}"，全部参数被静默丢弃（引擎按生成物默认拓扑跑，
+                                //   开关永远默认档、expected 永远是节点占位文字，2026-11-24 实锤）
+                                val manifestNow = runCatching { TaskPack.load(whmxDir) }.getOrNull() ?: manifest
+                                val override = manifestNow?.let { m ->
+                                    m.tasks.firstOrNull { it.name == item.name || it.entry == item.entry }
+                                        ?.let { TaskPack.buildOverride(m, it, item.selection) }
+                                } ?: "{}"
+                                EngineLog.liveOverride =
+                                    runCatching { JSONObject(override) }.getOrNull()
+                                cb.onLog("pipeline_override: $override", LogLevel.INFO)
+                                val rr = MaaBridge.runTask(whmxDir, item.entry, logDir, override) { msg ->
                                     notify { cb.onLog(msg, LogLevel.TRACE) }
                                 }
                                 notify {
