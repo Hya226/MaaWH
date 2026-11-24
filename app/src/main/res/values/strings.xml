@@ -74,8 +74,8 @@
     <string name="waiqin_status_default">空闲</string>
     <string name="toolbox_chip_warehouse">仓库识别</string>
     <string name="toolbox_title_warehouse">仓库识别（资源）</string>
-    <string name="warehouse_note">识别【物资库-资源】小仓库的全部资源与数量
-先跑【仓库识别】流程（或手动）导航到资源仓库页再开始；识别完成自动按返回键回到主页，结果见日志页，明细存 files/warehouse/resource_scan.json</string>
+    <string name="warehouse_note">一键完成：自动导航到【物资库-资源】页 → 逐页识别全部资源与数量（滑动翻页）→ 完成后自动返回主页
+需先启动虚拟屏且游戏在主页；结果见日志页，明细存 files/warehouse/resource_scan.json</string>
     <string name="warehouse_run">开始识别</string>
     <string name="warehouse_stop">停止识别</string>
     <string name="warehouse_status_default">空闲</string>

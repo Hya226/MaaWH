@@ -3233,6 +3233,8 @@ class MainActivity : AppCompatActivity() {
     private var warehouseJob: kotlinx.coroutines.Job? = null
 
     private fun stopWarehouseScan() {
+        // 导航阶段（引擎 runTask 阻塞中）的中断通道；识别阶段由 job.cancel 即停
+        runCatching { MaaBridge.requestStop() }
         warehouseJob?.cancel()
         binding.tvWarehouseStatus.text = "停止中…"
         if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
@@ -3259,6 +3261,22 @@ class MainActivity : AppCompatActivity() {
             var runSummary = ""
             try {
                 RunLogStore.begin(applicationContext, "仓库识别", -1)
+
+                // 阶段 1：引擎跑【仓库识别】导航流程（主页 → 点物资库 → 点资源 tab）。
+                // runTask 是阻塞调用（内部等任务结束），必须挂 IO 线程；停止走 requestStop。
+                val bundleDir = resolveBundleDir() ?: throw Exception("任务包目录缺失")
+                val logDir = File(applicationContext.filesDir, "maa_logs")
+                binding.tvWarehouseStatus.text = "导航中…"
+                setRunState("仓库识别：导航到【物资库-资源】页…", R.color.accent)
+                val navOk = withContext(Dispatchers.IO) {
+                    MaaBridge.runTask(bundleDir, "VF_仓库识别", logDir, "{}") { msg ->
+                        log(msg, LogLevel.TRACE)
+                    }
+                }
+                if (!navOk) throw Exception("导航流程失败（VF_仓库识别）——请确认虚拟屏里的游戏在主页")
+                if (!ShizukuShell.isVdAlive()) throw Exception("虚拟屏已断开，无法继续识别")
+
+                // 阶段 2：识别循环（MAA 式：网格 NCC 模板匹配 + 数量 OCR + 滑动翻页）
                 val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
                 val scanner = ResourceWarehouseScan(applicationContext, ocr, { m, lv -> log(m, lv) }) {
                     !warehouseRunning || warehouseJob?.isActive != true
