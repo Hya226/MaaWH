@@ -2,10 +2,10 @@
     "$meta": {
         "generatedBy": "MaaWH Studio",
         "editorVersion": "2.0",
-        "generatedAt": "2026-11-17T15:04:01+08:00",
+        "generatedAt": "2026-11-24T21:52:09+08:00",
         "flowFile": "领取奖励.flow.json",
-        "flowHash": "sha256:813b22b7e58c8e5e4a7a0e00d359b7daa3ddbcacc81865a393a860722184db79",
-        "pipelineHash": "sha256:a076ce863ba88c6506d16dd87d5fbc218e1e99ea60bfa41533a6a75ae0b28869",
+        "flowHash": "sha256:b91e7609486b71918d882a0e10fce66df23f1ab16e637ce93d2be811a695f009",
+        "pipelineHash": "sha256:0b2201fb4fb4b3fe105fc2812cbb1c685f7205d3164567fa45db42ee1cfc663f",
         "frameW": 1280,
         "frameH": 720
     },
@@ -186,7 +186,7 @@
             "VF_领取奖励_16_Hit"
         ],
         "on_error": [
-            "VF_领取奖励_End"
+            "VF_领取奖励_18"
         ]
     },
     "VF_领取奖励_16_Hit": {
@@ -206,6 +206,274 @@
         "max_hit": 3,
         "rate_limit": 200,
         "post_delay": 600
+    },
+    "VF_领取奖励_18": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_领取奖励_18_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_19"
+        ]
+    },
+    "VF_领取奖励_18_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "游历"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            769,
+            651,
+            68,
+            42
+        ],
+        "next": [
+            "VF_领取奖励_18"
+        ],
+        "max_hit": 2,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_领取奖励_19": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_领取奖励_19_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_20"
+        ]
+    },
+    "VF_领取奖励_19_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "任务"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            26,
+            297,
+            81,
+            45
+        ],
+        "next": [
+            "VF_领取奖励_19"
+        ],
+        "max_hit": 2,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_领取奖励_20": {
+        "action": "Click",
+        "target": [
+            785,
+            673
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 4,
+        "repeat_delay": 350,
+        "next": [
+            "VF_领取奖励_21"
+        ]
+    },
+    "VF_领取奖励_21": {
+        "action": "Click",
+        "target": [
+            418,
+            223
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 2,
+        "repeat_delay": 200,
+        "next": [
+            "VF_领取奖励_22"
+        ]
+    },
+    "VF_领取奖励_22": {
+        "action": "Click",
+        "target": [
+            785,
+            673
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "repeat": 4,
+        "repeat_delay": 350,
+        "next": [
+            "VF_领取奖励_23"
+        ]
+    },
+    "VF_领取奖励_23": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_领取奖励_23_Hit"
+        ],
+        "on_error": [
+            "VF_领取奖励_24"
+        ]
+    },
+    "VF_领取奖励_23_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "奖励"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            27,
+            148,
+            80,
+            42
+        ],
+        "next": [
+            "VF_领取奖励_23"
+        ],
+        "max_hit": 2,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_领取奖励_24": {
+        "action": "Click",
+        "target": [
+            785,
+            673
+        ],
+        "post_delay": 500,
+        "pre_delay": 200,
+        "post_wait_freezes": 100,
+        "repeat": 4,
+        "repeat_delay": 350,
+        "next": [
+            "VF_领取奖励_26"
+        ]
+    },
+    "VF_领取奖励_26": {
+        "action": "Click",
+        "target": [
+            785,
+            673
+        ],
+        "post_delay": 500,
+        "pre_delay": 1500,
+        "repeat": 2,
+        "repeat_delay": 350,
+        "next": [
+            "VF_领取奖励_25"
+        ]
+    },
+    "VF_领取奖励_25": {
+        "action": "ClickKey",
+        "key": [
+            4
+        ],
+        "pre_delay": 200,
+        "post_delay": 500
     },
     "VF_领取奖励_08": {
         "action": "DoNothing",
