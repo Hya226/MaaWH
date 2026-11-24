@@ -72,6 +72,14 @@
     <string name="waiqin_run">开始识别</string>
     <string name="waiqin_stop">停止识别</string>
     <string name="waiqin_status_default">空闲</string>
+    <string name="toolbox_chip_warehouse">仓库识别</string>
+    <string name="toolbox_title_warehouse">仓库识别（资源）</string>
+    <string name="warehouse_note">识别【物资库-资源】小仓库的全部资源与数量
+先跑【仓库识别】流程（或手动）导航到资源仓库页再开始；识别完成自动按返回键回到主页，结果见日志页，明细存 files/warehouse/resource_scan.json</string>
+    <string name="warehouse_run">开始识别</string>
+    <string name="warehouse_stop">停止识别</string>
+    <string name="warehouse_status_default">空闲</string>
+    <string name="warehouse_result_hint">识别基于图标模板库（assets 内置，adb 可覆盖 files/warehouse/resource/ 下的模板更新），新资源需补充图标后重新识别</string>
     <string name="toolbox_start_hint">点底部「开始任务」开始识别；识别中按钮变为「停止任务」，点它可随时停止。</string>
     <string name="toolbox_state_idle">未在抓取。与抽卡页的「开始抓取」是同一入口，状态两边同步显示。</string>
     <string name="toolbox_desc">把虚拟屏里的游戏停在「招集记录」页后点下方按钮即可抓取（与抽卡页共用同一功能，运行状态在抽卡页也可查看）。</string>

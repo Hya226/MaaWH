@@ -294,7 +294,11 @@ class MainActivity : AppCompatActivity() {
         binding.btnStartQueue.setOnClickListener {
             // 小工具 tab：开始/停止当前选中小工具；其他 tab：跑对应队列
             if (homeTab == HomeTab.TOOLBOX) {
-                if (toolboxSection == ToolboxSection.WAIQIN) startWaiqinScan() else startGachaCrawl()
+                when (toolboxSection) {
+                    ToolboxSection.WAIQIN -> startWaiqinScan()
+                    ToolboxSection.WAREHOUSE -> startWarehouseScan()
+                    else -> startGachaCrawl()
+                }
             } else startQueue()
         }
         binding.btnQuick.setOnClickListener { showQuickMenu() }
@@ -305,6 +309,7 @@ class MainActivity : AppCompatActivity() {
         // 小工具栏目切换：抽卡识别 / 外勤见闻识别
         binding.chipToolboxGacha.setOnClickListener { switchToolboxSection(ToolboxSection.GACHA) }
         binding.chipToolboxWaiqin.setOnClickListener { switchToolboxSection(ToolboxSection.WAIQIN) }
+        binding.chipToolboxWarehouse.setOnClickListener { switchToolboxSection(ToolboxSection.WAREHOUSE) }
         switchToolboxSection(ToolboxSection.GACHA)
         // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
         binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
@@ -1099,7 +1104,7 @@ class MainActivity : AppCompatActivity() {
         // 全屏画面页在前台时不要画中画（用户看的就是全屏）；从全屏回桌面由全屏页自己弹
         if (VdFullscreenActivity.isResumed) return
         // 切后台且虚拟屏活着/任务在跑 → 自动弹虚拟屏悬浮窗（设置页可关）
-        if (pipEnabled && (vdOn || queueRunner?.running == true || gachaRunning || waiqinRunning)) {
+        if (pipEnabled && (vdOn || queueRunner?.running == true || gachaRunning || waiqinRunning || warehouseRunning)) {
             if (gachaRunning) FloatingPanel.update("▶ 抽卡记录识别中")
             if (waiqinRunning) FloatingPanel.update("▶ 外勤见闻识别中")
             if (FloatingPanel.isPermissionGranted(this)) {
@@ -1326,23 +1331,26 @@ class MainActivity : AppCompatActivity() {
     /** 主页里的两个分区 */
     private enum class HomeTab { ONECLICK, TOOLS, TOOLBOX }
 
-    /** 小工具 tab 内的栏目：抽卡识别 / 外勤见闻识别 */
-    private enum class ToolboxSection { GACHA, WAIQIN }
+    /** 小工具 tab 内的栏目：抽卡识别 / 外勤见闻识别 / 仓库识别 */
+    private enum class ToolboxSection { GACHA, WAIQIN, WAREHOUSE }
 
     private var toolboxSection = ToolboxSection.GACHA
 
     /** 栏目 chips 高亮与内容区切换；开始/停止仍由底部「开始任务」按钮按栏目分发 */
     private fun switchToolboxSection(section: ToolboxSection) {
         toolboxSection = section
-        val gacha = section == ToolboxSection.GACHA
         binding.chipToolboxGacha.setBackgroundResource(
-            if (gacha) R.drawable.bg_chip_selected else R.drawable.bg_chip_normal
+            if (section == ToolboxSection.GACHA) R.drawable.bg_chip_selected else R.drawable.bg_chip_normal
         )
         binding.chipToolboxWaiqin.setBackgroundResource(
-            if (gacha) R.drawable.bg_chip_normal else R.drawable.bg_chip_selected
+            if (section == ToolboxSection.WAIQIN) R.drawable.bg_chip_selected else R.drawable.bg_chip_normal
         )
-        binding.panelToolGacha.visibility = if (gacha) View.VISIBLE else View.GONE
-        binding.panelToolWaiqin.visibility = if (gacha) View.GONE else View.VISIBLE
+        binding.chipToolboxWarehouse.setBackgroundResource(
+            if (section == ToolboxSection.WAREHOUSE) R.drawable.bg_chip_selected else R.drawable.bg_chip_normal
+        )
+        binding.panelToolGacha.visibility = if (section == ToolboxSection.GACHA) View.VISIBLE else View.GONE
+        binding.panelToolWaiqin.visibility = if (section == ToolboxSection.WAIQIN) View.VISIBLE else View.GONE
+        binding.panelToolWarehouse.visibility = if (section == ToolboxSection.WAREHOUSE) View.VISIBLE else View.GONE
     }
 
     private var homeTab = HomeTab.ONECLICK
@@ -1360,7 +1368,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnTabTools.isChecked = tab == HomeTab.TOOLS
         binding.btnTabToolbox.isChecked = tab == HomeTab.TOOLBOX
         if (tab == HomeTab.TOOLBOX) {
-            val busy = gachaRunning || waiqinRunning
+            val busy = gachaRunning || waiqinRunning || warehouseRunning
             binding.btnStartQueue.text =
                 getString(if (busy) R.string.quick_stop else R.string.btn_start_queue)
         } else if (!isTaskRunning) {
@@ -1692,7 +1700,7 @@ class MainActivity : AppCompatActivity() {
             renderSchedulePanel()
         }
         if (isTaskRunning) { skip("跳过：已有任务在运行", "触发时已有任务在运行，本次跳过"); return }
-        if (waiqinRunning || gachaRunning) { skip("跳过：小工具在运行", "触发时小工具正在运行，本次跳过"); return }
+        if (waiqinRunning || gachaRunning || warehouseRunning) { skip("跳过：小工具在运行", "触发时小工具正在运行，本次跳过"); return }
 
         // 目标队列：profile 空 = 跟随当前生效配置（与手动开始完全一致，用内存队列）；
         // 绑定配置 = 按该配置的存档构建（不切 UI 生效配置）
@@ -3121,7 +3129,7 @@ class MainActivity : AppCompatActivity() {
 
     /** 改完缩放：空闲时立即重建界面（并回到设置页）；任务/抓取运行中只落盘，下次启动生效 */
     private fun restartForScale() {
-        if (isTaskRunning || gachaRunning || waiqinRunning) {
+        if (isTaskRunning || gachaRunning || waiqinRunning || warehouseRunning) {
             toast("缩放已保存，任务结束后重开 MaaWH 生效")
             renderScaleLabel()
             return
@@ -3161,6 +3169,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (isTaskRunning) { toast("任务队列运行中，不能同时识别"); return }
         if (gachaRunning) { toast("抽卡识别运行中，不能同时识别"); return }
+        if (warehouseRunning) { toast("仓库识别运行中，不能同时识别"); return }
         if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并把游戏打开到「外勤见闻」列表页"); return }
         waiqinRunning = true
         binding.btnWaiqinRun.text = getString(R.string.waiqin_stop)
@@ -3214,6 +3223,81 @@ class MainActivity : AppCompatActivity() {
     /** scanSuspend 的 isStopped 轮询源：停止走协程 cancel，这里只是立即中止标志 */
     @Volatile
     private var stopWaiqinRequested = false
+
+    // ==================================================================
+    // 仓库识别（小工具：ResourceWarehouseScan 面板入口；与队列/抽卡/外勤互斥）
+    // ==================================================================
+
+    @Volatile
+    private var warehouseRunning = false
+    private var warehouseJob: kotlinx.coroutines.Job? = null
+
+    private fun stopWarehouseScan() {
+        warehouseJob?.cancel()
+        binding.tvWarehouseStatus.text = "停止中…"
+        if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
+    }
+
+    private fun startWarehouseScan() {
+        if (warehouseRunning) {
+            stopWarehouseScan()
+            return
+        }
+        if (isTaskRunning) { toast("任务队列运行中，不能同时识别"); return }
+        if (waiqinRunning) { toast("外勤见闻识别运行中，不能同时识别"); return }
+        if (gachaRunning) { toast("抽卡识别运行中，不能同时识别"); return }
+        if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并导航到【物资库-资源】页（可跑【仓库识别】流程）"); return }
+        warehouseRunning = true
+        binding.btnWarehouseRun.text = getString(R.string.warehouse_stop)
+        binding.tvWarehouseStatus.text = "准备…"
+        if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
+        setRunState("仓库识别中…", R.color.accent)
+        keepAlive("仓库识别中")
+        FloatingPanel.stopCallback = { stopWarehouseScan() }
+        FloatingPanel.update("▶ 仓库识别中")
+        warehouseJob = lifecycleScope.launch {
+            var runSummary = ""
+            try {
+                RunLogStore.begin(applicationContext, "仓库识别", -1)
+                val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
+                val scanner = ResourceWarehouseScan(applicationContext, ocr, { m, lv -> log(m, lv) }) {
+                    !warehouseRunning || warehouseJob?.isActive != true
+                }
+                val r = scanner.scanSuspend { p ->
+                    runOnUiThread {
+                        binding.tvWarehouseStatus.text = p
+                        setRunState("▶ 仓库识别：$p", R.color.accent)
+                    }
+                    keepAlive("▶ 仓库识别：$p")
+                    FloatingPanel.update("▶ 仓库识别：$p")
+                }
+                runSummary = "资源 ${r.counts.size} 种 · ${r.pages} 页"
+                binding.tvWarehouseStatus.text = "✓ 资源 ${r.counts.size} 种（${r.pages} 页）"
+                setRunState("✓ 仓库识别完成：资源 ${r.counts.size} 种，明细见日志页", R.color.ok_green)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                runSummary = "已停止"
+                binding.tvWarehouseStatus.text = "◼ 已停止"
+                setRunState("◼ 仓库识别已停止", R.color.text_secondary)
+                throw e
+            } catch (e: Exception) {
+                runSummary = "失败：${e.message}"
+                log("仓库识别失败：${e.message}", LogLevel.ERR)
+                binding.tvWarehouseStatus.text = "✗ ${e.message}"
+                setRunState("✗ 仓库识别失败：${e.message}", R.color.err_red)
+            } finally {
+                RunLogStore.end(runSummary)
+                warehouseRunning = false
+                warehouseJob = null
+                binding.btnWarehouseRun.text = getString(R.string.warehouse_run)
+                if (homeTab == HomeTab.TOOLBOX) {
+                    binding.btnStartQueue.text = getString(R.string.btn_start_queue)
+                }
+                if (ShizukuShell.isVdAlive()) keepAlive(getString(R.string.keepalive_vd)) else stopKeepAlive()
+                FloatingPanel.stopCallback = { QueueRunner.requestStopCurrent() }
+                FloatingPanel.update(if (runSummary.isEmpty()) "仓库识别结束" else "仓库识别：$runSummary")
+            }
+        }
+    }
 
     private fun setupGachaAccounts() {
         // 点账号名 = 管理菜单（改名/删除/新建/切换）；点倒三角 = 直接弹账号切换列表
@@ -4019,6 +4103,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (isTaskRunning) { toast("任务队列运行中，不能同时抓取"); return }
         if (waiqinRunning) { toast("外勤见闻识别运行中，不能同时抓取"); return }
+        if (warehouseRunning) { toast("仓库识别运行中，不能同时抓取"); return }
         if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并把游戏打开到「招集记录」页"); return }
         if (!full) {
             launchGachaCrawl(full = false)
