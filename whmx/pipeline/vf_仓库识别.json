@@ -1,0 +1,147 @@
+{
+    "$meta": {
+        "generatedBy": "MaaWH Studio",
+        "editorVersion": "2.0",
+        "generatedAt": "2026-11-24T22:50:18+08:00",
+        "flowFile": "仓库识别.flow.json",
+        "flowHash": "sha256:b16be423b9947d8d8925cf95c6279af6b01e14e86a03e5ad18c0a46806e7827a",
+        "pipelineHash": "sha256:9617d7572c84ba4596f7e0cc95c0b5ab5b8d741508a611cdbe65d7a39efaf323",
+        "frameW": 1280,
+        "frameH": 720
+    },
+    "VF_仓库识别": {
+        "next": [
+            "VF_仓库识别_01"
+        ]
+    },
+    "VF_仓库识别_01": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_仓库识别_01_Hit"
+        ],
+        "on_error": [
+            "VF_仓库识别_02"
+        ]
+    },
+    "VF_仓库识别_01_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "物资库"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            1010,
+            653,
+            90,
+            38
+        ],
+        "next": [
+            "VF_仓库识别_01"
+        ],
+        "max_hit": 2,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_仓库识别_02": {
+        "action": "DoNothing",
+        "timeout": 3000,
+        "next": [
+            "VF_仓库识别_02_Hit"
+        ],
+        "on_error": [
+            "VF_仓库识别_End"
+        ]
+    },
+    "VF_仓库识别_02_Hit": {
+        "recognition": "OCR",
+        "expected": [
+            "资源"
+        ],
+        "replace": [
+            [
+                "汉漠拉比法典",
+                "汉谟拉比法典"
+            ],
+            [
+                "少虞剑",
+                "少虡剑"
+            ],
+            [
+                "云雷纹大饶",
+                "云雷纹大铙"
+            ],
+            [
+                "乌音山水钟",
+                "鸟音山水钟"
+            ],
+            [
+                "虎贝",
+                "庞贝"
+            ],
+            [
+                "秦公鎛",
+                "秦公镈"
+            ],
+            [
+                "免形陶[顷埙]",
+                "兔形陶埙"
+            ],
+            [
+                "兔形陶顷",
+                "兔形陶埙"
+            ]
+        ],
+        "action": "Click",
+        "roi": [
+            118,
+            229,
+            64,
+            32
+        ],
+        "next": [
+            "VF_仓库识别_02"
+        ],
+        "max_hit": 2,
+        "rate_limit": 200,
+        "post_delay": 600
+    },
+    "VF_仓库识别_End": {
+        "action": "DoNothing",
+        "next": []
+    }
+}
