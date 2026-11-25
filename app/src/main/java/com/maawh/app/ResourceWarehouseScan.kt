@@ -194,17 +194,21 @@ class ResourceWarehouseScan(
         val hits = ArrayList<CellHit>()
         var newOnes = 0
 
-        // 竖带参数：x 按列中心对齐，y 覆盖物品区全高（含滚动偏移余量）
-        val stripW = (cellW * sampleScale).toInt()          // 57
-        val stripTop = (Y0_SCAN * sampleScale).toInt()      // 50
-        val stripH = ((SCAN_BOTTOM - Y0_SCAN) * sampleScale).toInt()  // 280
+        // 竖带物理区域：宽 = 卡面内缩后物品区 106（>= 模板物理宽 74~100），y 覆盖物品区全高。
+        // dst 同 0.5 缩放——此前 dst 误传物理尺寸致竖带与模板差 2 倍尺度，NCC 全崩 0 命中。
+        val stripW = 106
+        val stripXInset = 4
+        val stripTop = Y0_SCAN          // 100（物理）
+        val stripH = SCAN_BOTTOM - Y0_SCAN  // 560（物理）
+        val dstW = (stripW * sampleScale).toInt()  // 53
+        val dstH = (stripH * sampleScale).toInt()  // 280
 
         for (c in 0 until cols) {
             coroutineContext.ensureActive()
             if (isStopped()) throw ScanException("已停止")
-            val gx = gridX0 + c * colPeriod + (cellW - stripW) / 2
+            val gx = gridX0 + c * colPeriod + stripXInset
             if (gx + stripW > frame.width) continue
-            val strip = grayOf(frame, gx, stripTop, stripW, stripH, stripW, stripH)
+            val strip = grayOf(frame, gx, stripTop, stripW, stripH, dstW, dstH)
 
             val colHits = ArrayList<CellHit>()
             for (t in templates) {
