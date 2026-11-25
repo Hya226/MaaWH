@@ -3246,11 +3246,24 @@ class MainActivity : AppCompatActivity() {
             setPadding(0, dp(8), 0, dp(4))
         }
         box.addView(title)
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        counts.entries.sortedBy { it.key }.forEach { (name, qty) ->
-            row.addView(warehouseCell(name, qty))
+        // 4 列等宽网格：55 种一行放不下（此前全塞一行，屏幕只露出前 8 个）
+        val list = counts.entries.sortedBy { it.key }.toList()
+        var i = 0
+        while (i < list.size) {
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            repeat(4) {
+                if (i < list.size) {
+                    row.addView(
+                        warehouseCell(list[i].key, list[i].value),
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                    )
+                    i++
+                } else {
+                    row.addView(View(this), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f))
+                }
+            }
+            box.addView(row)
         }
-        box.addView(row)
     }
 
     /** 单个物品卡片：模板缩略图 + 名字 + xN（数量 -1 = OCR 失败显示 ?） */
@@ -3267,8 +3280,9 @@ class MainActivity : AppCompatActivity() {
         val iv = ImageView(this)
         val f = File(applicationContext.filesDir, "warehouse/resource/$name.png")
         if (f.isFile) {
-            val opts = BitmapFactory.Options().apply { inSampleSize = 4 }
-            val bmp = BitmapFactory.decodeFile(f.absolutePath, opts)
+            // 模板裁片 74~99px ≈ 40dp 显示尺寸，接近 1:1——绝不能 inSampleSize
+            // （此前 4 倍降采样解码 → ~20px 拉到 110px，图标糊成一团，用户实测反馈）
+            val bmp = BitmapFactory.decodeFile(f.absolutePath)
             if (bmp != null) {
                 iv.setImageBitmap(bmp)
                 iv.layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
