@@ -54,6 +54,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import android.widget.GridLayout
 
 /**
  * MaaWH 控制台（竖屏，任务队列版）
@@ -3232,6 +3233,65 @@ class MainActivity : AppCompatActivity() {
     private var warehouseRunning = false
     private var warehouseJob: kotlinx.coroutines.Job? = null
 
+    /** 识别结果网格（MAA-Meow 式：图标+名字+xN）：每次列完成/结束时全量重渲染 */
+    private fun renderWarehouseResults(counts: Map<String, Int>) {
+        val box = binding.llWarehouseResults
+        box.removeAllViews()
+        if (counts.isEmpty()) return
+        val title = TextView(this).apply {
+            text = "识别结果 · ${counts.size} 种"
+            textSize = 13f
+            setTextColor(getColor(R.color.text_primary))
+            paint.isFakeBoldText = true
+            setPadding(0, dp(8), 0, dp(4))
+        }
+        box.addView(title)
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        counts.entries.sortedBy { it.key }.forEach { (name, qty) ->
+            row.addView(warehouseCell(name, qty))
+        }
+        box.addView(row)
+    }
+
+    /** 单个物品卡片：模板缩略图 + 名字 + xN（数量 -1 = OCR 失败显示 ?） */
+    private fun warehouseCell(name: String, qty: Int): View {
+        val cell = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = dp(8).toFloat()
+                setColor(getColor(R.color.bg_card))
+            }
+            setPadding(dp(4), dp(6), dp(4), dp(6))
+        }
+        val iv = ImageView(this)
+        val f = File(applicationContext.filesDir, "warehouse/resource/$name.png")
+        if (f.isFile) {
+            val opts = BitmapFactory.Options().apply { inSampleSize = 4 }
+            val bmp = BitmapFactory.decodeFile(f.absolutePath, opts)
+            if (bmp != null) {
+                iv.setImageBitmap(bmp)
+                iv.layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
+            }
+        }
+        cell.addView(iv)
+        cell.addView(TextView(this).apply {
+            text = name
+            textSize = 10f
+            gravity = Gravity.CENTER
+            setTextColor(getColor(R.color.text_primary))
+            maxWidth = dp(64)
+        })
+        cell.addView(TextView(this).apply {
+            text = if (qty >= 0) "x$qty" else "x?"
+            textSize = 12f
+            gravity = Gravity.CENTER
+            setTextColor(getColor(R.color.accent))
+            paint.isFakeBoldText = true
+        })
+        return cell
+    }
+
     private fun stopWarehouseScan() {
         // 导航阶段（引擎 runTask 阻塞中）的中断通道；识别阶段由 job.cancel 即停
         runCatching { MaaBridge.requestStop() }
@@ -3282,16 +3342,19 @@ class MainActivity : AppCompatActivity() {
 
                 // 阶段 2：识别循环（MAA 式：网格 NCC 模板匹配 + 数量 OCR + 滑动翻页）
                 val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
+                runOnUiThread { renderWarehouseResults(emptyMap()) }
                 val scanner = ResourceWarehouseScan(applicationContext, ocr, { m, lv -> log(m, lv) }) {
                     !warehouseRunning || warehouseJob?.isActive != true
                 }
-                val r = scanner.scanSuspend { p ->
+                val r = scanner.scanSuspend({ p ->
                     runOnUiThread {
                         binding.tvWarehouseStatus.text = p
                         setRunState("▶ 仓库识别：$p", R.color.accent)
                     }
                     keepAlive("▶ 仓库识别：$p")
                     FloatingPanel.update("▶ 仓库识别：$p")
+                }) { counts ->
+                    runOnUiThread { renderWarehouseResults(counts) }
                 }
                 runSummary = "资源 ${r.counts.size} 种 · ${r.pages} 页"
                 binding.tvWarehouseStatus.text = "✓ 资源 ${r.counts.size} 种（${r.pages} 页）"

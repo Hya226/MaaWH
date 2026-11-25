@@ -649,6 +649,14 @@ app:cornerRadius="8dp"
                             android:text="@string/warehouse_result_hint"
                             android:textColor="@color/text_secondary"
                             android:textSize="11sp" />
+
+                        <!-- 识别结果：物品卡片列表（图标+名字+xN），识别中实时追加 -->
+                        <LinearLayout
+                            android:id="@+id/llWarehouseResults"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:orientation="vertical" />
                     </LinearLayout>
                 </ScrollView>
             </LinearLayout>
