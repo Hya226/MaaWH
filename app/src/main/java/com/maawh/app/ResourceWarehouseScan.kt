@@ -58,8 +58,13 @@ class ResourceWarehouseScan(
     private val slideTo = 800 to 350
 
     private val matchThreshold = 0.72f
-    /** 模板统一降采样尺寸；ROI 侧用 roiGraySize（> 模板尺寸，滑窗在其内找最佳位置） */
-    private val tplGraySize = 28
+    /**
+     * 模板/ROI 的降采样尺寸必须**同尺度**：ROI 采样 96px→44（缩 0.458），模板原图
+     * ≈88px→40（缩 0.454）——滑窗匹配要求两者像素密度一致，尺度不一致 NCC 全崩
+     * （tplGraySize=28 的首版实锤：第 1 页 0 命中）。模板略小于 ROI 是刻意的：
+     * 图标本体 ≈88px < 格子内容区 96px，滑窗在 44×44 内找 40×40 的最佳位置。
+     */
+    private val tplGraySize = 40
     private val roiGraySize = 44
 
     /** 单页里每个格子的识别结果 */
@@ -77,6 +82,7 @@ class ResourceWarehouseScan(
 
         val counts = LinkedHashMap<String, Int>()
         var pages = 0
+        var retries = 0
         var prevKeys = emptySet<String>()
         var stableRuns = 0
         var firstPageChecked = false
@@ -104,6 +110,17 @@ class ResourceWarehouseScan(
             if (!firstPageChecked) {
                 firstPageChecked = true
                 if (hits.isEmpty()) {
+                    // 第一页 0 命中：可能是切换页面的过渡帧被抓到（grabStable 超时兜底返回
+                    // 最后一帧）——重抓重试一次再下结论，避免时机问题一击致命
+                    retries++
+                    if (retries <= 2) {
+                        onLog("第 1 页未识别到资源（第 $retries 次重试）——可能是过渡帧，重抓…", LogLevel.WRN)
+                        prevKeys = emptySet()
+                        stableRuns = 0
+                        pages--
+                        kotlinx.coroutines.delay(1200)
+                        continue
+                    }
                     throw ScanException("未识别到任何资源——请确认游戏已停在【物资库-资源】页（可先跑【仓库识别】流程导航）")
                 }
             }
