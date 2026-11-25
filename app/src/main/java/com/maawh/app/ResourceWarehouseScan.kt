@@ -98,7 +98,17 @@ class ResourceWarehouseScan(
                 continue
             }
 
-            val hits = scanPage(frame, templates, counts, onProgress)
+            if (pages == 0) {
+                // 诊断：把第一页识别实际用的帧存下来（排障「零识别」用，与素材/网格对照）
+                runCatching {
+                    val d = File(ctx.filesDir, "warehouse")
+                    d.mkdirs()
+                    val out = File(d, "debug_first_frame.jpg")
+                    out.outputStream().use { o -> frame.compress(Bitmap.CompressFormat.JPEG, 90, o) }
+                    onLog("诊断：第一页帧已存 ${out.path}（${frame.width}×${frame.height}）", LogLevel.TRACE)
+                }
+            }
+            val hits = scanPage(frame, templates, counts, onProgress, pages == 0)
             val keys = hits.map { it.name }.toSet()
             pages++
             onLog(
@@ -155,7 +165,8 @@ class ResourceWarehouseScan(
         frame: Bitmap,
         templates: List<Template>,
         counts: LinkedHashMap<String, Int>,
-        onProgress: (String) -> Unit
+        onProgress: (String) -> Unit,
+        verbose: Boolean
     ): List<CellHit> {
         val hits = ArrayList<CellHit>()
         var newOnes = 0
@@ -181,7 +192,11 @@ class ResourceWarehouseScan(
                     if (best == null || s > best!!.second) best = t to s
                 }
                 val (t, s) = best ?: continue
-                if (s < matchThreshold) continue  // 空槽或未知物品（模板库未覆盖）
+                if (s < matchThreshold) {
+                    if (verbose) onLog("格子($r,$c) 未过阈值 best=${t.name}:${"%.3f".format(s)}", LogLevel.TRACE)
+                    continue  // 空槽或未知物品（模板库未覆盖）
+                }
+                if (verbose) onLog("格子($r,$c) 命中 ${t.name}:${"%.3f".format(s)}", LogLevel.TRACE)
                 hits.add(CellHit(t.name, s, gx, gy))
 
                 if (!counts.containsKey(t.name)) {
@@ -255,19 +270,29 @@ class ResourceWarehouseScan(
 
     private class Template(val name: String, val gray: FloatArray, val meanColor: FloatArray)
 
-    /** assets/warehouse/resource/ → files/warehouse/resource/ 自举释放，然后加载为灰度模板 */
+    /** assets/warehouse/resource/ → files/warehouse/resource/ 自举释放，然后加载为灰度模板。
+     *  用「assets 清单指纹」比对 files 端记录：素材更新（打包）后自动整目录重建——
+     *  此前「目录非空不释放」导致 assets 更新后手机旧模板永不失效（实锤：换游戏内
+     *  裁片后真机仍用旧裸图标模板，怎么调算法都是 0 命中）。 */
     private fun ensureTemplates(ctx: Context): List<Template> {
         val dir = File(ctx.filesDir, "warehouse/resource")
-        if (!dir.isDirectory || dir.listFiles().isNullOrEmpty()) {
-            runCatching {
-                val names = ctx.assets.list("warehouse/resource") ?: emptyArray()
-                dir.mkdirs()
-                for (n in names) {
-                    ctx.assets.open("warehouse/resource/$n").use { input ->
-                        File(dir, n).outputStream().use { output -> input.copyTo(output) }
-                    }
+        val stamp = File(ctx.filesDir, "warehouse/resource_fingerprint.txt")
+        val names = runCatching { ctx.assets.list("warehouse/resource") ?: emptyArray() }.getOrDefault(emptyArray())
+        val fingerprint = names.sorted().joinToString("\n") { n ->
+            val l = runCatching { ctx.assets.open("warehouse/resource/$n").use { it.available() } }.getOrDefault(-1)
+            "$n:$l"
+        } + "|${names.size}"
+        val local = if (stamp.isFile) stamp.readText().trim() else null
+        if (!dir.isDirectory || dir.listFiles().isNullOrEmpty() || local != fingerprint) {
+            dir.deleteRecursively()
+            dir.mkdirs()
+            for (n in names) {
+                ctx.assets.open("warehouse/resource/$n").use { input ->
+                    File(dir, n).outputStream().use { output -> input.copyTo(output) }
                 }
-            }.onFailure { onLog("模板释放失败：${it.message}", LogLevel.WRN) }
+            }
+            stamp.writeText(fingerprint)
+            onLog("模板库已重建（${names.size} 个，指纹${if (local == null) "首建" else "更新"}）", LogLevel.INFO)
         }
         val files = dir.listFiles { f -> f.extension.equals("png", true) }?.sortedBy { it.name } ?: emptyList()
         val out = ArrayList<Template>(files.size)
