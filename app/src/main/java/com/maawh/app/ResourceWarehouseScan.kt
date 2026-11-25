@@ -45,14 +45,13 @@ class ResourceWarehouseScan(
 
     data class Result(val counts: LinkedHashMap<String, Int>, val pages: Int, val elapsedMs: Long)
 
-    // ---- 网格参数（720p 帧亮度剖面实测：列边界 359/509/658/808/959/1109 完美 150 周期，
-    //      行边界 125/255/385/515 周期 130，卡面约 145×91 横版小卡）----
-    private val gridX0 = 362
-    private val gridY0 = 127
+    // ---- 网格参数（用户按帧逐格校准：首格 (356,122) 卡面 114×116，列周期 150 行周期 130）----
+    private val gridX0 = 356
+    private val gridY0 = 122
     private val colPeriod = 150
     private val rowPeriod = 130
-    private val cellW = 142         // 卡面宽
-    private val cellH = 88          // 卡面高
+    private val cellW = 114         // 卡面宽
+    private val cellH = 116         // 卡面高
     private val iconInset = 4       // 边缘内缩
     private val cols = 6
     private val rows = 4            // 屏内完整行数（第 5 行只露出边缘，放弃）
@@ -216,10 +215,10 @@ class ResourceWarehouseScan(
     private suspend fun ocrQuantity(frame: Bitmap, gx: Int, gy: Int): Int {
         return try {
             // 数量角标在图标右下角（实测 ≈x+52..x+106, y+76..y+106），留 2px 余量
-            val rx = gx + cellW / 2
-            val ry = gy + cellH - 6
-            val rw = (cellW / 2 + 10).coerceAtMost(frame.width - rx)
-            val rh = 34.coerceAtMost(frame.height - ry)
+            val rx = gx + (cellW * 0.42f).toInt()
+            val ry = gy + (cellH * 0.78f).toInt()
+            val rw = (cellW * 0.58f).toInt().coerceAtMost(frame.width - rx)
+            val rh = (cellH * 0.30f).toInt().coerceAtMost(frame.height - ry)
             if (rw <= 0 || rh <= 0) return -1
             var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
             crop = Bitmap.createScaledBitmap(crop, rw * 2, rh * 2, true)
