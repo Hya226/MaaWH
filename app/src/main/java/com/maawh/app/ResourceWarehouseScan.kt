@@ -167,21 +167,18 @@ class ResourceWarehouseScan(
     }
 
     /**
-     * 单页识别：**列竖带全高滑窗**（滚动列表适配版，对标 MAA DepotImageAnalyzer 的
-     * 「模板在区域内滑窗找最佳位置」而非固定网格）。
+     * 单页识别：**列竖带全高滑窗（x+y 二维滑动）**（滚动列表适配版，对标 MAA
+     * DepotImageAnalyzer 的「模板在区域内滑窗找最佳位置」而非固定网格）。
      *
-     * 固定网格的前提是「物品行恰好对齐网格」——滑动翻页后物品停在任意滚动偏移上，
-     * 行位置连续变化（用户实测纠偏：左右列不变、上下会移动），固定网格只能命中
-     * 对齐的少数格子（实锤：24 格只中 4 个）。
+     * 固定网格的前提是「物品行恰好对齐网格」——滑动翻页后物品停在任意滚动偏移上
+     * （用户实测纠偏：左右列不变、上下会移动）。x 方向也必须滑动（诊断帧铁证：
+     * 55 模板最佳位置 ox=2..13，x 固定 0 会把绝大多数模板压到阈值之下——离线
+     * cv2 全量扫描：x 滑动 26/55 ≥0.72，x 固定只有 1/55）。尺度不需要多档
+     * （同一扫描里全部模板 scale=1.0 得胜：素材裁片与帧图标本就同尺度）。
      *
-     * 新方案：x 方向对齐列中心（用户确认左右边框不变），**y 方向整条竖带滑动**——
-     * 每列取一条竖带（宽 = 卡面宽 × 0.5 缩放，高 = 物品区全高 × 0.5），每个模板在
-     * 竖带内逐位置取快速 NCC 最大值，物品停在任意滚动位置都能命中。同一模板全
-     * 仓库只出现一次，各模板独立找位，同列上下多个物品各自被对应模板命中。
-     *
-     * 性能：竖带 53×280、模板 ≤50×50，每模板 ~240 个 y 位置 × 2500 像素 ≈ 60 万
-     * 乘加，55 模板 × 6 列 ≈ 2 亿乘加/页，Kotlin 约 1~2s/页。
-     * 命中去重：不同模板命中同一 y（同物品误双认）时保留分高者。
+     * 性能：竖带 53×280、模板 ≤50×50，每模板 ~1600 个位置 × 2000 像素 ≈ 340 万
+     * 乘加，55 模板 × 6 列 ≈ 11 亿/页，Kotlin 约 1~3s/页。
+     * 命中去重：同列不同模板命中同一 y（同物品误双认/同族近似牌互相串认）保留分高者。
      */
     private suspend fun scanPage(
         frame: Bitmap,
@@ -195,7 +192,8 @@ class ResourceWarehouseScan(
         var newOnes = 0
 
         // 竖带物理区域：宽 = 卡面内缩后物品区 106（>= 模板物理宽 74~100），y 覆盖物品区全高。
-        // dst 同 0.5 缩放——此前 dst 误传物理尺寸致竖带与模板差 2 倍尺度，NCC 全崩 0 命中。
+        // dst 同 0.5 缩放（53×280）；滑窗步长/范围一律用 dst 尺寸——此前步长误用物理宽
+        // 106（数组每行只有 53）→ strip[14840] 越界崩溃（真机 21:17 ERR 实锤）。
         val stripW = 106
         val stripXInset = 4
         val stripTop = Y0_SCAN          // 100（物理）
@@ -208,54 +206,16 @@ class ResourceWarehouseScan(
             if (isStopped()) throw ScanException("已停止")
             val gx = gridX0 + c * colPeriod + stripXInset
             if (gx + stripW > frame.width) continue
+            val cardX = gridX0 + c * colPeriod      // 卡面左缘物理 x（数量 OCR 锚点，与命中位置无关）
             val strip = grayOf(frame, gx, stripTop, stripW, stripH, dstW, dstH)
 
             val colHits = ArrayList<CellHit>()
             for (t in templates) {
                 coroutineContext.ensureActive()
-                // 模板大于竖带（降采样后）：等比缩到竖带尺寸再匹配——不跳过（跳过=0 命中实锤）
-                var bestScore = 0f
-                var bestY = 0
-                var tw = t.grayW
-                var th = t.grayH
-                var tgray = t.gray
-                if (tw > stripW || th > stripH) {
-                    val sc = minOf(stripW.toFloat() / tw, stripH.toFloat() / th)
-                    tw = (tw * sc).toInt().coerceAtLeast(8)
-                    th = (th * sc).toInt().coerceAtLeast(8)
-                    tgray = FloatArray(tw * th)
-                    for (yy in 0 until th) for (xx in 0 until tw) {
-                        tgray[yy * tw + xx] = t.gray[(yy * t.grayH / th) * t.grayW + (xx * t.grayW / tw)]
-                    }
-                }
-                for (oy in 0..stripH - th) {
-                    var num = 0f
-                    var sw = 0f
-                    var swq = 0f
-                    val rowBase = (oy) * stripW
-                    for (y in 0 until th) {
-                        val rb = rowBase + y * stripW
-                        val tb = y * tw
-                        for (x in 0 until tw) {
-                            val v = strip[rb + x]
-                            num += v * tgray[tb + x]
-                            sw += v
-                            swq += v * v
-                        }
-                    }
-                    val mr = t.mt
-                    val numC = num - mr * sw
-                    val wVar = swq - sw * sw / (tw * th)
-                    val den = kotlin.math.sqrt(wVar.coerceAtLeast(0f) * t.dt)
-                    val v = if (den <= 0f) 0f else (numC / den).toFloat()
-                    if (v > bestScore) {
-                        bestScore = v
-                        bestY = oy
-                    }
-                }
-                if (bestScore < matchThreshold) continue
-                // 命中：还原物理坐标（×2 回原尺度）
-                colHits.add(CellHit(t.name, bestScore, gx * 2, stripTop * 2 + bestY * 2))
+                val m = nccBest(strip, dstW, dstH, t.gray, t.grayW, t.grayH) ?: continue
+                if (m.score < matchThreshold) continue
+                // 命中：dst 位置 ×2 还原物理坐标（gx 记卡面左缘，数量 OCR 不依赖命中 x）
+                colHits.add(CellHit(t.name, m.score, cardX, stripTop + m.oy * 2))
             }
 
             // 同 y 去重（不同模板认同一物品时保留分高者）
@@ -281,15 +241,17 @@ class ResourceWarehouseScan(
         return hits
     }
 
-    /** 数量 OCR：格子右下角数量白字区域，裁片放大 2 倍走 PP-OCR，取整数 */
-    private suspend fun ocrQuantity(frame: Bitmap, gx: Int, gy: Int): Int {
+    /** 数量 OCR：卡面右下角数量白字区域，裁片放大 2 倍走 PP-OCR，取整数。
+     *  锚点 = 卡面左缘 cardX（列固定，与命中 x 无关）+ 命中 y（=模板裁片顶缘，
+     *  不同素材上留白 0~22px 不等）；数字右对齐卡面右缘、贴卡面底缘——crop 取
+     *  gy+78 起高 42、x 卡面+52 起宽 62（右缘=卡面右缘），覆盖全部留白差异。 */
+    private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int): Int {
         return try {
-            // 数量角标在图标右下角（实测 ≈x+52..x+106, y+76..y+106），留 2px 余量
-            val rx = gx + (cellW * 0.42f).toInt()
-            val ry = gy + (cellH * 0.78f).toInt()
-            val rw = (cellW * 0.58f).toInt().coerceAtMost(frame.width - rx)
-            val rh = (cellH * 0.30f).toInt().coerceAtMost(frame.height - ry)
-            if (rw <= 0 || rh <= 0) return -1
+            val rx = cardX + 52
+            val ry = gy + 78
+            val rw = 62
+            val rh = 42
+            if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return -1
             var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
             crop = Bitmap.createScaledBitmap(crop, rw * 2, rh * 2, true)
             val lines = ocr.requestOCR(GachaOcr.encode(crop))
@@ -510,21 +472,17 @@ class ResourceWarehouseScan(
         return g
     }
 
-    /**
-     * 滑窗 NCC：模板在 ROI 内逐位置取归一化互相关的最大值。
-     * 用积分图把每个窗口的均值/方差降到 O(1)，分子逐像素累加。
-     * （模板裁片与 ROI 的构图不必严格对齐——用户素材是手裁的，尺寸/留白有差异，
-     *   滑窗能吸收这些差异；这也是离线 cv2 验证采用的同款算法。）
-     */
-    private fun nccSearch(
+    /** 滑窗 NCC 最佳命中：模板在 ROI 内 x+y 全程滑动，返回（分数, ox, oy）。
+     *  积分图把每个窗口的均值/方差降到 O(1)，分子逐像素累加。
+     *  （模板裁片与帧图标的手裁留白差异由滑窗吸收——离线 cv2 验证采用的同款算法。） */
+    private fun nccBest(
         roi: FloatArray, roiW: Int, roiH: Int,
         tpl: FloatArray, tplW: Int, tplH: Int
-    ): Float {
+    ): MatchResult? {
         if (tplW > roiW || tplH > roiH) {
-            // 模板大于 ROI：降采样模板到 ROI 尺寸再整幅 NCC。
-            // ★ 旧实现 return ncc(roi, tpl) 有越界 bug：ncc 遍历 roi 全部像素访问更短的
-            //   tpl 数组（模板任一维 > ROI 时必越界，「length=X; index=X」实锤）。
-            //   正确做法是先把模板缩到 ROI 尺寸——匹配语义不变（模板缩略图 vs 卡面）。
+            // 模板大于 ROI：降采样模板到 ROI 尺寸再整幅 NCC（无位置语义，位置记 0）。
+            // ★ 旧实现直接遍历 roi 访问更短的 tpl 数组（模板任一维 > ROI 时必越界）。
+            //   当前素材全部 ≤50×50 ≤ 53×280，此分支实际不会触发，仅防御。
             val tw = minOf(tplW, roiW)
             val th = minOf(tplH, roiH)
             val t2 = FloatArray(tw * th)
@@ -533,7 +491,7 @@ class ResourceWarehouseScan(
                     t2[y * tw + x] = tpl[(y * tplH / th) * tplW + (x * tplW / tw)]
                 }
             }
-            return ncc(roi, t2)
+            return MatchResult(ncc(roi, t2), 0, 0)
         }
         // ROI 积分图（sum 与 sumsq）
         val iw = roiW + 1
@@ -558,8 +516,9 @@ class ResourceWarehouseScan(
             val d = v - mt
             dt += d * d
         }
-        val dtDen = sqrt(dt * tpl.size)
         var best = 0f
+        var bx = 0
+        var by = 0
         val n = tplW * tplH
         for (oy in 0..roiH - tplH) {
             for (ox in 0..roiW - tplW) {
@@ -576,11 +535,17 @@ class ResourceWarehouseScan(
                 val wVar = q - s * s / n
                 val den = sqrt(wVar * dt)
                 val v = if (den <= 0f) 0f else (num / den).toFloat()
-                if (v > best) best = v
+                if (v > best) {
+                    best = v
+                    bx = ox
+                    by = oy
+                }
             }
         }
-        return best.coerceIn(0f, 1f)
+        return MatchResult(best.coerceIn(0f, 1f), bx, by)
     }
+
+    private class MatchResult(val score: Float, val ox: Int, val oy: Int)
 
     private fun areaSum(sum: FloatArray, iw: Int, x: Int, y: Int, w: Int, h: Int): Float {
         return sum[(y + h) * iw + (x + w)] - sum[y * iw + (x + w)] - sum[(y + h) * iw + x] + sum[y * iw + x]
