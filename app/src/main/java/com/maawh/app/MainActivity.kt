@@ -3264,6 +3264,10 @@ class MainActivity : AppCompatActivity() {
 
                 // 阶段 1：引擎跑【仓库识别】导航流程（主页 → 点物资库 → 点资源 tab）。
                 // runTask 是阻塞调用（内部等任务结束），必须挂 IO 线程；停止走 requestStop。
+                // ★ clearStop 必须先调：stopFlag 是全局标志（runQueue 专属清位），任何一次
+                //   历史停止操作留下的标志都会让 runTask 一启动就「收到停止请求，本次不执行」
+                //   （实锤：启动任务跑完后点仓库识别必报「导航流程失败」）。
+                MaaBridge.clearStop()
                 val bundleDir = resolveBundleDir() ?: throw Exception("任务包目录缺失")
                 val logDir = File(applicationContext.filesDir, "maa_logs")
                 binding.tvWarehouseStatus.text = "导航中…"

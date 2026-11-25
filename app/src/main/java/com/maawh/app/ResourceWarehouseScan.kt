@@ -189,7 +189,13 @@ class ResourceWarehouseScan(
                 var best: Pair<Template, Float>? = null
                 val dims = scaledDims(cellW - iconInset * 2, cellH - iconInset * 2)
                 for (t in candidates) {
-                    val s = nccSearch(icon, dims.first, dims.second, t.gray, t.grayW, t.grayH)
+                    val s = try {
+                        nccSearch(icon, dims.first, dims.second, t.gray, t.grayW, t.grayH)
+                    } catch (e: Throwable) {
+                        val stack = e.stackTraceToString().lineSequence().take(4).joinToString(" | ")
+                        onLog("格子($r,$c) 模板[${t.name}] 匹配异常：${e.message} | $stack", LogLevel.ERR)
+                        continue
+                    }
                     if (best == null || s > best!!.second) best = t to s
                 }
                 val (t, s) = best ?: continue
