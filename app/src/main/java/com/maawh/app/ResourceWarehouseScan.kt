@@ -164,21 +164,15 @@ class ResourceWarehouseScan(
     }
 
     /**
-     * 单页识别：**列竖带全高滑窗**（滚动列表适配版，对标 MAA DepotImageAnalyzer 的
-     * 「模板在区域内滑窗找最佳位置」而非固定网格）。
+     * 单页识别：**行位置自适应 + 逐列滑窗**。
      *
-     * 固定网格的前提是「物品行恰好对齐网格」——滑动翻页后物品停在任意滚动偏移上，
-     * 行位置连续变化（用户实测纠偏：左右列不变、上下会移动），固定网格只能命中
-     * 对齐的少数格子（实锤：24 格只中 4 个）。
+     * 滚动列表的物品行会随滚动停在任意 y 位置（用户实测纠偏：左右列固定、上下移动），
+     * 固定网格只能命中恰好对齐的格子（实锤 24 格只中 4 个）。方案：
+     * 1. 检测物品行的起点 y（卡面顶部「亮底→暗卡」下降沿，竖直剖面梯度峰，聚类）；
+     * 2. 每个行起点 × 每列取卡面 ROI（与模板同 0.5 降采样，尺度一致）；
+     * 3. nccSearch 滑窗（模板在卡面 ROI 内微调位置取最高分）→ ≥0.72 命中。
      *
-     * 新方案：x 方向对齐列中心（用户确认左右边框不变），**y 方向整条竖带滑动**——
-     * 每列取一条竖带（宽 = 卡面宽 × 0.5 缩放，高 = 物品区全高 × 0.5），每个模板在
-     * 竖带内逐位置取快速 NCC 最大值，物品停在任意滚动位置都能命中。同一模板全
-     * 仓库只出现一次，各模板独立找位，同列上下多个物品各自被对应模板命中。
-     *
-     * 性能：竖带 53×280、模板 ≤50×50，每模板 ~240 个 y 位置 × 2500 像素 ≈ 60 万
-     * 乘加，55 模板 × 6 列 ≈ 2 亿乘加/页，Kotlin 约 1~2s/页。
-     * 命中去重：不同模板命中同一 y（同物品误双认）时保留分高者。
+     * 匹配异常单格隔离（try-catch + 堆栈进日志），不拖垮整页。
      */
     private suspend fun scanPage(
         frame: Bitmap,
@@ -190,78 +184,105 @@ class ResourceWarehouseScan(
         val hits = ArrayList<CellHit>()
         var newOnes = 0
 
-        // 竖带参数：x 按列中心对齐，y 覆盖物品区全高（含滚动偏移余量）
-        val stripW = (cellW * sampleScale).toInt()          // 57
-        val stripTop = (Y0_SCAN * sampleScale).toInt()      // 50
-        val stripH = ((SCAN_BOTTOM - Y0_SCAN) * sampleScale).toInt()  // 280
+        val rowYs = detectRowOrigins(frame)
+        if (rowYs.isEmpty()) {
+            onLog("未检测到物品行——画面可能不是【物资库-资源】页", LogLevel.WRN)
+            return hits
+        }
+        onLog("检测到物品行 y：$rowYs", LogLevel.TRACE)
 
-        for (c in 0 until cols) {
-            coroutineContext.ensureActive()
-            if (isStopped()) throw ScanException("已停止")
-            val gx = gridX0 + c * colPeriod + (cellW - stripW) / 2
-            if (gx + stripW > frame.width) continue
-            val strip = grayOf(frame, gx, stripTop, stripW, stripH, stripW, stripH)
-
-            val colHits = ArrayList<CellHit>()
-            for (t in templates) {
+        for (rowY in rowYs) {
+            if (rowY + cellH > frame.height) continue
+            for (c in 0 until cols) {
                 coroutineContext.ensureActive()
-                if (t.grayW > stripW || t.grayH > stripH) continue
-                // 模板在竖带内滑动（x 居中固定，y 全程），取快速 NCC 最大值与其 y
+                if (isStopped()) throw ScanException("已停止")
+                val gx = gridX0 + c * colPeriod
+                val dims = scaledDims(cellW, cellH)
+                val roi = grayOf(frame, gx, rowY, cellW, cellH, dims.first, dims.second)
+                var best: Template? = null
                 var bestScore = 0f
-                var bestY = 0
-                val tw = t.grayW
-                val th = t.grayH
-                for (oy in 0..stripH - th) {
-                    var num = 0f
-                    var sw = 0f
-                    var swq = 0f
-                    val rowBase = (oy) * stripW
-                    val tBase = 0
-                    for (y in 0 until th) {
-                        val rb = rowBase + y * stripW
-                        val tb = tBase + y * tw
-                        for (x in 0 until tw) {
-                            val v = strip[rb + x]
-                            num += v * t.gray[tb + x]
-                            sw += v
-                            swq += v * v
-                        }
+                for (t in templates) {
+                    coroutineContext.ensureActive()
+                    val s = try {
+                        nccSearch(roi, dims.first, dims.second, t.gray, t.grayW, t.grayH)
+                    } catch (e: Throwable) {
+                        val stack = e.stackTraceToString().lineSequence().take(4).joinToString(" | ")
+                        onLog("匹配异常[${t.name}]：${e.message} | $stack", LogLevel.ERR)
+                        continue
                     }
-                    val mr = t.mt
-                    val numC = num - mr * sw
-                    val wVar = swq - sw * sw / (tw * th)
-                    val den = kotlin.math.sqrt(wVar.coerceAtLeast(0f) * t.dt)
-                    val v = if (den <= 0f) 0f else (numC / den).toFloat()
-                    if (v > bestScore) {
-                        bestScore = v
-                        bestY = oy
+                    if (s > bestScore) {
+                        bestScore = s
+                        best = t
                     }
                 }
-                if (bestScore < matchThreshold) continue
-                // 命中：还原物理坐标（×2 回原尺度）
-                colHits.add(CellHit(t.name, bestScore, gx * 2, stripTop * 2 + bestY * 2))
-            }
-
-            // 同 y 去重（不同模板认同一物品时保留分高者）
-            colHits.sortByDescending { it.score }
-            val kept = ArrayList<CellHit>()
-            for (h in colHits) {
-                if (kept.none { kotlin.math.abs(it.gy - h.gy) < cellH * 2 / 3 }) kept.add(h)
-            }
-
-            for (h in kept) {
-                if (!counts.containsKey(h.name)) {
-                    newOnes++
-                    counts[h.name] = ocrQuantity(frame, h.gx, h.gy)
+                if (best == null) continue
+                if (bestScore >= matchThreshold) {
+                    hits.add(CellHit(best.name, bestScore, gx, rowY))
+                    if (verbose) onLog("行@$rowY 列${c + 1} 命中 ${best.name}=${"%.3f".format(bestScore)}", LogLevel.TRACE)
+                    if (!counts.containsKey(best.name)) {
+                        newOnes++
+                        counts[best.name] = ocrQuantity(frame, gx, rowY)
+                    }
+                } else if (verbose) {
+                    onLog("行@$rowY 列${c + 1} 未过阈值 best=${best.name}:${"%.3f".format(bestScore)}", LogLevel.TRACE)
                 }
             }
-            onLog("列${c + 1}：命中 ${kept.size} 种", LogLevel.TRACE)
-            hits.addAll(kept)
         }
 
         if (hits.isNotEmpty()) onProgress("仓库识别：累计 ${counts.size} 种 · 本页 ${hits.size} 格")
         if (newOnes > 0) onLog("本页新增资源 $newOnes 种", LogLevel.TRACE)
         return hits
+    }
+
+    /**
+     * 检测物品行的起点 y：对第一列物品带的竖直灰度剖面做平滑与梯度，取「亮底→暗卡」
+     * 下降沿的聚类中心。行周期 ~130；y < 110 的候选属顶部计数条杂边，过滤。
+     */
+    private fun detectRowOrigins(frame: Bitmap): List<Int> {
+        val x0 = gridX0 + 6
+        val w = cellW - 12
+        val yTop = 90
+        val yBot = 660
+        val n = yBot - yTop
+        val prof = FloatArray(n)
+        val px = IntArray(w)
+        for (i in 0 until n) {
+            frame.getPixels(px, 0, w, x0, yTop + i, w, 1)
+            var s = 0f
+            for (p in px) {
+                s += 0.299f * (p shr 16 and 0xff) + 0.587f * (p shr 8 and 0xff) + 0.114f * (p and 0xff)
+            }
+            prof[i] = s / w
+        }
+        // 7 点平滑
+        val sm = FloatArray(n)
+        for (i in 0 until n) {
+            var acc = 0f
+            var cnt = 0
+            for (k in -3..3) {
+                val j = i + k
+                if (j in 0 until n) {
+                    acc += prof[j]
+                    cnt++
+                }
+            }
+            sm[i] = acc / cnt
+        }
+        // 下降沿候选（梯度 < -6）
+        val cands = ArrayList<Int>()
+        for (i in 0 until n - 1) {
+            if (sm[i] - sm[i + 1] > 6f) cands.add(yTop + i)
+        }
+        // 聚类（相邻 ≤30 归一组）取组内均值，过滤顶部杂边（y < 110）
+        val groups = ArrayList<MutableList<Int>>()
+        for (y in cands) {
+            val g = groups.lastOrNull()
+            if (g != null && y - g.last() <= 30) g.add(y) else groups.add(mutableListOf(y))
+        }
+        return groups.mapNotNull { g ->
+            val m = g.average().toInt()
+            if (m >= 110) m else null
+        }
     }
 
     /** 数量 OCR：格子右下角数量白字区域，裁片放大 2 倍走 PP-OCR，取整数 */
