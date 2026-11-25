@@ -58,12 +58,15 @@ class ResourceWarehouseScan(
     private val slideFrom = 800 to 630
     private val slideTo = 800 to 350
 
+    /** 物品区竖带扫描的 y 范围（帧坐标）：覆盖全部可见行 + 滚动偏移余量 */
+    private val Y0_SCAN = 100
+    private val SCAN_BOTTOM = 660
+
     private val matchThreshold = 0.72f
     /**
-     * 模板/ROI 统一 0.5 等比缩放（**保持宽高比**）：此前 ROI 142×88 被强压成正方
-     * 44×44（宽高比 1.61→1.0 变形）而模板近方形——变形比例不一致 NCC 全崩（真机
-     * 0 命中第二根因；第一根因是尺度不一致 tpl28/roi44）。滑窗吸收手裁裁片的
-     * 尺寸/留白差异；等比缩放只降采样不变形。像素减半让纯 Kotlin 滑窗够快。
+     * 统一 0.5 等比缩放（**保持宽高比**）：此前 ROI 被强压成正方而模板近方形——
+     * 变形比例不一致 NCC 全崩（真机 0 命中根因之一）。只降采样不变形；
+     * 像素减半让纯 Kotlin 滑窗够快。模板与竖带必须用同一缩放因子（尺度一致）。
      */
     private val sampleScale = 0.5f
 
@@ -160,7 +163,23 @@ class ResourceWarehouseScan(
         Result(counts, pages, elapsed)
     }
 
-    /** 单页：按网格逐格滑窗匹配 + 新资源 OCR 数量，返回本页命中（同时把数量并入 counts） */
+    /**
+     * 单页识别：**列竖带全高滑窗**（滚动列表适配版，对标 MAA DepotImageAnalyzer 的
+     * 「模板在区域内滑窗找最佳位置」而非固定网格）。
+     *
+     * 固定网格的前提是「物品行恰好对齐网格」——滑动翻页后物品停在任意滚动偏移上，
+     * 行位置连续变化（用户实测纠偏：左右列不变、上下会移动），固定网格只能命中
+     * 对齐的少数格子（实锤：24 格只中 4 个）。
+     *
+     * 新方案：x 方向对齐列中心（用户确认左右边框不变），**y 方向整条竖带滑动**——
+     * 每列取一条竖带（宽 = 卡面宽 × 0.5 缩放，高 = 物品区全高 × 0.5），每个模板在
+     * 竖带内逐位置取快速 NCC 最大值，物品停在任意滚动位置都能命中。同一模板全
+     * 仓库只出现一次，各模板独立找位，同列上下多个物品各自被对应模板命中。
+     *
+     * 性能：竖带 53×280、模板 ≤50×50，每模板 ~240 个 y 位置 × 2500 像素 ≈ 60 万
+     * 乘加，55 模板 × 6 列 ≈ 2 亿乘加/页，Kotlin 约 1~2s/页。
+     * 命中去重：不同模板命中同一 y（同物品误双认）时保留分高者。
+     */
     private suspend fun scanPage(
         frame: Bitmap,
         templates: List<Template>,
@@ -170,48 +189,76 @@ class ResourceWarehouseScan(
     ): List<CellHit> {
         val hits = ArrayList<CellHit>()
         var newOnes = 0
-        for (r in 0 until rows) {
-            for (c in 0 until cols) {
+
+        // 竖带参数：x 按列中心对齐，y 覆盖物品区全高（含滚动偏移余量）
+        val stripW = (cellW * sampleScale).toInt()          // 57
+        val stripTop = (Y0_SCAN * sampleScale).toInt()      // 50
+        val stripH = ((SCAN_BOTTOM - Y0_SCAN) * sampleScale).toInt()  // 280
+
+        for (c in 0 until cols) {
+            coroutineContext.ensureActive()
+            if (isStopped()) throw ScanException("已停止")
+            val gx = gridX0 + c * colPeriod + (cellW - stripW) / 2
+            if (gx + stripW > frame.width) continue
+            val strip = grayOf(frame, gx, stripTop, stripW, stripH, stripW, stripH)
+
+            val colHits = ArrayList<CellHit>()
+            for (t in templates) {
                 coroutineContext.ensureActive()
-                if (isStopped()) throw ScanException("已停止")
-                val gx = gridX0 + c * colPeriod
-                val gy = gridY0 + r * rowPeriod
-                if (gx + cellW > frame.width || gy + cellH > frame.height) continue
-
-                val icon = grayOf(frame, gx + iconInset, gy + iconInset, cellW - iconInset * 2, cellH - iconInset * 2)
-                val colorMean = colorMeanOf(frame, gx + iconInset, gy + iconInset, cellW - iconInset * 2, cellH - iconInset * 2)
-                // 颜色预筛：ROI 中心均值色与模板均值色的 RGB 距离排序，取前 10 候选（55 模板全滑窗太慢）
-                val candidates = templates
-                    .map { it to colorDist(colorMean, it.meanColor) }
-                    .sortedBy { it.second }
-                    .take(10)
-                    .map { it.first }
-                var best: Pair<Template, Float>? = null
-                val dims = scaledDims(cellW - iconInset * 2, cellH - iconInset * 2)
-                for (t in candidates) {
-                    val s = try {
-                        nccSearch(icon, dims.first, dims.second, t.gray, t.grayW, t.grayH)
-                    } catch (e: Throwable) {
-                        val stack = e.stackTraceToString().lineSequence().take(4).joinToString(" | ")
-                        onLog("格子($r,$c) 模板[${t.name}] 匹配异常：${e.message} | $stack", LogLevel.ERR)
-                        continue
+                if (t.grayW > stripW || t.grayH > stripH) continue
+                // 模板在竖带内滑动（x 居中固定，y 全程），取快速 NCC 最大值与其 y
+                var bestScore = 0f
+                var bestY = 0
+                val tw = t.grayW
+                val th = t.grayH
+                for (oy in 0..stripH - th) {
+                    var num = 0f
+                    var sw = 0f
+                    var swq = 0f
+                    val rowBase = (oy) * stripW
+                    val tBase = 0
+                    for (y in 0 until th) {
+                        val rb = rowBase + y * stripW
+                        val tb = tBase + y * tw
+                        for (x in 0 until tw) {
+                            val v = strip[rb + x]
+                            num += v * t.gray[tb + x]
+                            sw += v
+                            swq += v * v
+                        }
                     }
-                    if (best == null || s > best!!.second) best = t to s
+                    val mr = t.mt
+                    val numC = num - mr * sw
+                    val wVar = swq - sw * sw / (tw * th)
+                    val den = kotlin.math.sqrt(wVar.coerceAtLeast(0f) * t.dt)
+                    val v = if (den <= 0f) 0f else (numC / den).toFloat()
+                    if (v > bestScore) {
+                        bestScore = v
+                        bestY = oy
+                    }
                 }
-                val (t, s) = best ?: continue
-                if (s < matchThreshold) {
-                    if (verbose) onLog("格子($r,$c) 未过阈值 best=${t.name}:${"%.3f".format(s)}", LogLevel.TRACE)
-                    continue  // 空槽或未知物品（模板库未覆盖）
-                }
-                if (verbose) onLog("格子($r,$c) 命中 ${t.name}:${"%.3f".format(s)}", LogLevel.TRACE)
-                hits.add(CellHit(t.name, s, gx, gy))
+                if (bestScore < matchThreshold) continue
+                // 命中：还原物理坐标（×2 回原尺度）
+                colHits.add(CellHit(t.name, bestScore, gx * 2, stripTop * 2 + bestY * 2))
+            }
 
-                if (!counts.containsKey(t.name)) {
+            // 同 y 去重（不同模板认同一物品时保留分高者）
+            colHits.sortByDescending { it.score }
+            val kept = ArrayList<CellHit>()
+            for (h in colHits) {
+                if (kept.none { kotlin.math.abs(it.gy - h.gy) < cellH * 2 / 3 }) kept.add(h)
+            }
+
+            for (h in kept) {
+                if (!counts.containsKey(h.name)) {
                     newOnes++
-                    counts[t.name] = ocrQuantity(frame, gx, gy)
+                    counts[h.name] = ocrQuantity(frame, h.gx, h.gy)
                 }
             }
+            onLog("列${c + 1}：命中 ${kept.size} 种", LogLevel.TRACE)
+            hits.addAll(kept)
         }
+
         if (hits.isNotEmpty()) onProgress("仓库识别：累计 ${counts.size} 种 · 本页 ${hits.size} 格")
         if (newOnes > 0) onLog("本页新增资源 $newOnes 种", LogLevel.TRACE)
         return hits
@@ -275,7 +322,11 @@ class ResourceWarehouseScan(
 
     // ---------------- 模板库 ----------------
 
-    private class Template(val name: String, val gray: FloatArray, val meanColor: FloatArray, val grayW: Int, val grayH: Int)
+    /** mt=模板灰度均值，dt=Σ(t-mt)²（滑窗快速 NCC 分母的预计算项） */
+    private class Template(
+        val name: String, val gray: FloatArray, val meanColor: FloatArray,
+        val grayW: Int, val grayH: Int, val mt: Float, val dt: Float
+    )
 
     /** assets/warehouse/resource/ → files/warehouse/resource/ 自举释放，然后加载为灰度模板。
      *  用「assets 清单指纹」比对 files 端记录：素材更新（打包）后自动整目录重建——
@@ -307,12 +358,20 @@ class ResourceWarehouseScan(
             val bmp = BitmapFactory.decodeFile(f.absolutePath) ?: continue
             val g = toGrayNormalized(bmp)
             val dims = scaledDims(bmp.width, bmp.height)
+            var mt = 0f
+            for (v in g) mt += v
+            mt /= g.size
+            var dt = 0f
+            for (v in g) {
+                val d = v - mt
+                dt += d * d
+            }
             out.add(
                 Template(
                     f.nameWithoutExtension,
                     g,
                     colorMeanOf(bmp, 0, 0, bmp.width, bmp.height),
-                    dims.first, dims.second
+                    dims.first, dims.second, mt, dt
                 )
             )
             bmp.recycle()
@@ -409,23 +468,22 @@ class ResourceWarehouseScan(
         val w = (src.width * sampleScale).toInt().coerceAtLeast(12)
         val h = (src.height * sampleScale).toInt().coerceAtLeast(12)
         val small = Bitmap.createScaledBitmap(src, w, h, true)
-        val g = grayOf(small, 0, 0, w, h)
+        val g = grayOf(small, 0, 0, w, h, w, h)
         small.recycle()
         if (made) src.recycle()
         return g
     }
 
-    private fun grayOf(bmp: Bitmap, x: Int, y: Int, w: Int, h: Int): FloatArray {
-        val safeW = w.coerceAtMost(bmp.width - x)
-        val safeH = h.coerceAtMost(bmp.height - y)
-        if (safeW <= 0 || safeH <= 0) return FloatArray(1) { 0f }
-        var crop = Bitmap.createBitmap(bmp, x, y, safeW, safeH)
-        val tw = (safeW * sampleScale).toInt().coerceAtLeast(8)
-        val th = (safeH * sampleScale).toInt().coerceAtLeast(8)
-        val small = Bitmap.createScaledBitmap(crop, tw, th, true)
+    /** 裁 (x,y,cropW,cropH) 并缩放到 dstW×dstH 的灰度 FloatArray（缩放因子由调用方统一决定） */
+    private fun grayOf(bmp: Bitmap, x: Int, y: Int, cropW: Int, cropH: Int, dstW: Int, dstH: Int): FloatArray {
+        val safeW = cropW.coerceAtMost(bmp.width - x)
+        val safeH = cropH.coerceAtMost(bmp.height - y)
+        if (safeW <= 0 || safeH <= 0) return FloatArray(dstW * dstH)
+        val crop = Bitmap.createBitmap(bmp, x, y, safeW, safeH)
+        val small = Bitmap.createScaledBitmap(crop, dstW, dstH, true)
         crop.recycle()
-        val px = IntArray(tw * th)
-        small.getPixels(px, 0, tw, 0, 0, tw, th)
+        val px = IntArray(dstW * dstH)
+        small.getPixels(px, 0, dstW, 0, 0, dstW, dstH)
         small.recycle()
         val g = FloatArray(px.size)
         for (i in px.indices) {
