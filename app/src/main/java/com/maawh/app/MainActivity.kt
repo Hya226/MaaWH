@@ -3368,7 +3368,6 @@ class MainActivity : AppCompatActivity() {
         if (gachaRunning) { toast("抽卡识别运行中，不能同时识别"); return }
         if (!ShizukuShell.isVdAlive()) { toast("请先启动虚拟屏，并导航到【物资库-资源】页（可跑【仓库识别】流程）"); return }
         warehouseRunning = true
-        binding.btnWarehouseRun.text = getString(R.string.warehouse_stop)
         binding.tvWarehouseStatus.text = "准备…"
         if (homeTab == HomeTab.TOOLBOX) binding.btnStartQueue.text = getString(R.string.quick_stop)
         setRunState("仓库识别中…", R.color.accent)
@@ -3439,7 +3438,6 @@ class MainActivity : AppCompatActivity() {
                 RunLogStore.end(runSummary)
                 warehouseRunning = false
                 warehouseJob = null
-                binding.btnWarehouseRun.text = getString(R.string.warehouse_run)
                 if (homeTab == HomeTab.TOOLBOX) {
                     binding.btnStartQueue.text = getString(R.string.btn_start_queue)
                 }
