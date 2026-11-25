@@ -58,7 +58,9 @@ class ResourceWarehouseScan(
     private val slideTo = 800 to 350
 
     private val matchThreshold = 0.72f
-    private val iconGraySize = 40   // 模板/ROI 统一降采样尺寸
+    /** 模板统一降采样尺寸；ROI 侧用 roiGraySize（> 模板尺寸，滑窗在其内找最佳位置） */
+    private val tplGraySize = 28
+    private val roiGraySize = 44
 
     /** 单页里每个格子的识别结果 */
     private data class CellHit(val name: String, val score: Float, val gx: Int, val gy: Int)
@@ -131,7 +133,7 @@ class ResourceWarehouseScan(
         Result(counts, pages, elapsed)
     }
 
-    /** 单页：按网格逐格 NCC 匹配 + 新资源 OCR 数量，返回本页命中（同时把数量并入 counts） */
+    /** 单页：按网格逐格滑窗匹配 + 新资源 OCR 数量，返回本页命中（同时把数量并入 counts） */
     private suspend fun scanPage(
         frame: Bitmap,
         templates: List<Template>,
@@ -148,14 +150,21 @@ class ResourceWarehouseScan(
                 val gy = gridY0 + r * rowPeriod
                 if (gx + cell > frame.width || gy + cell > frame.height) continue
 
-                val icon = grayOf(frame, gx + iconInset, gy + iconInset, cell - iconInset * 2, cell - iconInset * 2)
+                val icon = grayOf(frame, gx + iconInset, gy + iconInset, cell - iconInset * 2, cell - iconInset * 2, roiGraySize)
+                val colorMean = colorMeanOf(frame, gx + iconInset, gy + iconInset, cell - iconInset * 2, cell - iconInset * 2)
+                // 颜色预筛：ROI 中心均值色与模板均值色的 RGB 距离排序，取前 10 候选（55 模板全滑窗太慢）
+                val candidates = templates
+                    .map { it to colorDist(colorMean, it.meanColor) }
+                    .sortedBy { it.second }
+                    .take(10)
+                    .map { it.first }
                 var best: Pair<Template, Float>? = null
-                for (t in templates) {
-                    val s = ncc(icon, t.gray)
+                for (t in candidates) {
+                    val s = nccSearch(icon, roiGraySize, roiGraySize, t.gray, tplGraySize, tplGraySize)
                     if (best == null || s > best!!.second) best = t to s
                 }
                 val (t, s) = best ?: continue
-                if (s < matchThreshold) continue  // 空槽或未知物品
+                if (s < matchThreshold) continue  // 空槽或未知物品（模板库未覆盖）
                 hits.add(CellHit(t.name, s, gx, gy))
 
                 if (!counts.containsKey(t.name)) {
@@ -164,7 +173,7 @@ class ResourceWarehouseScan(
                 }
             }
         }
-        if (hits.isNotEmpty()) onProgress("仓库识别：第 ${counts.size} 种累计 · 本页 ${hits.size} 格")
+        if (hits.isNotEmpty()) onProgress("仓库识别：累计 ${counts.size} 种 · 本页 ${hits.size} 格")
         if (newOnes > 0) onLog("本页新增资源 $newOnes 种", LogLevel.TRACE)
         return hits
     }
@@ -227,7 +236,7 @@ class ResourceWarehouseScan(
 
     // ---------------- 模板库 ----------------
 
-    private class Template(val name: String, val gray: FloatArray)
+    private class Template(val name: String, val gray: FloatArray, val meanColor: FloatArray)
 
     /** assets/warehouse/resource/ → files/warehouse/resource/ 自举释放，然后加载为灰度模板 */
     private fun ensureTemplates(ctx: Context): List<Template> {
@@ -247,13 +256,42 @@ class ResourceWarehouseScan(
         val out = ArrayList<Template>(files.size)
         for (f in files) {
             val bmp = BitmapFactory.decodeFile(f.absolutePath) ?: continue
-            out.add(Template(f.nameWithoutExtension, toGrayNormalized(bmp, iconGraySize)))
+            out.add(
+                Template(
+                    f.nameWithoutExtension,
+                    toGrayNormalized(bmp, tplGraySize),
+                    colorMeanOf(bmp, 0, 0, bmp.width, bmp.height)
+                )
+            )
             bmp.recycle()
         }
         return out
     }
 
     // ---------------- 图像原语 ----------------
+
+    /** ROI 彩色均值（颜色预筛用） */
+    private fun colorMeanOf(bmp: Bitmap, x: Int, y: Int, w: Int, h: Int): FloatArray {
+        val safeW = w.coerceAtMost(bmp.width - x)
+        val safeH = h.coerceAtMost(bmp.height - y)
+        if (safeW <= 0 || safeH <= 0) return floatArrayOf(0f, 0f, 0f)
+        val small = Bitmap.createScaledBitmap(Bitmap.createBitmap(bmp, x, y, safeW, safeH), 8, 8, true)
+        val px = IntArray(64)
+        small.getPixels(px, 0, 8, 0, 0, 8, 8)
+        small.recycle()
+        var r = 0f; var g = 0f; var b = 0f
+        for (p in px) {
+            r += (p shr 16 and 0xff)
+            g += (p shr 8 and 0xff)
+            b += (p and 0xff)
+        }
+        return floatArrayOf(r / px.size, g / px.size, b / px.size)
+    }
+
+    private fun colorDist(a: FloatArray, b: FloatArray): Float {
+        val d0 = a[0] - b[0]; val d1 = a[1] - b[1]; val d2 = a[2] - b[2]
+        return d0 * d0 + d1 * d1 + d2 * d2
+    }
 
     /** 稳定抓帧：连续两帧表格区域一致才用（滑动/动画干扰下防抖） */
     private suspend fun grabStable(timeoutMs: Long = 4000): Bitmap? {
@@ -314,13 +352,13 @@ class ResourceWarehouseScan(
             made = true
         }
         val small = Bitmap.createScaledBitmap(src, size, size, true)
-        val g = grayOf(small, 0, 0, size, size)
+        val g = grayOf(small, 0, 0, size, size, size)
         small.recycle()
         if (made) src.recycle()
         return g
     }
 
-    private fun grayOf(bmp: Bitmap, x: Int, y: Int, w: Int, h: Int, size: Int = iconGraySize): FloatArray {
+    private fun grayOf(bmp: Bitmap, x: Int, y: Int, w: Int, h: Int, size: Int): FloatArray {
         val safeW = w.coerceAtMost(bmp.width - x)
         val safeH = h.coerceAtMost(bmp.height - y)
         if (safeW <= 0 || safeH <= 0) return FloatArray(size * size)
@@ -336,6 +374,71 @@ class ResourceWarehouseScan(
             g[i] = 0.299f * (p shr 16 and 0xff) + 0.587f * (p shr 8 and 0xff) + 0.114f * (p and 0xff)
         }
         return g
+    }
+
+    /**
+     * 滑窗 NCC：模板在 ROI 内逐位置取归一化互相关的最大值。
+     * 用积分图把每个窗口的均值/方差降到 O(1)，分子逐像素累加。
+     * （模板裁片与 ROI 的构图不必严格对齐——用户素材是手裁的，尺寸/留白有差异，
+     *   滑窗能吸收这些差异；这也是离线 cv2 验证采用的同款算法。）
+     */
+    private fun nccSearch(
+        roi: FloatArray, roiW: Int, roiH: Int,
+        tpl: FloatArray, tplW: Int, tplH: Int
+    ): Float {
+        if (tplW > roiW || tplH > roiH) {
+            // 模板比 ROI 还大：退化成整幅 NCC（模板缩放语义不变）
+            return ncc(roi, tpl)
+        }
+        // ROI 积分图（sum 与 sumsq）
+        val iw = roiW + 1
+        val sum = FloatArray(iw * (roiH + 1))
+        val sq = FloatArray(iw * (roiH + 1))
+        for (y in 0 until roiH) {
+            var rs = 0f
+            var rq = 0f
+            for (x in 0 until roiW) {
+                val v = roi[y * roiW + x]
+                rs += v
+                rq += v * v
+                sum[(y + 1) * iw + (x + 1)] = sum[y * iw + (x + 1)] + rs
+                sq[(y + 1) * iw + (x + 1)] = sq[y * iw + (x + 1)] + rq
+            }
+        }
+        var mt = 0f
+        for (v in tpl) mt += v
+        mt /= tpl.size
+        var dt = 0f
+        for (v in tpl) {
+            val d = v - mt
+            dt += d * d
+        }
+        val dtDen = sqrt(dt * tpl.size)
+        var best = 0f
+        val n = tplW * tplH
+        for (oy in 0..roiH - tplH) {
+            for (ox in 0..roiW - tplW) {
+                val s = areaSum(sum, iw, ox, oy, tplW, tplH)
+                val q = areaSum(sq, iw, ox, oy, tplW, tplH)
+                val mr = s / n
+                var num = 0f
+                for (ty in 0 until tplH) {
+                    for (tx in 0 until tplW) {
+                        val v = roi[(oy + ty) * roiW + (ox + tx)]
+                        num += (v - mr) * (tpl[ty * tplW + tx] - mt)
+                    }
+                }
+                val wVar = q - s * s / n
+                val den = sqrt(wVar * dt)
+                val v = if (den <= 0f) 0f else (num / den).toFloat()
+                if (v > best) best = v
+            }
+        }
+        return best.coerceIn(0f, 1f)
+    }
+
+    private fun areaSum(sum: FloatArray, iw: Int, x: Int, y: Int, w: Int, h: Int): Float {
+        return sum[(y + h) * iw + (x + w)] - sum[y * iw + (x + w)] - sum[(y + h) * iw + x] + sum[y * iw + x]
     }
 
     /** 归一化互相关 NCC（灰度、已含均值归一），负相关按 0 处理 */
