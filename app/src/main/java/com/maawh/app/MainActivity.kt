@@ -311,6 +311,17 @@ class MainActivity : AppCompatActivity() {
         binding.chipToolboxGacha.setOnClickListener { switchToolboxSection(ToolboxSection.GACHA) }
         binding.chipToolboxWaiqin.setOnClickListener { switchToolboxSection(ToolboxSection.WAIQIN) }
         binding.chipToolboxWarehouse.setOnClickListener { switchToolboxSection(ToolboxSection.WAREHOUSE) }
+        // 仓库识别分类切换：资源/徽章/票券（对标 MAA 仓库页，切换即渲染该仓库的已存结果）
+        binding.toggleWhCat.addOnButtonCheckedListener { _, id, checked ->
+            if (!checked) return@addOnButtonCheckedListener
+            warehouseCategory = when (id) {
+                R.id.btnWhCatBadge -> WarehouseStore.CAT_BADGE
+                R.id.btnWhCatTicket -> WarehouseStore.CAT_TICKET
+                else -> WarehouseStore.CAT_RESOURCE
+            }
+            renderWarehouseStored()
+        }
+        renderWarehouseStored()
         switchToolboxSection(ToolboxSection.GACHA)
         // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
         binding.btnEditConfig.setOnClickListener { setConfigMode(!configMode) }
@@ -1352,6 +1363,8 @@ class MainActivity : AppCompatActivity() {
         binding.panelToolGacha.visibility = if (section == ToolboxSection.GACHA) View.VISIBLE else View.GONE
         binding.panelToolWaiqin.visibility = if (section == ToolboxSection.WAIQIN) View.VISIBLE else View.GONE
         binding.panelToolWarehouse.visibility = if (section == ToolboxSection.WAREHOUSE) View.VISIBLE else View.GONE
+        // 每次进面板都从落盘数据刷新（识别完成后 App 重启/切页回来也能看到上次同步）
+        if (section == ToolboxSection.WAREHOUSE) renderWarehouseStored()
     }
 
     private var homeTab = HomeTab.ONECLICK
@@ -3233,19 +3246,46 @@ class MainActivity : AppCompatActivity() {
     private var warehouseRunning = false
     private var warehouseJob: kotlinx.coroutines.Job? = null
 
+    /** 仓库识别面板当前分类（资源/徽章/票券，对标 MAA 仓库页；徽章、票券素材暂未录入） */
+    private var warehouseCategory = WarehouseStore.CAT_RESOURCE
+
     /** 识别结果网格（MAA-Meow 式：图标+名字+xN）：每次列完成/结束时全量重渲染 */
+    /** 按当前分类渲染已保存的识别结果（上次同步/种类数/变化条数，识别完成后重启也能看到） */
+    private fun renderWarehouseStored() {
+        val snap = WarehouseStore.load(applicationContext, warehouseCategory)
+        val catName = WarehouseStore.catName(warehouseCategory)
+        binding.tvWhSync.text = if (snap == null) getString(R.string.warehouse_sync_none_time)
+        else "上次同步：${snap.scannedAt}"
+        if (snap == null) {
+            binding.tvWhCount.text = if (warehouseCategory == WarehouseStore.CAT_RESOURCE)
+                getString(R.string.warehouse_sync_none) else "【$catName】尚未录入"
+            binding.tvWhChanged.visibility = View.GONE
+            binding.llWarehouseResults.removeAllViews()
+            if (warehouseCategory != WarehouseStore.CAT_RESOURCE) {
+                binding.llWarehouseResults.addView(TextView(this).apply {
+                    text = "【$catName】仓库的素材与导航流程尚未配置——录入后在此识别"
+                    textSize = 11f
+                    setTextColor(getColor(R.color.text_secondary))
+                    setPadding(0, dp(10), 0, 0)
+                })
+            }
+            return
+        }
+        binding.tvWhCount.text = "共 ${snap.counts.size} 种物品"
+        if (snap.changedFromPrev > 0) {
+            binding.tvWhChanged.visibility = View.VISIBLE
+            binding.tvWhChanged.text = "较上次：${snap.changedFromPrev} 种有变化"
+        } else {
+            binding.tvWhChanged.visibility = View.GONE
+        }
+        renderWarehouseResults(snap.counts)
+    }
+
     private fun renderWarehouseResults(counts: Map<String, Int>) {
         val box = binding.llWarehouseResults
         box.removeAllViews()
+        binding.tvWhCount.text = "共 ${counts.size} 种物品"
         if (counts.isEmpty()) return
-        val title = TextView(this).apply {
-            text = "识别结果 · ${counts.size} 种"
-            textSize = 13f
-            setTextColor(getColor(R.color.text_primary))
-            paint.isFakeBoldText = true
-            setPadding(0, dp(8), 0, dp(4))
-        }
-        box.addView(title)
         // 4 列等宽网格：55 种一行放不下（此前全塞一行，屏幕只露出前 8 个）
         val list = counts.entries.sortedBy { it.key }.toList()
         var i = 0
@@ -3319,6 +3359,10 @@ class MainActivity : AppCompatActivity() {
             stopWarehouseScan()
             return
         }
+        if (warehouseCategory != WarehouseStore.CAT_RESOURCE) {
+            toast("【${WarehouseStore.catName(warehouseCategory)}】仓库识别尚未录入（素材与导航流程未配置）")
+            return
+        }
         if (isTaskRunning) { toast("任务队列运行中，不能同时识别"); return }
         if (waiqinRunning) { toast("外勤见闻识别运行中，不能同时识别"); return }
         if (gachaRunning) { toast("抽卡识别运行中，不能同时识别"); return }
@@ -3356,7 +3400,10 @@ class MainActivity : AppCompatActivity() {
 
                 // 阶段 2：识别循环（MAA 式：网格 NCC 模板匹配 + 数量 OCR + 滑动翻页）
                 val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
-                runOnUiThread { renderWarehouseResults(emptyMap()) }
+                runOnUiThread {
+                    binding.tvWhCount.text = "识别中…"
+                    renderWarehouseResults(emptyMap())
+                }
                 val scanner = ResourceWarehouseScan(applicationContext, ocr, { m, lv -> log(m, lv) }) {
                     !warehouseRunning || warehouseJob?.isActive != true
                 }
@@ -3371,6 +3418,11 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread { renderWarehouseResults(counts) }
                 }
                 runSummary = "资源 ${r.counts.size} 种 · ${r.pages} 页"
+                // 落盘 + 刷新面板（上次同步时间/种类数/变化条数/结果网格统一由 WarehouseStore 驱动）
+                withContext(Dispatchers.IO) {
+                    WarehouseStore.save(applicationContext, WarehouseStore.CAT_RESOURCE, r.counts)
+                }
+                renderWarehouseStored()
                 binding.tvWarehouseStatus.text = "✓ 资源 ${r.counts.size} 种（${r.pages} 页）"
                 setRunState("✓ 仓库识别完成：资源 ${r.counts.size} 种，明细见日志页", R.color.ok_green)
             } catch (e: kotlinx.coroutines.CancellationException) {

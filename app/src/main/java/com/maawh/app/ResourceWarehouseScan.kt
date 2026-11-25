@@ -9,9 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.coroutines.coroutineContext
 import kotlin.math.sqrt
 
@@ -157,7 +154,7 @@ class ResourceWarehouseScan(
         backToHome(onProgress)
 
         val elapsed = System.currentTimeMillis() - started
-        saveResult(counts)
+        // 结果落盘由调用方（MainActivity → WarehouseStore.save，含上次同步/变化对比）统一负责
         onLog(
             "仓库识别完成：共 $pages 页，资源 ${counts.size} 种（数量识别成功 ${counts.count { it.value >= 0 }}）" +
                 " · 耗时 ${elapsed / 1000}s · 明细见 files/warehouse/resource_scan.json",
@@ -601,30 +598,5 @@ class ResourceWarehouseScan(
         }
         val den = sqrt(da * db)
         return if (den <= 0f) 0f else (num / den).coerceIn(0f, 1f)
-    }
-
-    // ---------------- 结果落盘 ----------------
-
-    private fun saveResult(counts: Map<String, Int>) {
-        try {
-            val dir = File(ctx.filesDir, "warehouse")
-            dir.mkdirs()
-            val ts = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(Date())
-            val sb = StringBuilder("{\n  \"scannedAt\": \"$ts\",\n  \"counts\": {\n")
-            val entries = counts.entries.sortedBy { it.key }
-            entries.forEachIndexed { i, (name, qty) ->
-                sb.append("    \"").append(name.replace("\"", "\\\"")).append("\": ").append(qty)
-                sb.append(if (i == entries.lastIndex) "\n" else ",\n")
-            }
-            sb.append("  }\n}")
-            val tmp = File(dir, "resource_scan.json.tmp")
-            tmp.writeText(sb.toString())
-            if (!tmp.renameTo(File(dir, "resource_scan.json"))) {
-                File(dir, "resource_scan.json").writeText(sb.toString())
-                tmp.delete()
-            }
-        } catch (e: Throwable) {
-            onLog("结果落盘失败：${e.message}", LogLevel.WRN)
-        }
     }
 }
