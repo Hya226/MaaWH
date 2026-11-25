@@ -288,11 +288,13 @@ class ResourceWarehouseScan(
     /** 数量 OCR：格子右下角数量白字区域，裁片放大 2 倍走 PP-OCR，取整数 */
     private suspend fun ocrQuantity(frame: Bitmap, gx: Int, gy: Int): Int {
         return try {
-            // 数量角标在图标右下角（实测 ≈x+52..x+106, y+76..y+106），留 2px 余量
-            val rx = gx + (cellW * 0.42f).toInt()
-            val ry = gy + (cellH * 0.78f).toInt()
-            val rw = (cellW * 0.58f).toInt().coerceAtMost(frame.width - rx)
-            val rh = (cellH * 0.30f).toInt().coerceAtMost(frame.height - ry)
+            // 数量白字在卡面右下角内部、右对齐卡面右缘（帧实测：57 = gx+94..114, gy+103..116）
+            // 区域取 (gx+58, gy+96, 56×26)——两位/三位数字（右对齐向左延伸）全覆盖。
+            // 离线 PP-OCR 双通道验证：57/72/3/54/25/20 全对，置信度 0.97~1.00。
+            val rx = gx + 58
+            val ry = gy + 96
+            val rw = 56.coerceAtMost(frame.width - rx)
+            val rh = 26.coerceAtMost(frame.height - ry)
             if (rw <= 0 || rh <= 0) return -1
             var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
             crop = Bitmap.createScaledBitmap(crop, rw * 2, rh * 2, true)
