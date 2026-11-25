@@ -45,13 +45,15 @@ class ResourceWarehouseScan(
 
     data class Result(val counts: LinkedHashMap<String, Int>, val pages: Int, val elapsedMs: Long)
 
-    // ---- 网格参数（720p 帧实测，物资库-资源页）----
-    private val gridX0 = 355
-    private val gridY0 = 118
-    private val colPeriod = 120
+    // ---- 网格参数（720p 帧亮度剖面实测：列边界 359/509/658/808/959/1109 完美 150 周期，
+    //      行边界 125/255/385/515 周期 130，卡面约 145×91 横版小卡）----
+    private val gridX0 = 362
+    private val gridY0 = 127
+    private val colPeriod = 150
     private val rowPeriod = 130
-    private val cell = 112          // 格子含边框尺寸
-    private val iconInset = 8       // 图标内缩（去格子边框装饰）
+    private val cellW = 142         // 卡面宽
+    private val cellH = 88          // 卡面高
+    private val iconInset = 4       // 边缘内缩
     private val cols = 6
     private val rows = 4            // 屏内完整行数（第 5 行只露出边缘，放弃）
     private val slideFrom = 800 to 630
@@ -59,13 +61,12 @@ class ResourceWarehouseScan(
 
     private val matchThreshold = 0.72f
     /**
-     * 模板/ROI 的降采样尺寸必须**同尺度**：ROI 采样 96px→44（缩 0.458），模板原图
-     * ≈88px→40（缩 0.454）——滑窗匹配要求两者像素密度一致，尺度不一致 NCC 全崩
-     * （tplGraySize=28 的首版实锤：第 1 页 0 命中）。模板略小于 ROI 是刻意的：
-     * 图标本体 ≈88px < 格子内容区 96px，滑窗在 44×44 内找 40×40 的最佳位置。
+     * 模板/ROI 统一 0.5 等比缩放（**保持宽高比**）：此前 ROI 142×88 被强压成正方
+     * 44×44（宽高比 1.61→1.0 变形）而模板近方形——变形比例不一致 NCC 全崩（真机
+     * 0 命中第二根因；第一根因是尺度不一致 tpl28/roi44）。滑窗吸收手裁裁片的
+     * 尺寸/留白差异；等比缩放只降采样不变形。像素减半让纯 Kotlin 滑窗够快。
      */
-    private val tplGraySize = 40
-    private val roiGraySize = 44
+    private val sampleScale = 0.5f
 
     /** 单页里每个格子的识别结果 */
     private data class CellHit(val name: String, val score: Float, val gx: Int, val gy: Int)
@@ -176,10 +177,10 @@ class ResourceWarehouseScan(
                 if (isStopped()) throw ScanException("已停止")
                 val gx = gridX0 + c * colPeriod
                 val gy = gridY0 + r * rowPeriod
-                if (gx + cell > frame.width || gy + cell > frame.height) continue
+                if (gx + cellW > frame.width || gy + cellH > frame.height) continue
 
-                val icon = grayOf(frame, gx + iconInset, gy + iconInset, cell - iconInset * 2, cell - iconInset * 2, roiGraySize)
-                val colorMean = colorMeanOf(frame, gx + iconInset, gy + iconInset, cell - iconInset * 2, cell - iconInset * 2)
+                val icon = grayOf(frame, gx + iconInset, gy + iconInset, cellW - iconInset * 2, cellH - iconInset * 2)
+                val colorMean = colorMeanOf(frame, gx + iconInset, gy + iconInset, cellW - iconInset * 2, cellH - iconInset * 2)
                 // 颜色预筛：ROI 中心均值色与模板均值色的 RGB 距离排序，取前 10 候选（55 模板全滑窗太慢）
                 val candidates = templates
                     .map { it to colorDist(colorMean, it.meanColor) }
@@ -187,8 +188,9 @@ class ResourceWarehouseScan(
                     .take(10)
                     .map { it.first }
                 var best: Pair<Template, Float>? = null
+                val dims = scaledDims(cellW - iconInset * 2, cellH - iconInset * 2)
                 for (t in candidates) {
-                    val s = nccSearch(icon, roiGraySize, roiGraySize, t.gray, tplGraySize, tplGraySize)
+                    val s = nccSearch(icon, dims.first, dims.second, t.gray, t.grayW, t.grayH)
                     if (best == null || s > best!!.second) best = t to s
                 }
                 val (t, s) = best ?: continue
@@ -214,9 +216,9 @@ class ResourceWarehouseScan(
     private suspend fun ocrQuantity(frame: Bitmap, gx: Int, gy: Int): Int {
         return try {
             // 数量角标在图标右下角（实测 ≈x+52..x+106, y+76..y+106），留 2px 余量
-            val rx = gx + 50
-            val ry = gy + 74
-            val rw = 58.coerceAtMost(frame.width - rx)
+            val rx = gx + cellW / 2
+            val ry = gy + cellH - 6
+            val rw = (cellW / 2 + 10).coerceAtMost(frame.width - rx)
             val rh = 34.coerceAtMost(frame.height - ry)
             if (rw <= 0 || rh <= 0) return -1
             var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
@@ -268,7 +270,7 @@ class ResourceWarehouseScan(
 
     // ---------------- 模板库 ----------------
 
-    private class Template(val name: String, val gray: FloatArray, val meanColor: FloatArray)
+    private class Template(val name: String, val gray: FloatArray, val meanColor: FloatArray, val grayW: Int, val grayH: Int)
 
     /** assets/warehouse/resource/ → files/warehouse/resource/ 自举释放，然后加载为灰度模板。
      *  用「assets 清单指纹」比对 files 端记录：素材更新（打包）后自动整目录重建——
@@ -298,11 +300,14 @@ class ResourceWarehouseScan(
         val out = ArrayList<Template>(files.size)
         for (f in files) {
             val bmp = BitmapFactory.decodeFile(f.absolutePath) ?: continue
+            val g = toGrayNormalized(bmp)
+            val dims = scaledDims(bmp.width, bmp.height)
             out.add(
                 Template(
                     f.nameWithoutExtension,
-                    toGrayNormalized(bmp, tplGraySize),
-                    colorMeanOf(bmp, 0, 0, bmp.width, bmp.height)
+                    g,
+                    colorMeanOf(bmp, 0, 0, bmp.width, bmp.height),
+                    dims.first, dims.second
                 )
             )
             bmp.recycle()
@@ -313,6 +318,9 @@ class ResourceWarehouseScan(
     // ---------------- 图像原语 ----------------
 
     /** ROI 彩色均值（颜色预筛用） */
+    private fun scaledDims(w: Int, h: Int): Pair<Int, Int> =
+        Pair((w * sampleScale).toInt().coerceAtLeast(8), (h * sampleScale).toInt().coerceAtLeast(8))
+
     private fun colorMeanOf(bmp: Bitmap, x: Int, y: Int, w: Int, h: Int): FloatArray {
         val safeW = w.coerceAtMost(bmp.width - x)
         val safeH = h.coerceAtMost(bmp.height - y)
@@ -381,8 +389,8 @@ class ResourceWarehouseScan(
         return h.toInt()
     }
 
-    /** 裁 ROI → 缩放 → 灰度 FloatArray；模板侧先合成中性灰底消透明角 */
-    private fun toGrayNormalized(bmp: Bitmap, size: Int): FloatArray {
+    /** 裁 ROI → 0.5 等比缩放 → 灰度 FloatArray；模板侧先合成中性灰底消透明角 */
+    private fun toGrayNormalized(bmp: Bitmap): FloatArray {
         var src: Bitmap = bmp
         var made = false
         if (bmp.hasAlpha()) {
@@ -393,22 +401,26 @@ class ResourceWarehouseScan(
             src = flat
             made = true
         }
-        val small = Bitmap.createScaledBitmap(src, size, size, true)
-        val g = grayOf(small, 0, 0, size, size, size)
+        val w = (src.width * sampleScale).toInt().coerceAtLeast(12)
+        val h = (src.height * sampleScale).toInt().coerceAtLeast(12)
+        val small = Bitmap.createScaledBitmap(src, w, h, true)
+        val g = grayOf(small, 0, 0, w, h)
         small.recycle()
         if (made) src.recycle()
         return g
     }
 
-    private fun grayOf(bmp: Bitmap, x: Int, y: Int, w: Int, h: Int, size: Int): FloatArray {
+    private fun grayOf(bmp: Bitmap, x: Int, y: Int, w: Int, h: Int): FloatArray {
         val safeW = w.coerceAtMost(bmp.width - x)
         val safeH = h.coerceAtMost(bmp.height - y)
-        if (safeW <= 0 || safeH <= 0) return FloatArray(size * size)
+        if (safeW <= 0 || safeH <= 0) return FloatArray(1) { 0f }
         var crop = Bitmap.createBitmap(bmp, x, y, safeW, safeH)
-        val small = Bitmap.createScaledBitmap(crop, size, size, true)
+        val tw = (safeW * sampleScale).toInt().coerceAtLeast(8)
+        val th = (safeH * sampleScale).toInt().coerceAtLeast(8)
+        val small = Bitmap.createScaledBitmap(crop, tw, th, true)
         crop.recycle()
-        val px = IntArray(size * size)
-        small.getPixels(px, 0, size, 0, 0, size, size)
+        val px = IntArray(tw * th)
+        small.getPixels(px, 0, tw, 0, 0, tw, th)
         small.recycle()
         val g = FloatArray(px.size)
         for (i in px.indices) {
