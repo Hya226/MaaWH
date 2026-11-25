@@ -228,7 +228,7 @@ class ResourceWarehouseScan(
             for (h in kept) {
                 if (!counts.containsKey(h.name)) {
                     newOnes++
-                    counts[h.name] = ocrQuantity(frame, h.gx, h.gy)
+                    counts[h.name] = ocrQuantity(frame, h.gx, h.gy, h.name)
                 }
             }
             onLog("列${c + 1}：命中 ${kept.size} 种", LogLevel.TRACE)
@@ -241,28 +241,56 @@ class ResourceWarehouseScan(
         return hits
     }
 
-    /** 数量 OCR：卡面右下角数量白字区域，裁片放大 2 倍走 PP-OCR，取整数。
+    /** 数量 OCR：卡面右下角数量白字区域，裁片放大走 PP-OCR，取整数。
      *  锚点 = 卡面左缘 cardX（列固定，与命中 x 无关）+ 命中 y（=模板裁片顶缘，
      *  不同素材上留白 0~22px 不等）；数字右对齐卡面右缘、贴卡面底缘——crop 取
-     *  gy+78 起高 42、x 卡面+52 起宽 62（右缘=卡面右缘），覆盖全部留白差异。 */
-    private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int): Int {
+     *  gy+78 起高 42、x 卡面+52 起宽 62（右缘=卡面右缘），覆盖全部留白差异。
+     *  重试链：同区域 2x → 4x → 收紧区域 4x（小数字/低置信度单次会漏，实测
+     *  远击核定牌I 翻车、同族其余全对）；仍失败落盘整卡面诊断图。 */
+    private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int, name: String): Int {
         return try {
             val rx = cardX + 52
             val ry = gy + 78
-            val rw = 62
-            val rh = 42
-            if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return -1
-            var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
-            crop = Bitmap.createScaledBitmap(crop, rw * 2, rh * 2, true)
-            val lines = ocr.requestOCR(GachaOcr.encode(crop))
-            crop.recycle()
-            val text = lines.maxByOrNull { it.score }?.text?.trim().orEmpty()
-            val digits = text.filter { it.isDigit() }
-            digits.toIntOrNull() ?: -1  // -1 = 数量识别失败（资源本身仍记录）
+            if (rx < 0 || ry < 0) return -1
+            var v = ocrDigits(frame, rx, ry, 62, 42, 2)
+            if (v < 0) v = ocrDigits(frame, rx, ry, 62, 42, 4)
+            if (v < 0) v = ocrDigits(frame, rx, gy + 86, 62, 32, 4)
+            if (v < 0) {
+                runCatching {
+                    val d = File(ctx.filesDir, "warehouse")
+                    d.mkdirs()
+                    val cx = (cardX + 2).coerceAtLeast(0)
+                    val cy = (gy - 2).coerceAtLeast(0)
+                    val cw = 110.coerceAtMost(frame.width - cx)
+                    val ch = 120.coerceAtMost(frame.height - cy)
+                    if (cw > 0 && ch > 0) {
+                        val bmp = Bitmap.createBitmap(frame, cx, cy, cw, ch)
+                        File(d, "qty_fail_$name.png").outputStream().use { o ->
+                            bmp.compress(Bitmap.CompressFormat.PNG, 100, o)
+                        }
+                        bmp.recycle()
+                    }
+                }
+                onLog("数量 OCR 失败：$name（已存诊断卡面 warehouse/qty_fail_$name.png）", LogLevel.WRN)
+            }
+            v
         } catch (e: Throwable) {
             onLog("数量 OCR 失败：${e.message}", LogLevel.WRN)
             -1
         }
+    }
+
+    /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条含数字的行 */
+    private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): Int {
+        var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
+        crop = Bitmap.createScaledBitmap(crop, rw * scale, rh * scale, true)
+        val lines = ocr.requestOCR(GachaOcr.encode(crop))
+        crop.recycle()
+        for (l in lines.sortedByDescending { it.score }) {
+            val digits = l.text.filter { it.isDigit() }
+            if (digits.isNotEmpty()) return digits.toIntOrNull() ?: -1
+        }
+        return -1
     }
 
     // ---------------- 收尾：返回键回主页 ----------------
