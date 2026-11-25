@@ -446,8 +446,19 @@ class ResourceWarehouseScan(
         tpl: FloatArray, tplW: Int, tplH: Int
     ): Float {
         if (tplW > roiW || tplH > roiH) {
-            // 模板比 ROI 还大：退化成整幅 NCC（模板缩放语义不变）
-            return ncc(roi, tpl)
+            // 模板大于 ROI：降采样模板到 ROI 尺寸再整幅 NCC。
+            // ★ 旧实现 return ncc(roi, tpl) 有越界 bug：ncc 遍历 roi 全部像素访问更短的
+            //   tpl 数组（模板任一维 > ROI 时必越界，「length=X; index=X」实锤）。
+            //   正确做法是先把模板缩到 ROI 尺寸——匹配语义不变（模板缩略图 vs 卡面）。
+            val tw = minOf(tplW, roiW)
+            val th = minOf(tplH, roiH)
+            val t2 = FloatArray(tw * th)
+            for (y in 0 until th) {
+                for (x in 0 until tw) {
+                    t2[y * tw + x] = tpl[(y * tplH / th) * tplW + (x * tplW / tw)]
+                }
+            }
+            return ncc(roi, t2)
         }
         // ROI 积分图（sum 与 sumsq）
         val iw = roiW + 1
