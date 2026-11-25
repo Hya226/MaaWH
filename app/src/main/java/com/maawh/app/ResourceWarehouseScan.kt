@@ -213,24 +213,32 @@ class ResourceWarehouseScan(
             val colHits = ArrayList<CellHit>()
             for (t in templates) {
                 coroutineContext.ensureActive()
-                if (t.grayW > stripW || t.grayH > stripH) continue
-                // 模板在竖带内滑动（x 居中固定，y 全程），取快速 NCC 最大值与其 y
+                // 模板大于竖带（降采样后）：等比缩到竖带尺寸再匹配——不跳过（跳过=0 命中实锤）
                 var bestScore = 0f
                 var bestY = 0
-                val tw = t.grayW
-                val th = t.grayH
+                var tw = t.grayW
+                var th = t.grayH
+                var tgray = t.gray
+                if (tw > stripW || th > stripH) {
+                    val sc = minOf(stripW.toFloat() / tw, stripH.toFloat() / th)
+                    tw = (tw * sc).toInt().coerceAtLeast(8)
+                    th = (th * sc).toInt().coerceAtLeast(8)
+                    tgray = FloatArray(tw * th)
+                    for (yy in 0 until th) for (xx in 0 until tw) {
+                        tgray[yy * tw + xx] = t.gray[(yy * t.grayH / th) * t.grayW + (xx * t.grayW / tw)]
+                    }
+                }
                 for (oy in 0..stripH - th) {
                     var num = 0f
                     var sw = 0f
                     var swq = 0f
                     val rowBase = (oy) * stripW
-                    val tBase = 0
                     for (y in 0 until th) {
                         val rb = rowBase + y * stripW
-                        val tb = tBase + y * tw
+                        val tb = y * tw
                         for (x in 0 until tw) {
                             val v = strip[rb + x]
-                            num += v * t.gray[tb + x]
+                            num += v * tgray[tb + x]
                             sw += v
                             swq += v * v
                         }
