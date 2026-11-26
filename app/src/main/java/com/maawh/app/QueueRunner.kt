@@ -371,6 +371,7 @@ class QueueRunner(
                                 context,
                                 whmxDir,
                                 logDir,
+                                item.selection,
                                 { msg, lv -> cb.onLog(msg, lv) },
                                 { text -> notify { cb.onRunState(text, R.color.accent) } }
                             ) { stopRequested }.run()

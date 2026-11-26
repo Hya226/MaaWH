@@ -20,6 +20,7 @@ class MaterialKeepRunner(
     private val context: Context,
     private val whmxDir: File,
     private val logDir: File,
+    private val selection: TaskPack.Selection,
     private val onLog: (String, LogLevel) -> Unit,
     private val onRunState: (String) -> Unit,
     private val isStopped: () -> Boolean
@@ -66,6 +67,9 @@ class MaterialKeepRunner(
             LogLevel.INFO
         )
 
+        // 体力预算：任务编辑里「刷取体力上限」（空/0 = 不限），逐轮累计达到即停
+        val budget = selection.input("刷取体力上限", "").trim().toLongOrNull() ?: 0L
+        var spent = 0L
         var rounds = 0
         var stopReason: String? = null
         while (true) {
@@ -103,9 +107,17 @@ class MaterialKeepRunner(
                 deficits[m]?.let { ceil(it.toDouble() / per).toInt() }
             }.maxOrNull() ?: 1
             runs = runs.coerceIn(1, 9)
+            if (budget > 0) {
+                if (spent + picked.cost > budget) {
+                    stopReason = "已达体力预算 $budget（已消耗 $spent）"
+                    break
+                }
+                runs = runs.coerceAtMost(((budget - spent) / picked.cost).toInt())
+            }
             val coveredNames = picked.drop.keys.filter { deficits.containsKey(it) }
             onLog(
-                "第 ${rounds + 1} 轮：${taskDesc(picked)} ×$runs（体力约 ${picked.cost * runs}），补 $coveredNames",
+                "第 ${rounds + 1} 轮：${taskDesc(picked)} ×$runs（体力约 ${picked.cost * runs}" +
+                    (if (budget > 0) "，预算已用 $spent/$budget" else "") + "），补 $coveredNames",
                 LogLevel.INFO
             )
             onRunState("智能刷材料：第 ${rounds + 1} 轮 ${taskDesc(picked)} ×$runs")
@@ -119,6 +131,7 @@ class MaterialKeepRunner(
             for ((m, per) in picked.drop) {
                 inventory[m] = (inventory[m] ?: 0L) + per * runs
             }
+            spent += picked.cost * runs
             rounds++
         }
 
