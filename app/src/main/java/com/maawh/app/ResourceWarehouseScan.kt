@@ -249,23 +249,28 @@ class ResourceWarehouseScan(
         return hits
     }
 
-    /** 数量 OCR：卡面右下角数量白字（右对齐卡面右缘、贴底缘，实测数字带 y≈gy+103..118）。
-     *  ★ 锚定难点：命中 y = 卡面顶 + 素材顶部留白 m（手裁素材 m∈0..22px 不等）——数字
-     *  实际位置随 m 漂移，单条矮窗（高 28）会截掉数字上半（真机实锤：420→2、204→4、
-     *  x0、大量 x?）。改用**三条重叠矮条**扫 gy+74..123 全程（高 24×3），任何 m 下
-     *  数字都完整落在某一条；矮条保证纯 rec 缩放后数字足够大。
-     *  宽窗（98）优先防长数字「1531.04万」只读到半截，窄窗（62）兜底背景更干净。
-     *  数量 ≥1万 游戏显示「X.XX万」——**显示串保留万字**（用户要求），见 parseQuantity。 */
+    /** 数量 OCR：卡面右下角数量白字（右对齐卡面右缘、贴底缘）。
+     *  ★ 命中 y 含素材顶部留白 m（手裁 0~22px），数字位置随 m 漂移——三条重叠矮条
+     *  （高24）扫 gy+74..123 保证完整落窗；矮条保证纯 rec 缩放后数字够大。
+     *  ★ 单窗口截断/边缘差会**读错**（真机：11→7、5900→5908、1531.04万丢万——
+     *  离线窗口矩阵实锤：正确读数在多数窗口稳定重现）——**三窗口全扫+多数投票**
+     *  取规范化数值的众数，显示保留原串；宽窗(98)优先，窄窗(62)兜底。
+     *  显示串保留「万」（用户要求）；带点无万自动补（游戏格式只有纯整数/X.XX万）。 */
     private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int, name: String): String {
         return try {
             if (cardX < 0 || gy < 0) return ""
-            var v = ocrDigits(frame, cardX + 16, gy + 87, 98, 24, 2)   // 中条-宽
-            if (v.isBlank()) v = ocrDigits(frame, cardX + 16, gy + 99, 98, 24, 2)  // 下条-宽
-            if (v.isBlank()) v = ocrDigits(frame, cardX + 16, gy + 74, 98, 24, 2)  // 上条-宽
-            if (v.isBlank()) v = ocrDigits(frame, cardX + 52, gy + 87, 62, 24, 2)  // 中条-窄
-            if (v.isBlank()) v = ocrDigits(frame, cardX + 52, gy + 99, 62, 24, 2)  // 下条-窄
-            if (v.isBlank()) v = ocrDigits(frame, cardX + 52, gy + 74, 62, 24, 2)  // 上条-窄
-            if (v.isBlank()) {
+            val votes = ArrayList<Pair<Long, String>>()
+            for (dy in intArrayOf(87, 99, 74)) {
+                val s = ocrDigits(frame, cardX + 16, gy + dy, 98, 24, 2)
+                if (s.isNotEmpty()) votes.add(qtyKey(s) to s)
+            }
+            if (votes.isEmpty()) {
+                for (dy in intArrayOf(87, 99, 74)) {
+                    val s = ocrDigits(frame, cardX + 52, gy + dy, 62, 24, 2)
+                    if (s.isNotEmpty()) votes.add(qtyKey(s) to s)
+                }
+            }
+            if (votes.isEmpty()) {
                 runCatching {
                     val d = File(ctx.filesDir, "warehouse")
                     d.mkdirs()
@@ -282,12 +287,34 @@ class ResourceWarehouseScan(
                     }
                 }
                 onLog("数量 OCR 失败：$name（已存诊断卡面 warehouse/qty_fail_$name.png）", LogLevel.WRN)
+                return ""
             }
-            v
+            // 众数投票：正确读数在多数窗口稳定重现（离线矩阵 5900×6 vs 5908/5988×1）
+            val best = votes.groupBy { it.first }.maxByOrNull { it.value.size }!!.value
+            var display = best.first().second
+            if (display.contains('.') && !display.contains('万')) display += "万"
+            display
         } catch (e: Throwable) {
             onLog("数量 OCR 失败：${e.message}", LogLevel.WRN)
             ""
         }
+    }
+
+    /** 数值化投票 key：「1531.04万」「153104万」（丢点）「1531.04」（丢万字）都归到同值。
+     *  游戏 ≥1万 格式固定 X.XX万（两位小数）——含万丢点按后两位小数还原。 */
+    private fun qtyKey(s: String): Long {
+        val wan = s.contains('万')
+        val body = s.replace("万", "")
+        val dot = body.indexOf('.')
+        val digits = body.replace(".", "").toLongOrNull() ?: return -1
+        val frac = when {
+            wan && dot < 0 -> 2                       // 丢点：按固定两位小数还原
+            dot >= 0 -> body.length - dot - 1
+            else -> 0
+        }
+        var scale = 10000L
+        repeat(frac) { scale /= 10 }
+        return digits * scale
     }
 
     /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条能解析出数量的行，返回显示串（失败 ""） */
