@@ -681,6 +681,21 @@ app:cornerRadius="8dp"
                                 android:textSize="11sp" />
 
                             <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnWhTarget"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="8dp"
+                                android:insetTop="2dp"
+                                android:insetBottom="2dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp"
+                                android:text="@string/warehouse_target_config"
+                                android:textSize="11sp"
+                                app:cornerRadius="0dp" />
+
+                            <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnWhChanged"
                                 style="?attr/materialButtonOutlinedStyle"
                                 android:layout_width="wrap_content"

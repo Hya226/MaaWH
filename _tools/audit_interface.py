@@ -75,7 +75,8 @@ opt_defs = iface.get('option') or {}
 # 1 + 2
 # 宿主任务的 entry 由 QueueRunner 的 Kotlin 分支执行，不是引擎节点（对齐 QueueRunner 的分支判断）。
 # 注：「外勤见闻识别」已改为小工具面板功能，不在清单里，入口只有面板与 adb 直达（--es entry 外勤见闻识别）
-HOST_ENTRIES = {"关闭游戏"}
+# 「智能刷材料」= 仓库识别结果页目标配置的宿主编排任务（MaterialKeepRunner，2026-11-26）
+HOST_ENTRIES = {"关闭游戏", "智能刷材料"}
 
 for t in iface.get('task', []):
     name = t.get('name')

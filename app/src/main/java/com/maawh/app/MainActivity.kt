@@ -321,6 +321,8 @@ class MainActivity : AppCompatActivity() {
             }
             renderWarehouseStored()
         }
+        // 【目标配置】：逐材料填目标数量（存 targets.json，智能刷材料运行时按此补齐）
+        binding.btnWhTarget.setOnClickListener { showTargetDialog() }
         // 【仅看变化】：只显示与上次同步相比有增减的物品（对标 MAA 仓库页同名按钮）
         binding.btnWhChanged.setOnClickListener {
             warehouseShowChangedOnly = !warehouseShowChangedOnly
@@ -3265,6 +3267,80 @@ class MainActivity : AppCompatActivity() {
 
     /** 识别结果网格（MAA-Meow 式：图标+名字+xN）：每次列完成/结束时全量重渲染 */
     /** 按当前分类渲染已保存的识别结果（上次同步/种类数/变化条数，识别完成后重启也能看到） */
+    /** 【目标配置】：列出材料目录覆盖的材料，逐个填目标数量（存 targets.json，
+     *  智能刷材料运行时按此补齐缺口）。目录未覆盖的材料不列出（设了也没法刷）。 */
+    private fun showTargetDialog() {
+        val catalog = MaterialCatalog.ensure(applicationContext)
+        if (catalog.isEmpty()) {
+            toast("材料目录缺失（assets/warehouse/material_catalog.json）")
+            return
+        }
+        val materials = catalog.flatMap { it.drop.keys }.toSortedSet().toList()
+        val inventory = MaterialCatalog.loadInventory(applicationContext)
+        val targets = MaterialCatalog.loadTargets(applicationContext)
+        val inputs = HashMap<String, EditText>()
+        val scroll = ScrollView(this)
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+        }
+        box.addView(TextView(this).apply {
+            text = getString(R.string.warehouse_target_hint)
+            textSize = 11f
+            setTextColor(getColor(R.color.text_secondary))
+            setPadding(0, dp(4), 0, dp(8))
+        })
+        for (m in materials) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(4), 0, dp(4))
+            }
+            val iv = ImageView(this)
+            val f = File(applicationContext.filesDir, "warehouse/resource/$m.png")
+            if (f.isFile) {
+                iv.setImageBitmap(BitmapFactory.decodeFile(f.absolutePath))
+                iv.layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
+            }
+            row.addView(iv)
+            row.addView(
+                TextView(this).apply {
+                    text = "$m（当前 ${inventory[m] ?: 0}）"
+                    textSize = 12f
+                    setTextColor(getColor(R.color.text_primary))
+                    setPadding(dp(10), 0, 0, 0)
+                },
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            )
+            val et = EditText(this).apply {
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                hint = "目标"
+                setText(targets[m]?.toString() ?: "")
+                textSize = 12f
+                gravity = Gravity.CENTER
+            }
+            row.addView(et, LinearLayout.LayoutParams(dp(76), ViewGroup.LayoutParams.WRAP_CONTENT))
+            inputs[m] = et
+            box.addView(row)
+        }
+        scroll.addView(box)
+        AlertDialog.Builder(this)
+            .setTitle("目标配置（${materials.size} 种，来自材料关卡目录）")
+            .setView(scroll)
+            .setPositiveButton("保存") { _, _ ->
+                val byCat = HashMap<String, HashMap<String, Long>>()
+                for ((m, et) in inputs) {
+                    val v = et.text.toString().trim().toLongOrNull() ?: 0L
+                    byCat.getOrPut("resource") { HashMap() }[m] = v
+                }
+                MaterialCatalog.saveTargets(applicationContext, byCat)
+                renderWarehouseStored()
+                toast("目标已保存")
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
     private fun renderWarehouseStored() {
         val snap = WarehouseStore.load(applicationContext, warehouseCategory)
         val catName = WarehouseStore.catName(warehouseCategory)
@@ -3300,7 +3376,8 @@ class MainActivity : AppCompatActivity() {
     private fun renderWarehouseResults(
         counts: Map<String, String>,
         prev: Map<String, String> = emptyMap(),
-        onlyChanged: Boolean = false
+        onlyChanged: Boolean = false,
+        targets: Map<String, Long> = MaterialCatalog.loadTargets(applicationContext)
     ) {
         val box = binding.llWarehouseResults
         box.removeAllViews()
@@ -3333,7 +3410,7 @@ class MainActivity : AppCompatActivity() {
             repeat(4) {
                 if (i < list.size) {
                     row.addView(
-                        warehouseCell(list[i].key, list[i].value, prev),
+                        warehouseCell(list[i].key, list[i].value, prev, targets),
                         LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
                     )
                     i++
@@ -3346,8 +3423,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** 单个物品卡片：模板缩略图 + 名字 + xN（数量空串 = OCR 失败显示 ?，「万」保留原样）；
-     *  下方红色增减量（对标 MAA +400/-3）：与上次同步对比，新增物品 = 全量 */
-    private fun warehouseCell(name: String, qty: String, prev: Map<String, String> = emptyMap()): View {
+     *  下方红色标注：设了目标的显示「缺 N」（目标-库存），未设目标的显示与上次同步
+     *  的增减量（对标 MAA +400/-3，新增物品 = 全量） */
+    private fun warehouseCell(
+        name: String,
+        qty: String,
+        prev: Map<String, String> = emptyMap(),
+        targets: Map<String, Long> = emptyMap()
+    ): View {
         val cell = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -3385,8 +3468,17 @@ class MainActivity : AppCompatActivity() {
             paint.isFakeBoldText = true
         })
         val cv = WarehouseStore.qtyValue(qty)
+        val tv = targets[name]
         val pv = prev[name]?.let { WarehouseStore.qtyValue(it) }
-        if (cv != null && (pv == null || cv != pv) && !(pv == null && cv == 0L)) {
+        if (tv != null && tv > 0 && cv != null && cv < tv) {
+            // 有目标：缺口优先展示（对标「还差多少」）
+            cell.addView(TextView(this).apply {
+                text = "缺 " + WarehouseStore.fmtQty(tv - cv)
+                textSize = 11f
+                gravity = Gravity.CENTER
+                setTextColor(getColor(R.color.err_red))
+            })
+        } else if (cv != null && (pv == null || cv != pv) && !(pv == null && cv == 0L)) {
             val d = if (pv == null) cv else cv - pv
             cell.addView(TextView(this).apply {
                 text = (if (d > 0) "+" else "") + WarehouseStore.fmtQty(d)

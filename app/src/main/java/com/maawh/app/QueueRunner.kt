@@ -363,6 +363,17 @@ class QueueRunner(
                             }
                             WaiQinScan(context, ocr, { msg, lv -> cb.onLog(msg, lv) }) { stopRequested }
                                 .scan()
+                        } else if (item.entry == "智能刷材料" || item.name == "智能刷材料") {
+                            // 智能刷材料：宿主编排（引擎不参与主循环）——读目标/库存算缺口，
+                            // 逐关构造 pipeline_override 跑 VF_刷活动关/VF_清体力/VF_实验室，
+                            // 本地库存扣账重算，直到全部达标/刷关失败（体力不足）/轮数上限
+                            MaterialKeepRunner(
+                                context,
+                                whmxDir,
+                                logDir,
+                                { msg, lv -> cb.onLog(msg, lv) },
+                                { text -> notify { cb.onRunState(text, R.color.accent) } }
+                            ) { stopRequested }.run()
                         } else {
                             // 其余任务：按清单 option 生成 pipeline_override 后交给引擎
                             // （name 对不上时用 entry 兜底：adb 直达入口的 TaskItem 只有 entry 可用）

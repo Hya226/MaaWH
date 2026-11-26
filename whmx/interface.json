@@ -1,5 +1,4 @@
 {
-
   "interface_version": 2,
   "name": "whmx",
   "label": "物华弥新",
@@ -274,6 +273,15 @@
         "tools"
       ],
       "description": "从主页导航到【物资库-资源】页（识别在小工具里做）"
+    },
+    {
+      "name": "智能刷材料",
+      "label": "智能刷材料",
+      "entry": "智能刷材料",
+      "group": [
+        "daily"
+      ],
+      "description": "按「仓库识别结果页 → 目标配置」设置的目标数量，自动刷关卡补齐材料缺口，直到全部达标或体力不足"
     }
   ],
   "option": {

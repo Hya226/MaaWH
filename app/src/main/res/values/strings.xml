@@ -84,6 +84,8 @@
     <string name="warehouse_cat_badge">徽章</string>
     <string name="warehouse_cat_ticket">票券</string>
     <string name="warehouse_only_changed">仅看变化</string>
+    <string name="warehouse_target_config">目标配置</string>
+    <string name="warehouse_target_hint">填目标数量的材料会在【智能刷材料】运行时自动补齐；留空 = 不参与</string>
     <string name="warehouse_show_all">显示全部</string>
     <string name="toolbox_start_hint">点底部「开始任务」开始识别；识别中按钮变为「停止任务」，点它可随时停止。</string>
     <string name="toolbox_state_idle">未在抓取。与抽卡页的「开始抓取」是同一入口，状态两边同步显示。</string>
