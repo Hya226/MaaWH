@@ -74,10 +74,10 @@
     <string name="waiqin_status_default">空闲</string>
     <string name="toolbox_chip_warehouse">仓库识别</string>
     <string name="toolbox_title_warehouse">仓库识别</string>
-    <string name="warehouse_note">一键完成：自动导航到【物资库-资源】页 → 逐页识别全部资源与数量（滑动翻页）→ 完成后自动返回主页
-需先启动虚拟屏且游戏在主页；结果见日志页，明细存 files/warehouse/resource_scan.json</string>
+    <string name="warehouse_note">一键完成：自动导航到【物资库】当前所选小仓库页 → 逐页识别全部物品与数量（滑动翻页）→ 完成后自动返回主页
+需先启动虚拟屏且游戏在主页；结果见日志页，明细存 files/warehouse/&lt;分类&gt;_scan.json</string>
     <string name="warehouse_status_default">空闲</string>
-    <string name="warehouse_result_hint">识别基于图标模板库（assets 内置，adb 可覆盖 files/warehouse/resource/ 下的模板更新），新资源需补充图标后重新识别</string>
+    <string name="warehouse_result_hint">识别基于图标模板库（assets 内置，adb 可覆盖 files/warehouse/&lt;分类&gt;/ 下的模板更新），新物品需补充图标后重新识别</string>
     <string name="warehouse_sync_none">尚未同步</string>
     <string name="warehouse_sync_none_time">上次同步：—</string>
     <string name="warehouse_cat_resource">资源</string>

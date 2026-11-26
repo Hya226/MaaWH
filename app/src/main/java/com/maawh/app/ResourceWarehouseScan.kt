@@ -33,6 +33,8 @@ import kotlin.math.sqrt
  */
 class ResourceWarehouseScan(
     private val ctx: Context,
+    /** 小仓库分类：resource/badge/ticket——决定模板目录 assets|files/warehouse/<cat>/ 与日志文案 */
+    private val category: String,
     private val ocr: GachaOcr,
     private val onLog: (String, LogLevel) -> Unit,
     private val isStopped: () -> Boolean
@@ -79,9 +81,9 @@ class ResourceWarehouseScan(
         val started = System.currentTimeMillis()
         val templates = ensureTemplates(ctx)
         if (templates.isEmpty()) {
-            throw ScanException("图标模板库为空（assets/warehouse/resource 缺失或释放失败）")
+            throw ScanException("图标模板库为空（assets/warehouse/$category 缺失或释放失败）")
         }
-        onLog("仓库识别开始：模板 ${templates.size} 个", LogLevel.INFO)
+        onLog("仓库识别开始（${WarehouseStore.catName(category)}仓库）：模板 ${templates.size} 个", LogLevel.INFO)
 
         val counts = LinkedHashMap<String, Int>()
         var pages = 0
@@ -102,11 +104,11 @@ class ResourceWarehouseScan(
             }
 
             if (pages == 0) {
-                // 诊断：把第一页识别实际用的帧存下来（排障「零识别」用，与素材/网格对照）
+                // 诊断：把第一页识别实际用的帧存下来（排障「零识别」用，与素材/网格对照；按分类命名不互覆）
                 runCatching {
                     val d = File(ctx.filesDir, "warehouse")
                     d.mkdirs()
-                    val out = File(d, "debug_first_frame.jpg")
+                    val out = File(d, "debug_first_$category.jpg")
                     out.outputStream().use { o -> frame.compress(Bitmap.CompressFormat.JPEG, 90, o) }
                     onLog("诊断：第一页帧已存 ${out.path}（${frame.width}×${frame.height}）", LogLevel.TRACE)
                 }
@@ -134,7 +136,7 @@ class ResourceWarehouseScan(
                         kotlinx.coroutines.delay(1200)
                         continue
                     }
-                    throw ScanException("未识别到任何资源——请确认游戏已停在【物资库-资源】页（可先跑【仓库识别】流程导航）")
+                    throw ScanException("未识别到任何资源——请确认游戏已停在【物资库-${WarehouseStore.catName(category)}】页（可先跑【仓库识别】流程导航）")
                 }
             }
 
@@ -156,8 +158,9 @@ class ResourceWarehouseScan(
         val elapsed = System.currentTimeMillis() - started
         // 结果落盘由调用方（MainActivity → WarehouseStore.save，含上次同步/变化对比）统一负责
         onLog(
-            "仓库识别完成：共 $pages 页，资源 ${counts.size} 种（数量识别成功 ${counts.count { it.value >= 0 }}）" +
-                " · 耗时 ${elapsed / 1000}s · 明细见 files/warehouse/resource_scan.json",
+            "仓库识别完成（${WarehouseStore.catName(category)}）：共 $pages 页，${counts.size} 种" +
+                "（数量识别成功 ${counts.count { it.value >= 0 }}）" +
+                " · 耗时 ${elapsed / 1000}s · 明细见 files/warehouse/${category}_scan.json",
             LogLevel.SUCCESS
         )
         Result(counts, pages, elapsed)
@@ -332,16 +335,16 @@ class ResourceWarehouseScan(
         val grayW: Int, val grayH: Int, val mt: Float, val dt: Float
     )
 
-    /** assets/warehouse/resource/ → files/warehouse/resource/ 自举释放，然后加载为灰度模板。
+    /** assets/warehouse/<category>/ → files/warehouse/<category>/ 自举释放，然后加载为灰度模板。
      *  用「assets 清单指纹」比对 files 端记录：素材更新（打包）后自动整目录重建——
      *  此前「目录非空不释放」导致 assets 更新后手机旧模板永不失效（实锤：换游戏内
      *  裁片后真机仍用旧裸图标模板，怎么调算法都是 0 命中）。 */
     private fun ensureTemplates(ctx: Context): List<Template> {
-        val dir = File(ctx.filesDir, "warehouse/resource")
-        val stamp = File(ctx.filesDir, "warehouse/resource_fingerprint.txt")
-        val names = runCatching { ctx.assets.list("warehouse/resource") ?: emptyArray() }.getOrDefault(emptyArray())
+        val dir = File(ctx.filesDir, "warehouse/$category")
+        val stamp = File(ctx.filesDir, "warehouse/${category}_fingerprint.txt")
+        val names = runCatching { ctx.assets.list("warehouse/$category") ?: emptyArray() }.getOrDefault(emptyArray())
         val fingerprint = names.sorted().joinToString("\n") { n ->
-            val l = runCatching { ctx.assets.open("warehouse/resource/$n").use { it.available() } }.getOrDefault(-1)
+            val l = runCatching { ctx.assets.open("warehouse/$category/$n").use { it.available() } }.getOrDefault(-1)
             "$n:$l"
         } + "|${names.size}"
         val local = if (stamp.isFile) stamp.readText().trim() else null
@@ -349,12 +352,12 @@ class ResourceWarehouseScan(
             dir.deleteRecursively()
             dir.mkdirs()
             for (n in names) {
-                ctx.assets.open("warehouse/resource/$n").use { input ->
+                ctx.assets.open("warehouse/$category/$n").use { input ->
                     File(dir, n).outputStream().use { output -> input.copyTo(output) }
                 }
             }
             stamp.writeText(fingerprint)
-            onLog("模板库已重建（${names.size} 个，指纹${if (local == null) "首建" else "更新"}）", LogLevel.INFO)
+            onLog("模板库已重建（${WarehouseStore.catName(category)} ${names.size} 个，指纹${if (local == null) "首建" else "更新"}）", LogLevel.INFO)
         }
         val files = dir.listFiles { f -> f.extension.equals("png", true) }?.sortedBy { it.name } ?: emptyList()
         val out = ArrayList<Template>(files.size)

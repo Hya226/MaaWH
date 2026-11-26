@@ -3263,7 +3263,7 @@ class MainActivity : AppCompatActivity() {
             binding.llWarehouseResults.removeAllViews()
             if (warehouseCategory != WarehouseStore.CAT_RESOURCE) {
                 binding.llWarehouseResults.addView(TextView(this).apply {
-                    text = "【$catName】仓库的素材与导航流程尚未配置——录入后在此识别"
+                    text = "点击底部【开始任务】识别【$catName】仓库"
                     textSize = 11f
                     setTextColor(getColor(R.color.text_secondary))
                     setPadding(0, dp(10), 0, 0)
@@ -3359,10 +3359,6 @@ class MainActivity : AppCompatActivity() {
             stopWarehouseScan()
             return
         }
-        if (warehouseCategory != WarehouseStore.CAT_RESOURCE) {
-            toast("【${WarehouseStore.catName(warehouseCategory)}】仓库识别尚未录入（素材与导航流程未配置）")
-            return
-        }
         if (isTaskRunning) { toast("任务队列运行中，不能同时识别"); return }
         if (waiqinRunning) { toast("外勤见闻识别运行中，不能同时识别"); return }
         if (gachaRunning) { toast("抽卡识别运行中，不能同时识别"); return }
@@ -3376,8 +3372,14 @@ class MainActivity : AppCompatActivity() {
         FloatingPanel.update("▶ 仓库识别中")
         warehouseJob = lifecycleScope.launch {
             var runSummary = ""
+            val catName = WarehouseStore.catName(warehouseCategory)
+            val entry = when (warehouseCategory) {
+                WarehouseStore.CAT_BADGE -> "VF_仓库识别徽章"
+                WarehouseStore.CAT_TICKET -> "VF_仓库识别票券"
+                else -> "VF_仓库识别"
+            }
             try {
-                RunLogStore.begin(applicationContext, "仓库识别", -1)
+                RunLogStore.begin(applicationContext, "仓库识别·$catName", -1)
 
                 // 阶段 1：引擎跑【仓库识别】导航流程（主页 → 点物资库 → 点资源 tab）。
                 // runTask 是阻塞调用（内部等任务结束），必须挂 IO 线程；停止走 requestStop。
@@ -3388,13 +3390,13 @@ class MainActivity : AppCompatActivity() {
                 val bundleDir = resolveBundleDir() ?: throw Exception("任务包目录缺失")
                 val logDir = File(applicationContext.filesDir, "maa_logs")
                 binding.tvWarehouseStatus.text = "导航中…"
-                setRunState("仓库识别：导航到【物资库-资源】页…", R.color.accent)
+                setRunState("仓库识别：导航到【物资库-$catName】页…", R.color.accent)
                 val navOk = withContext(Dispatchers.IO) {
-                    MaaBridge.runTask(bundleDir, "VF_仓库识别", logDir, "{}") { msg ->
+                    MaaBridge.runTask(bundleDir, entry, logDir, "{}") { msg ->
                         log(msg, LogLevel.TRACE)
                     }
                 }
-                if (!navOk) throw Exception("导航流程失败（VF_仓库识别）——请确认虚拟屏里的游戏在主页")
+                if (!navOk) throw Exception("导航流程失败（$entry）——请确认虚拟屏里的游戏在主页")
                 if (!ShizukuShell.isVdAlive()) throw Exception("虚拟屏已断开，无法继续识别")
 
                 // 阶段 2：识别循环（MAA 式：网格 NCC 模板匹配 + 数量 OCR + 滑动翻页）
@@ -3403,7 +3405,7 @@ class MainActivity : AppCompatActivity() {
                     binding.tvWhCount.text = "识别中…"
                     renderWarehouseResults(emptyMap())
                 }
-                val scanner = ResourceWarehouseScan(applicationContext, ocr, { m, lv -> log(m, lv) }) {
+                val scanner = ResourceWarehouseScan(applicationContext, warehouseCategory, ocr, { m, lv -> log(m, lv) }) {
                     !warehouseRunning || warehouseJob?.isActive != true
                 }
                 val r = scanner.scanSuspend({ p ->
@@ -3416,13 +3418,13 @@ class MainActivity : AppCompatActivity() {
                 }) { counts ->
                     runOnUiThread { renderWarehouseResults(counts) }
                 }
-                runSummary = "资源 ${r.counts.size} 种 · ${r.pages} 页"
+                runSummary = "$catName ${r.counts.size} 种 · ${r.pages} 页"
                 // 落盘 + 刷新面板（上次同步时间/种类数/变化条数/结果网格统一由 WarehouseStore 驱动）
                 withContext(Dispatchers.IO) {
-                    WarehouseStore.save(applicationContext, WarehouseStore.CAT_RESOURCE, r.counts)
+                    WarehouseStore.save(applicationContext, warehouseCategory, r.counts)
                 }
                 renderWarehouseStored()
-                binding.tvWarehouseStatus.text = "✓ 资源 ${r.counts.size} 种（${r.pages} 页）"
+                binding.tvWarehouseStatus.text = "✓ $catName ${r.counts.size} 种（${r.pages} 页）"
                 setRunState("✓ 仓库识别完成：资源 ${r.counts.size} 种，明细见日志页", R.color.ok_green)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 runSummary = "已停止"
