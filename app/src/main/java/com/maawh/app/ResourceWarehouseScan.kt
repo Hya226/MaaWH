@@ -260,10 +260,10 @@ class ResourceWarehouseScan(
     private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int, name: String): String {
         return try {
             if (cardX < 0 || gy < 0) return ""
-            val votes = ArrayList<Pair<Long, String>>()
+            val votes = ArrayList<Triple<String, String, Float>>()   // (等价类key, 读数串, 置信度)
             for (dy in intArrayOf(76, 82, 88, 94, 100, 106, 112)) {
-                val s = ocrDigits(frame, cardX + 16, gy + dy, 98, 24, 2)
-                if (s.isNotEmpty()) votes.add(qtyKey(s) to s)
+                val (qs, qconf) = ocrDigits(frame, cardX + 16, gy + dy, 98, 24, 2) ?: continue
+                votes.add(Triple(voteClass(qs), qs, qconf))
             }
             if (votes.isEmpty()) {
                 runCatching {
@@ -284,16 +284,25 @@ class ResourceWarehouseScan(
                 onLog("数量 OCR 失败：$name（已存诊断卡面 warehouse/qty_fail_$name.png）", LogLevel.WRN)
                 return ""
             }
-            // 众数投票：正确读数在多数窗口稳定重现（离线矩阵 16 案例 15 对）；并列时取更长读数
-            val best = votes.groupBy { it.first }
-                .maxWithOrNull(compareBy({ it.value.size }, { it.value.first().second.length }))!!.value
-            var display = best.first().second
+            // 众数投票（按等价类）：正确读数在多数窗口稳定重现；重复数字（1/11/111）
+            // 合并同类后取**类内置信度最高**的读数（完整覆盖窗读得准且置信高——红卡
+            // 11 的 conf 0.91 高于截断窗 1 的 0.78）；类间并列时也比最高置信度
+            val bestGroup = votes.groupBy { it.first }
+                .maxWithOrNull(compareBy({ it.value.size }, { it.value.maxOf { it.third } }))!!
+            var display = bestGroup.value.maxByOrNull { it.third }!!.second
             if (display.contains('.') && !display.contains('万')) display += "万"
             display
         } catch (e: Throwable) {
             onLog("数量 OCR 失败：${e.message}", LogLevel.WRN)
             ""
         }
+    }
+
+    /** 投票等价类：全同字符读数（1/11/111）在截断/边缘窗下位数不定（红卡 11 的一轮
+     *  实锤：同一物品的窗读出 111/1/1/11 四种），合并为同一类计票；其余按数值 key。 */
+    private fun voteClass(s: String): String {
+        if (s.all { it.isDigit() && it == s[0] }) return "rep:${s[0]}"
+        return "n:${qtyKey(s)}"
     }
 
     /** 数值化投票 key：「1531.04万」「153104万」（丢点）「1531.04」（丢万字）都归到同值。
@@ -320,8 +329,8 @@ class ResourceWarehouseScan(
      *  放大后做 **OTSU 二值化**：数量白字对比度低（贴卡面外缘/浅色网格背景）时纯 rec
      *  整窗读空（真机 粘合-浆糊/远击核定牌I 的 7 条窗全空实锤；离线 OTSU 两样本救回、
      *  成功样本零回归且长数字置信度更高）。 */
-    private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): String {
-        if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return ""
+    private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): Pair<String, Float>? {
+        if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return null
         var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
         crop = Bitmap.createScaledBitmap(crop, rw * scale, rh * scale, true)
         crop = otsuBinarize(crop)
@@ -329,9 +338,9 @@ class ResourceWarehouseScan(
         crop.recycle()
         for (l in lines.sortedByDescending { it.score }) {
             val s = parseQuantity(l.text)
-            if (s.isNotEmpty()) return s
+            if (s.isNotEmpty()) return s to l.score
         }
-        return ""
+        return null
     }
 
     /** OTSU 自适应阈值二值化：亮（数量白字）→白、其余→黑，把对比度拉满 */
