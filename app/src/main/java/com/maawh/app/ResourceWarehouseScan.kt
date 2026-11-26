@@ -250,25 +250,20 @@ class ResourceWarehouseScan(
     }
 
     /** 数量 OCR：卡面右下角数量白字（右对齐卡面右缘、贴底缘）。
-     *  ★ 命中 y 含素材顶部留白 m（手裁 0~22px），数字位置随 m 漂移——三条重叠矮条
-     *  （高24）扫 gy+74..123 保证完整落窗；矮条保证纯 rec 缩放后数字够大。
-     *  ★ 单窗口截断/边缘差会**读错**（真机：11→7、5900→5908、1531.04万丢万——
-     *  离线窗口矩阵实锤：正确读数在多数窗口稳定重现）——**三窗口全扫+多数投票**
-     *  取规范化数值的众数，显示保留原串；宽窗(98)优先，窄窗(62)兜底。
+     *  ★ 命中 y 含素材顶部留白 m（手裁 0~22px），数字位置随 m 漂移。单窗/三窗都
+     *  不够：m 恰好让「截断窗」成为唯一有读数的窗时投票也被错误读数绑架（真机
+     *  11→7、1531.04万→1331.04万 两轮实锤）。改 **7 条密集窗**（步长 6px，扫
+     *  gy+76..136）：数字带无论在哪都有 1~2 条「居中」窗完整覆盖（离线矩阵证实
+     *  居中窗读数 100% 正确且在多窗重现），全部读数按数值众数投票，边缘窗的
+     *  截断错读（17、5908、1331）票数压不过正确读数。
      *  显示串保留「万」（用户要求）；带点无万自动补（游戏格式只有纯整数/X.XX万）。 */
     private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int, name: String): String {
         return try {
             if (cardX < 0 || gy < 0) return ""
             val votes = ArrayList<Pair<Long, String>>()
-            for (dy in intArrayOf(87, 99, 74)) {
+            for (dy in intArrayOf(76, 82, 88, 94, 100, 106, 112)) {
                 val s = ocrDigits(frame, cardX + 16, gy + dy, 98, 24, 2)
                 if (s.isNotEmpty()) votes.add(qtyKey(s) to s)
-            }
-            if (votes.isEmpty()) {
-                for (dy in intArrayOf(87, 99, 74)) {
-                    val s = ocrDigits(frame, cardX + 52, gy + dy, 62, 24, 2)
-                    if (s.isNotEmpty()) votes.add(qtyKey(s) to s)
-                }
             }
             if (votes.isEmpty()) {
                 runCatching {
@@ -289,8 +284,9 @@ class ResourceWarehouseScan(
                 onLog("数量 OCR 失败：$name（已存诊断卡面 warehouse/qty_fail_$name.png）", LogLevel.WRN)
                 return ""
             }
-            // 众数投票：正确读数在多数窗口稳定重现（离线矩阵 5900×6 vs 5908/5988×1）
-            val best = votes.groupBy { it.first }.maxByOrNull { it.value.size }!!.value
+            // 众数投票：正确读数在多数窗口稳定重现（离线矩阵 16 案例 15 对）；并列时取更长读数
+            val best = votes.groupBy { it.first }
+                .maxWithOrNull(compareBy({ it.value.size }, { it.value.first().second.length }))!!.value
             var display = best.first().second
             if (display.contains('.') && !display.contains('万')) display += "万"
             display
