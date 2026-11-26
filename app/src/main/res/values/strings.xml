@@ -83,6 +83,8 @@
     <string name="warehouse_cat_resource">资源</string>
     <string name="warehouse_cat_badge">徽章</string>
     <string name="warehouse_cat_ticket">票券</string>
+    <string name="warehouse_only_changed">仅看变化</string>
+    <string name="warehouse_show_all">显示全部</string>
     <string name="toolbox_start_hint">点底部「开始任务」开始识别；识别中按钮变为「停止任务」，点它可随时停止。</string>
     <string name="toolbox_state_idle">未在抓取。与抽卡页的「开始抓取」是同一入口，状态两边同步显示。</string>
     <string name="toolbox_desc">把虚拟屏里的游戏停在「招集记录」页后点下方按钮即可抓取（与抽卡页共用同一功能，运行状态在抽卡页也可查看）。</string>

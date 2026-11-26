@@ -662,14 +662,38 @@ app:cornerRadius="8dp"
                                 android:textSize="11sp" />
                         </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/tvWhChanged"
+                        <!-- 变化行 + 仅看变化（对标 MAA 仓库页） -->
+                        <LinearLayout
+                            android:id="@+id/llWhChangedRow"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="11sp"
-                            android:visibility="gone" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:id="@+id/tvWhChanged"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnWhChanged"
+                                style="?attr/materialButtonOutlinedStyle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:insetTop="2dp"
+                                android:insetBottom="2dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp"
+                                android:text="@string/warehouse_only_changed"
+                                android:textSize="11sp"
+                                app:cornerRadius="0dp" />
+                        </LinearLayout>
 
                         <!-- 小仓库分类切换：资源 / 徽章 / 票券（徽章、票券素材暂未录入，仅占位） -->
                         <com.google.android.material.button.MaterialButtonToggleGroup

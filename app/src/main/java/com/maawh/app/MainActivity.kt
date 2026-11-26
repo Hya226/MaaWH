@@ -321,6 +321,14 @@ class MainActivity : AppCompatActivity() {
             }
             renderWarehouseStored()
         }
+        // 【仅看变化】：只显示与上次同步相比有增减的物品（对标 MAA 仓库页同名按钮）
+        binding.btnWhChanged.setOnClickListener {
+            warehouseShowChangedOnly = !warehouseShowChangedOnly
+            binding.btnWhChanged.text = getString(
+                if (warehouseShowChangedOnly) R.string.warehouse_show_all else R.string.warehouse_only_changed
+            )
+            renderWarehouseStored()
+        }
         renderWarehouseStored()
         switchToolboxSection(ToolboxSection.GACHA)
         // 「编辑配置」：一键长草里切到配置管理（对标 maameow 的编辑配置/完成）
@@ -3249,6 +3257,12 @@ class MainActivity : AppCompatActivity() {
     /** 仓库识别面板当前分类（资源/徽章/票券，对标 MAA 仓库页；徽章、票券素材暂未录入） */
     private var warehouseCategory = WarehouseStore.CAT_RESOURCE
 
+    /** 【仅看变化】过滤开关（MAA 同名按钮；无变化数据时自动复位为 false） */
+    private var warehouseShowChangedOnly = false
+
+    /** 识别中的增减量对比基准（识别开始时缓存上一份结果，完成时由落盘数据接管） */
+    private var warehouseLivePrev: Map<String, String> = emptyMap()
+
     /** 识别结果网格（MAA-Meow 式：图标+名字+xN）：每次列完成/结束时全量重渲染 */
     /** 按当前分类渲染已保存的识别结果（上次同步/种类数/变化条数，识别完成后重启也能看到） */
     private fun renderWarehouseStored() {
@@ -3272,29 +3286,54 @@ class MainActivity : AppCompatActivity() {
             return
         }
         binding.tvWhCount.text = "共 ${snap.counts.size} 种物品"
-        if (snap.changedFromPrev > 0) {
-            binding.tvWhChanged.visibility = View.VISIBLE
+        if (snap.changedFromPrev > 0 && snap.prevCounts.isNotEmpty()) {
+            binding.llWhChangedRow.visibility = View.VISIBLE
             binding.tvWhChanged.text = "较上次：${snap.changedFromPrev} 种有变化"
         } else {
-            binding.tvWhChanged.visibility = View.GONE
+            binding.llWhChangedRow.visibility = View.GONE
+            warehouseShowChangedOnly = false
+            binding.btnWhChanged.text = getString(R.string.warehouse_only_changed)
         }
-        renderWarehouseResults(snap.counts)
+        renderWarehouseResults(snap.counts, snap.prevCounts, warehouseShowChangedOnly)
     }
 
-    private fun renderWarehouseResults(counts: Map<String, String>) {
+    private fun renderWarehouseResults(
+        counts: Map<String, String>,
+        prev: Map<String, String> = emptyMap(),
+        onlyChanged: Boolean = false
+    ) {
         val box = binding.llWarehouseResults
         box.removeAllViews()
         binding.tvWhCount.text = "共 ${counts.size} 种物品"
         if (counts.isEmpty()) return
-        // 4 列等宽网格：55 种一行放不下（此前全塞一行，屏幕只露出前 8 个）
-        val list = counts.entries.sortedBy { it.key }.toList()
+        // 4 列等宽网格：55 种一行放不下（此前全塞一行，屏幕只露出前 8 个）；
+        // 仅看变化 = 数值与上次不同或新增（上次没有的物品）
+        val list = counts.entries
+            .filter { (name, qty) ->
+                if (!onlyChanged) true
+                else {
+                    val pv = prev[name]?.let { WarehouseStore.qtyValue(it) }
+                    val cv = WarehouseStore.qtyValue(qty)
+                    pv == null || cv == null || pv != cv
+                }
+            }
+            .sortedBy { it.key }.toList()
+        if (list.isEmpty()) {
+            box.addView(TextView(this).apply {
+                text = "（较上次无变化）"
+                textSize = 11f
+                setTextColor(getColor(R.color.text_secondary))
+                setPadding(0, dp(10), 0, 0)
+            })
+            return
+        }
         var i = 0
         while (i < list.size) {
             val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
             repeat(4) {
                 if (i < list.size) {
                     row.addView(
-                        warehouseCell(list[i].key, list[i].value),
+                        warehouseCell(list[i].key, list[i].value, prev),
                         LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
                     )
                     i++
@@ -3306,8 +3345,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 单个物品卡片：模板缩略图 + 名字 + xN（数量空串 = OCR 失败显示 ?，「万」保留原样） */
-    private fun warehouseCell(name: String, qty: String): View {
+    /** 单个物品卡片：模板缩略图 + 名字 + xN（数量空串 = OCR 失败显示 ?，「万」保留原样）；
+     *  下方红色增减量（对标 MAA +400/-3）：与上次同步对比，新增物品 = 全量 */
+    private fun warehouseCell(name: String, qty: String, prev: Map<String, String> = emptyMap()): View {
         val cell = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -3344,6 +3384,17 @@ class MainActivity : AppCompatActivity() {
             setTextColor(getColor(R.color.accent))
             paint.isFakeBoldText = true
         })
+        val cv = WarehouseStore.qtyValue(qty)
+        val pv = prev[name]?.let { WarehouseStore.qtyValue(it) }
+        if (cv != null && (pv == null || cv != pv) && !(pv == null && cv == 0L)) {
+            val d = if (pv == null) cv else cv - pv
+            cell.addView(TextView(this).apply {
+                text = (if (d > 0) "+" else "") + WarehouseStore.fmtQty(d)
+                textSize = 11f
+                gravity = Gravity.CENTER
+                setTextColor(getColor(R.color.err_red))
+            })
+        }
         return cell
     }
 
@@ -3402,6 +3453,9 @@ class MainActivity : AppCompatActivity() {
 
                 // 阶段 2：识别循环（MAA 式：网格 NCC 模板匹配 + 数量 OCR + 滑动翻页）
                 val ocr = GachaOcrFactory.create(applicationContext) { m -> log(m, LogLevel.INFO) }
+                warehouseLivePrev = withContext(Dispatchers.IO) {
+                    WarehouseStore.load(applicationContext, warehouseCategory)?.counts ?: emptyMap()
+                }
                 runOnUiThread {
                     binding.tvWhCount.text = "识别中…"
                     renderWarehouseResults(emptyMap())
@@ -3417,7 +3471,9 @@ class MainActivity : AppCompatActivity() {
                     keepAlive("▶ 仓库识别：$p")
                     FloatingPanel.update("▶ 仓库识别：$p")
                 }) { counts ->
-                    runOnUiThread { renderWarehouseResults(counts) }
+                    runOnUiThread {
+                        renderWarehouseResults(counts, warehouseLivePrev, warehouseShowChangedOnly)
+                    }
                 }
                 runSummary = "$catName ${r.counts.size} 种 · ${r.pages} 页"
                 // 落盘 + 刷新面板（上次同步时间/种类数/变化条数/结果网格统一由 WarehouseStore 驱动）
