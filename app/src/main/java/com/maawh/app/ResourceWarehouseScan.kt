@@ -192,6 +192,12 @@ class ResourceWarehouseScan(
      * 乘加，55 模板 × 6 列 ≈ 11 亿/页，Kotlin 约 1~3s/页。
      * 命中去重：同列不同模板命中同一 y（同物品误双认/同族近似牌互相串认）保留分高者。
      */
+    /** 阻塞包装（QueueRunner 宿主分支用——额外队列的「仓库识别」依次扫三仓） */
+    fun scanBlocking(
+        onProgress: (String) -> Unit,
+        onCounts: (Map<String, String>) -> Unit = {}
+    ): Result = kotlinx.coroutines.runBlocking { scanSuspend(onProgress, onCounts) }
+
     private suspend fun scanPage(
         frame: Bitmap,
         templates: List<Template>,

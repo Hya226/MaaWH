@@ -363,6 +363,52 @@ class QueueRunner(
                             }
                             WaiQinScan(context, ocr, { msg, lv -> cb.onLog(msg, lv) }) { stopRequested }
                                 .scan()
+                        } else if (item.entry == "仓库识别" || item.name == "仓库识别") {
+                            // 仓库识别：依次识别 资源→徽章→票券 三仓（导航 pipeline + 宿主
+                            // 扫描 + 落盘）；单仓失败记汇总继续下一仓，已完成的照常保存
+                            val ocr = GachaOcrFactory.create(context) { msg ->
+                                cb.onLog(msg, LogLevel.TRACE)
+                            }
+                            val cats = listOf(
+                                "resource" to "VF_仓库识别",
+                                "badge" to "VF_仓库识别徽章",
+                                "ticket" to "VF_仓库识别票券"
+                            )
+                            val failedCats = ArrayList<String>()
+                            for ((cat, entry) in cats) {
+                                if (stopRequested) break
+                                val catName = WarehouseStore.catName(cat)
+                                cb.onLog("仓库识别：$catName——导航到【物资库-$catName】页…", LogLevel.INFO)
+                                val navOk = MaaBridge.runTask(whmxDir, entry, logDir, "{}") { msg ->
+                                    notify { cb.onLog(msg, LogLevel.TRACE) }
+                                }
+                                if (!navOk) {
+                                    failedCats.add("$catName（导航失败）")
+                                    cb.onLog("↷ $catName 导航失败，跳过继续下一仓", LogLevel.WRN)
+                                    continue
+                                }
+                                try {
+                                    val r = ResourceWarehouseScan(
+                                        context, cat, ocr,
+                                        { msg, lv -> cb.onLog(msg, lv) }
+                                    ) { stopRequested }.scanBlocking(onProgress = { p ->
+                                        notify { cb.onRunState(p, R.color.accent) }
+                                    })
+                                    WarehouseStore.save(context, cat, r.counts)
+                                    cb.onLog("✓ $catName 识别完成：${r.counts.size} 种（${r.pages} 页），已保存", LogLevel.SUCCESS)
+                                } catch (e: Throwable) {
+                                    failedCats.add("$catName（${e.message}）")
+                                    cb.onLog("↷ $catName 识别失败：${e.message}，继续下一仓", LogLevel.WRN)
+                                }
+                            }
+                            when {
+                                stopRequested -> false
+                                failedCats.isEmpty() -> true
+                                else -> {
+                                    cb.onLog("✗ 仓库识别部分未完成：${failedCats.joinToString("、")}", LogLevel.ERR)
+                                    false
+                                }
+                            }
                         } else if (item.entry == "智能刷材料" || item.name == "智能刷材料") {
                             // 智能刷材料：宿主编排（引擎不参与主循环）——读目标/库存算缺口，
                             // 逐关构造 pipeline_override 跑 VF_刷活动关/VF_清体力/VF_实验室，
