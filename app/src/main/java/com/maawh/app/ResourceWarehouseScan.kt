@@ -297,20 +297,23 @@ class ResourceWarehouseScan(
     }
 
     /** 数值化投票 key：「1531.04万」「153104万」（丢点）「1531.04」（丢万字）都归到同值。
-     *  游戏 ≥1万 格式固定 X.XX万（两位小数）——含万丢点按后两位小数还原。 */
+     *  游戏 ≥1万 格式固定 X.XX万（两位小数）——含万丢点按后两位小数还原；
+     *  纯整数是字面值不乘万（与 WarehouseStore.qtyValue 同口径）。 */
     private fun qtyKey(s: String): Long {
         val wan = s.contains('万')
         val body = s.replace("万", "")
         val dot = body.indexOf('.')
         val digits = body.replace(".", "").toLongOrNull() ?: return -1
         val frac = when {
-            wan && dot < 0 -> 2                       // 丢点：按固定两位小数还原
+            wan && dot < 0 -> 2          // 丢点：X.XX万 固定两位小数
             dot >= 0 -> body.length - dot - 1
             else -> 0
         }
-        var scale = 10000L
-        repeat(frac) { scale /= 10 }
-        return digits * scale
+        return when {
+            wan -> digits * (10000L / WarehouseStore.pow10Of(frac))
+            dot >= 0 -> digits * 100L
+            else -> digits
+        }
     }
 
     /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条能解析出数量的行，返回显示串（失败 ""） */

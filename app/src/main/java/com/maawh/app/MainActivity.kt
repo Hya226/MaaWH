@@ -3286,7 +3286,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         binding.tvWhCount.text = "共 ${snap.counts.size} 种物品"
-        if (snap.changedFromPrev > 0 && snap.prevCounts.isNotEmpty()) {
+        if (snap.changedFromPrev > 0) {   // 首次基准（prev 空档）也显示——按钮/增减量从第一次对比起可用
             binding.llWhChangedRow.visibility = View.VISIBLE
             binding.tvWhChanged.text = "较上次：${snap.changedFromPrev} 种有变化"
         } else {

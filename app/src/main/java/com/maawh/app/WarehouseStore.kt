@@ -90,7 +90,9 @@ object WarehouseStore {
         return Snapshot(ts, m, prevCounts, changed)
     }
 
-    /** 数量显示串 → 数值（「3.99万」=39900；""/无法解析 = null）。与识别侧 qtyKey 同口径 */
+    /** 数量显示串 → 数值（「3.99万」=39900；""/无法解析 = null）。与识别侧 qtyKey 同口径。
+     *  ★ 纯整数就是字面值（412=412，不乘万）；带万按小数位折算；无万带点 = 万字被
+     *  OCR 丢了（游戏格式只有纯整数/X.XX万 两种）按两位小数折万。 */
     fun qtyValue(s: String): Long? {
         if (s.isBlank()) return null
         val wan = s.contains('万')
@@ -99,14 +101,25 @@ object WarehouseStore {
         val digits = body.replace(".", "")
         val d = digits.toLongOrNull() ?: return null
         val frac = when {
-            wan && dot < 0 -> 2
+            wan && dot < 0 -> 2          // 丢点：X.XX万 固定两位小数
             dot >= 0 -> body.length - dot - 1
             else -> 0
         }
-        var scale = 10000L
-        repeat(frac) { scale /= 10 }
-        return d * scale
+        return when {
+            wan -> d * (10000L / pow10(frac))
+            dot >= 0 -> d * 100L
+            else -> d
+        }
     }
+
+    private fun pow10(n: Int): Long {
+        var r = 1L
+        repeat(n) { r *= 10 }
+        return r
+    }
+
+    /** 供识别侧 qtyKey 复用的 10^n */
+    fun pow10Of(n: Int): Long = pow10(n)
 
     /** 数值 → 紧凑显示：≥1万 用「X.XX万」（去尾 0），否则纯数字 */
     fun fmtQty(v: Long): String {
