@@ -27,7 +27,43 @@ import kotlin.concurrent.thread
  * newProcess 在 Shizuku API 13 已被官方改为私有并弃用（14 移除），
  * 官方推荐 UserService —— 且截图字节(数MB)超过 Binder 1MB 上限，需用管道流式传回。
  */
+/** 提权启动模式：同一 ShellUserService，两种拉起方式（设置页手动切换） */
+enum class LaunchMode { SHIZUKU, ROOT }
+
 object ShizukuShell {
+
+    private const val PREFS = "maawh_settings"
+    private const val KEY_MODE = "launch_mode"
+
+    /** 提权启动模式（持久化；init 时从 prefs 恢复，设置页切换时写入） */
+    @Volatile
+    var launchMode = LaunchMode.SHIZUKU
+        private set
+
+    /** 启动模式变化钩子（设置页切换后刷新状态展示） */
+    @Volatile
+    var onLaunchModeChanged: ((LaunchMode) -> Unit)? = null
+
+    /** App 启动时恢复持久化的模式 */
+    fun initLaunchMode(ctx: Context) {
+        runCatching {
+            val prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            launchMode = if (prefs.getString(KEY_MODE, "SHIZUKU") == "ROOT") LaunchMode.ROOT else LaunchMode.SHIZUKU
+        }
+    }
+
+    /** 切换启动模式：断开当前服务引用（下次 ensureService 按新模式重连） */
+    fun setLaunchMode(ctx: Context, m: LaunchMode) {
+        if (launchMode == m) return
+        synchronized(lock) {
+            launchMode = m
+            service = null
+            args = null
+        }
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(KEY_MODE, m.name).apply()
+        onLaunchModeChanged?.invoke(m)
+    }
 
     /**
      * 错误上报钩子：App 侧挂到日志页（ShizukuShell 不依赖 UI）。
@@ -589,6 +625,18 @@ object ShizukuShell {
 
         synchronized(lock) {
             service?.let { if (it.asBinder().isBinderAlive) return it }
+            if (launchMode == LaunchMode.ROOT) {
+                // Root 后端：su 拉起 RootServiceStarter，binder 经 HolderService 回路到达
+                service = try {
+                    com.maawh.app.root.RootServiceConnector.ensure(ctx) { msg ->
+                        report(LogLevel.WRN, msg)
+                    }
+                } catch (t: Throwable) {
+                    throw RuntimeException("Root 服务连接失败：${t.message}", t)
+                }
+                onServiceReady?.invoke()
+                return service!!
+            }
             require(Shizuku.pingBinder()) { "Shizuku 服务未运行" }
 
             val latch = CountDownLatch(1)

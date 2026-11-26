@@ -44,6 +44,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.maawh.app.databinding.ActivityMainBinding
+import com.maawh.app.root.RootServiceConnector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -136,6 +137,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         ShizukuShell.init(applicationContext)
+        ShizukuShell.initLaunchMode(applicationContext)
         // ShizukuShell 内部吞掉的故障（停虚拟屏失败、注入失败等）上报到日志页
         ShizukuShell.errorHook = { level, msg -> log(msg, level) }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -284,6 +286,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnRequest.setOnClickListener { requestShizukuPermission() }
         binding.btnRefresh.setOnClickListener { refreshStatus() }
+        setupLaunchModeCard()
         binding.imageShot.setOnTouchListener { _, ev -> handleImageTouch(ev) }
         binding.imageShot.addOnLayoutChangeListener { v, l, _, r, _, ol, _, orr, _ ->
             // 宽度变化（含首次布局）时让预览高度重新贴合图像比例
@@ -3047,7 +3050,47 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    /** 启动模式卡：radio 状态与说明文字（设置页） */
+    private fun setupLaunchModeCard() {
+        binding.radioModeShizuku.isChecked = ShizukuShell.launchMode == LaunchMode.SHIZUKU
+        binding.radioModeRoot.isChecked = ShizukuShell.launchMode == LaunchMode.ROOT
+        updateLaunchModeState()
+        binding.rgLaunchMode.setOnCheckedChangeListener { _, id ->
+            val m = if (id == R.id.radioModeRoot) LaunchMode.ROOT else LaunchMode.SHIZUKU
+            if (m == LaunchMode.ROOT && !RootServiceConnector.isSuAvailable()) {
+                toast("未检测到 su——请确认设备已 root 且管理器允许")
+                binding.radioModeShizuku.isChecked = true
+                updateLaunchModeState()
+                return@setOnCheckedChangeListener
+            }
+            ShizukuShell.setLaunchMode(this, m)
+            updateLaunchModeState()
+            toast(
+                if (m == LaunchMode.ROOT) "已切换 Root 模式（服务以 shell 权限运行，首次启动会弹授权）"
+                else "已切换 Shizuku 模式"
+            )
+        }
+    }
+
+    private fun updateLaunchModeState() {
+        binding.tvLaunchState.text = when (ShizukuShell.launchMode) {
+            LaunchMode.ROOT -> "Root 模式：root 仅用于拉起服务进程，服务以 shell 权限运行；首次启动需在 root 管理器授权"
+            LaunchMode.SHIZUKU -> "Shizuku 模式：需要 Shizuku 服务在线并授权 MaaWH"
+        }
+    }
+
     private fun refreshStatus() {
+        if (ShizukuShell.launchMode == LaunchMode.ROOT) {
+            val su = RootServiceConnector.isSuAvailable()
+            binding.tvStatus.text = buildString {
+                append("启动模式：Root（服务以 shell 权限运行）")
+                append("\nsu 授权：").append(if (su) "可用" else "未授权/未检测到")
+                append("\n设备：${Build.MODEL} ｜ Android ${Build.VERSION.RELEASE}")
+            }
+            binding.tvStatus.setTextColor(getColorCompat(R.color.ok_green))
+            binding.btnRequest.isEnabled = false
+            return
+        }
         val running = shizukuRunning()
         val granted = shizukuGranted()
         binding.tvStatus.text = buildString {

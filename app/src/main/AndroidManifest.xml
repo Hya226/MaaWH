@@ -48,6 +48,15 @@
 
     <!-- 自定义 Application：把界面整体缩放（DisplayScale）挂到 applicationContext，
          悬浮窗用 applicationContext 建视图，只在 Activity 层包一层管不到它 -->
+    <!-- Root 模式：服务 binder 回投中转（root 进程 bindService 上来注册自己的服务
+         binder）。signature 权限防第三方 App 注册恶意 binder 借 MaaWH 代理提权 -->
+    <permission
+        android:name="com.maawh.permission.ROOT_SERVICE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.maawh.permission.ROOT_SERVICE" />
+        android:protectionLevel="signature" />
+
     <application
         android:name=".MaaApp"
         android:allowBackup="true"
@@ -78,6 +87,12 @@
         </provider>
 
         <!-- 任务运行中 / 虚拟屏存活时的保活前台服务（targetSdk 34 必须声明 FGS 类型） -->
+        <!-- Root 模式 binder 回投中转（signature 权限；仅自身 root 服务进程可绑） -->
+        <service
+            android:name=".root.RootBinderHolderService"
+            android:exported="true"
+            android:permission="com.maawh.permission.ROOT_SERVICE" />
+
         <service
             android:name=".KeepAliveService"
             android:exported="false"
