@@ -372,7 +372,19 @@ class ResourceWarehouseScan(
         val out = IntArray(px.size)
         val white = -0x1
         val black = 0xFF000000.toInt()
-        for (i in px.indices) out[i] = if (gray[i] > bestT) white else black
+        var whiteCnt = 0
+        for (i in px.indices) {
+            if (gray[i] > bestT) {
+                out[i] = white
+                whiteCnt++
+            } else {
+                out[i] = black
+            }
+        }
+        // ★ 背景大片亮（数字泡在浅色网格页里）时 OTSU 把背景整片切白、卡面边框线
+        //   被读成垃圾（真机金卡 3→11111 实锤）——白占比过高放弃二值图退回原图读数
+        //   （离线矩阵：金卡 dy106 白占比 0.67 退回原图读出 3；已救回样本白占比 0.23~0.50 不受影响）
+        if (whiteCnt * 100L > px.size * 55L) return bmp
         return Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888)
     }
 
