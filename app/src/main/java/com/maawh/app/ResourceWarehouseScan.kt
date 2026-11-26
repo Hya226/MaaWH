@@ -91,6 +91,7 @@ class ResourceWarehouseScan(
         var prevKeys = emptySet<String>()
         var stableRuns = 0
         var firstPageChecked = false
+        var lastSwipeHash: Int? = null   // 滑动前画面哈希：翻页后画面没变 = 到底
 
         while (true) {
             coroutineContext.ensureActive()
@@ -101,6 +102,12 @@ class ResourceWarehouseScan(
                 onLog("抓帧失败，重试…", LogLevel.WRN)
                 kotlinx.coroutines.delay(800)
                 continue
+            }
+            // 翻页后画面与滑动前完全一致 = 没滚动 = 到底（省掉「同集合再翻 2 页」的确认轮——
+            // 票券类一页装得下的仓库不再白滑 2 次）
+            if (lastSwipeHash != null && quickHash(frame) == lastSwipeHash) {
+                onLog("画面未滚动——已到底", LogLevel.INFO)
+                break
             }
 
             if (pages == 0) {
@@ -149,6 +156,7 @@ class ResourceWarehouseScan(
 
             coroutineContext.ensureActive()
             if (isStopped()) throw ScanException("已停止")
+            lastSwipeHash = quickHash(frame)
             ShizukuShell.injectSwipeVD(slideFrom.first, slideFrom.second, slideTo.first, slideTo.second, 600)
             kotlinx.coroutines.delay(900)  // 等滑动惯性+页面稳定
         }
@@ -241,20 +249,20 @@ class ResourceWarehouseScan(
         return hits
     }
 
-    /** 数量 OCR：卡面右下角数量白字区域，裁片放大走 PP-OCR，取整数。
-     *  锚点 = 卡面左缘 cardX（列固定，与命中 x 无关）+ 命中 y（=模板裁片顶缘，
-     *  不同素材上留白 0~22px 不等）；数字右对齐卡面右缘、贴卡面底缘——crop 取
-     *  gy+78 起高 42、x 卡面+52 起宽 62（右缘=卡面右缘），覆盖全部留白差异。
-     *  重试链：同区域 2x → 4x → 收紧区域 4x（小数字/低置信度单次会漏，实测
-     *  远击核定牌I 翻车、同族其余全对）；仍失败落盘整卡面诊断图。 */
+    /** 数量 OCR：卡面右下角数量白字（右对齐卡面右缘、贴底缘，实测 y≈gy+103..118）。
+     *  窗口全用**矮条**（高 28~34）：纯 rec 通道按高 32 等比缩放整块裁片，窗口越高
+     *  数字被压得越小越读不出（62×42 高窗真机实锤失败；56×26 老窗口 6/6 全对；
+     *  qty_fail 诊断图离线 RapidOCR 同窗口全对=问题在高度不在内容）。
+     *  宽度分级：62 → 100（盖「1531.04万」长数字）→ 110 大区兜底。
+     *  数量 ≥1万 游戏显示「X.XX万」——解析按万折算（parseQuantity）。 */
     private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int, name: String): Int {
         return try {
-            val rx = cardX + 52
-            val ry = gy + 78
-            if (rx < 0 || ry < 0) return -1
-            var v = ocrDigits(frame, rx, ry, 62, 42, 2)
-            if (v < 0) v = ocrDigits(frame, rx, ry, 62, 42, 4)
-            if (v < 0) v = ocrDigits(frame, rx, gy + 86, 62, 32, 4)
+            if (cardX < 0 || gy < 0) return -1
+            var v = ocrDigits(frame, cardX + 52, gy + 94, 62, 28, 2)
+            if (v < 0) v = ocrDigits(frame, cardX + 52, gy + 94, 62, 28, 4)
+            if (v < 0) v = ocrDigits(frame, cardX + 14, gy + 94, 100, 28, 2)
+            if (v < 0) v = ocrDigits(frame, cardX + 14, gy + 94, 100, 28, 4)
+            if (v < 0) v = ocrDigits(frame, cardX + 2, gy + 88, 110, 34, 3)
             if (v < 0) {
                 runCatching {
                     val d = File(ctx.filesDir, "warehouse")
@@ -280,17 +288,39 @@ class ResourceWarehouseScan(
         }
     }
 
-    /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条含数字的行 */
+    /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条能解析出数量的行 */
     private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): Int {
+        if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return -1
         var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
         crop = Bitmap.createScaledBitmap(crop, rw * scale, rh * scale, true)
         val lines = ocr.requestOCR(GachaOcr.encode(crop))
         crop.recycle()
         for (l in lines.sortedByDescending { it.score }) {
-            val digits = l.text.filter { it.isDigit() }
-            if (digits.isNotEmpty()) return digits.toIntOrNull() ?: -1
+            val v = parseQuantity(l.text)
+            if (v >= 0) return v
         }
         return -1
+    }
+
+    /** 「3.99万」→39900、「1531.04万」→15310400。
+     *  游戏数量格式只有两种：纯整数、X.XX万——所以**带小数点即按万折算**
+     *  （万字符被 OCR 丢了也能救回）；含「万」但数字丢点时按位数启发：
+     *  整数部分 3 位（如 399万）当两位小数丢点 ×100，更长 ×1万（误差可忽略）。 */
+    private fun parseQuantity(text: String): Int {
+        val m = Regex("[0-9]+(?:[.．,，][0-9]+)?").findAll(text).maxByOrNull { it.value.length } ?: return -1
+        val raw = m.value
+        val hasWan = text.contains('万') || text.contains('萬')
+        val hasDot = raw.any { it == '.' || it == '．' || it == ',' || it == '，' }
+        return if (hasWan || hasDot) {
+            val f = raw.replace(Regex("[.．,，]"), ".").toFloatOrNull() ?: return -1
+            when {
+                hasDot -> (f * 10000f).toInt()
+                f >= 100f -> (f * 10000f).toInt()
+                else -> (f * 100f).toInt()
+            }
+        } else {
+            raw.toIntOrNull() ?: -1
+        }
     }
 
     // ---------------- 收尾：返回键回主页 ----------------

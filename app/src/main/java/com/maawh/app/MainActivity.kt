@@ -3318,7 +3318,8 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(4), dp(6), dp(4), dp(6))
         }
         val iv = ImageView(this)
-        val f = File(applicationContext.filesDir, "warehouse/resource/$name.png")
+        // 图标 = 当前分类的模板图（路径写死 resource 的旧版在徽章/票券页全部不显示——实锤）
+        val f = File(applicationContext.filesDir, "warehouse/$warehouseCategory/$name.png")
         if (f.isFile) {
             // 模板裁片 74~99px ≈ 40dp 显示尺寸，接近 1:1——绝不能 inSampleSize
             // （此前 4 倍降采样解码 → ~20px 拉到 110px，图标糊成一团，用户实测反馈）
@@ -3425,7 +3426,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 renderWarehouseStored()
                 binding.tvWarehouseStatus.text = "✓ $catName ${r.counts.size} 种（${r.pages} 页）"
-                setRunState("✓ 仓库识别完成：资源 ${r.counts.size} 种，明细见日志页", R.color.ok_green)
+                setRunState("✓ 仓库识别完成：$catName ${r.counts.size} 种，明细见日志页", R.color.ok_green)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 runSummary = "已停止"
                 binding.tvWarehouseStatus.text = "◼ 已停止"
