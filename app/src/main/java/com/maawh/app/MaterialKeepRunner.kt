@@ -68,7 +68,7 @@ class MaterialKeepRunner(
         )
 
         // 体力预算：任务编辑里「刷取体力上限」（空/0 = 不限），逐轮累计达到即停
-        val budget = selection.input("刷取体力上限", "").trim().toLongOrNull() ?: 0L
+        val budget = selection.input("体力上限", "").trim().toLongOrNull() ?: 0L
         var spent = 0L
         var rounds = 0
         var stopReason: String? = null
@@ -139,7 +139,8 @@ class MaterialKeepRunner(
             inventory[name]?.let { target - it }?.takeIf { it > 0 }?.let { "$name 缺 $it" }
         }
         val elapsed = (System.currentTimeMillis() - started) / 1000
-        val ok = remain.isEmpty() && stopReason == null
+        // 预算用完/体力不足都是计划内结束（对标 M9A：体力打不动即收尾），不算任务失败；
+        // 只有目录缺失这类配置错误才返回 false
         onLog(
             when {
                 remain.isEmpty() -> "✓ 智能刷材料完成：$rounds 轮 · 耗时 ${elapsed}s · 目标全部达标"
@@ -147,7 +148,7 @@ class MaterialKeepRunner(
             },
             if (remain.isEmpty()) LogLevel.SUCCESS else LogLevel.WRN
         )
-        return ok
+        return true
     }
 
     private fun taskDesc(e: MaterialCatalog.CatalogEntry): String = when (e.task) {

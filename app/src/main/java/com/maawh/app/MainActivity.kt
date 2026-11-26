@@ -3297,9 +3297,8 @@ class MainActivity : AppCompatActivity() {
                 setPadding(0, dp(4), 0, dp(4))
             }
             val iv = ImageView(this)
-            val f = File(applicationContext.filesDir, "warehouse/resource/$m.png")
-            if (f.isFile) {
-                iv.setImageBitmap(BitmapFactory.decodeFile(f.absolutePath))
+            loadMaterialIcon("resource", m)?.let {
+                iv.setImageBitmap(it)
                 iv.layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
             }
             row.addView(iv)
@@ -3422,6 +3421,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** 材料图标加载：files 端优先（识别时指纹重建的最新模板），缺失时从 assets 兜底
+     *  解码（刚装新包还没跑过识别时 files 端可能未重建——真机棕刷图标闪没实锤） */
+    private fun loadMaterialIcon(cat: String, name: String): android.graphics.Bitmap? {
+        val f = File(applicationContext.filesDir, "warehouse/$cat/$name.png")
+        if (f.isFile) return BitmapFactory.decodeFile(f.absolutePath)
+        return runCatching {
+            application.assets.open("warehouse/$cat/$name.png").use {
+                BitmapFactory.decodeStream(it)
+            }
+        }.getOrNull()
+    }
+
     /** 单个物品卡片：模板缩略图 + 名字 + xN（数量空串 = OCR 失败显示 ?，「万」保留原样）；
      *  下方红色标注：设了目标的显示「缺 N」（目标-库存），未设目标的显示与上次同步
      *  的增减量（对标 MAA +400/-3，新增物品 = 全量） */
@@ -3441,16 +3452,10 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(4), dp(6), dp(4), dp(6))
         }
         val iv = ImageView(this)
-        // 图标 = 当前分类的模板图（路径写死 resource 的旧版在徽章/票券页全部不显示——实锤）
-        val f = File(applicationContext.filesDir, "warehouse/$warehouseCategory/$name.png")
-        if (f.isFile) {
-            // 模板裁片 74~99px ≈ 40dp 显示尺寸，接近 1:1——绝不能 inSampleSize
-            // （此前 4 倍降采样解码 → ~20px 拉到 110px，图标糊成一团，用户实测反馈）
-            val bmp = BitmapFactory.decodeFile(f.absolutePath)
-            if (bmp != null) {
-                iv.setImageBitmap(bmp)
-                iv.layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
-            }
+        // 图标 = 当前分类的模板图；模板裁片 ≈ 40dp 显示尺寸接近 1:1，绝不能 inSampleSize
+        loadMaterialIcon(warehouseCategory, name)?.let {
+            iv.setImageBitmap(it)
+            iv.layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
         }
         cell.addView(iv)
         cell.addView(TextView(this).apply {
