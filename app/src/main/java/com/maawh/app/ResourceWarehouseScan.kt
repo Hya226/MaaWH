@@ -316,11 +316,15 @@ class ResourceWarehouseScan(
         }
     }
 
-    /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条能解析出数量的行，返回显示串（失败 ""） */
+    /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条能解析出数量的行，返回显示串（失败 ""）。
+     *  放大后做 **OTSU 二值化**：数量白字对比度低（贴卡面外缘/浅色网格背景）时纯 rec
+     *  整窗读空（真机 粘合-浆糊/远击核定牌I 的 7 条窗全空实锤；离线 OTSU 两样本救回、
+     *  成功样本零回归且长数字置信度更高）。 */
     private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): String {
         if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return ""
         var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
         crop = Bitmap.createScaledBitmap(crop, rw * scale, rh * scale, true)
+        crop = otsuBinarize(crop)
         val lines = ocr.requestOCR(GachaOcr.encode(crop))
         crop.recycle()
         for (l in lines.sortedByDescending { it.score }) {
@@ -328,6 +332,48 @@ class ResourceWarehouseScan(
             if (s.isNotEmpty()) return s
         }
         return ""
+    }
+
+    /** OTSU 自适应阈值二值化：亮（数量白字）→白、其余→黑，把对比度拉满 */
+    private fun otsuBinarize(bmp: Bitmap): Bitmap {
+        val w = bmp.width
+        val h = bmp.height
+        val px = IntArray(w * h)
+        bmp.getPixels(px, 0, w, 0, 0, w, h)
+        val gray = IntArray(px.size)
+        val hist = IntArray(256)
+        for (i in px.indices) {
+            val p = px[i]
+            val g = (0.299f * (p shr 16 and 0xff) + 0.587f * (p shr 8 and 0xff) + 0.114f * (p and 0xff)).toInt().coerceIn(0, 255)
+            gray[i] = g
+            hist[g]++
+        }
+        val total = px.size
+        var sumAll = 0L
+        for (t in 0..255) sumAll += t.toLong() * hist[t]
+        var sumB = 0L
+        var wB = 0
+        var bestT = 128
+        var bestVar = -1.0
+        for (t in 0..255) {
+            wB += hist[t]
+            if (wB == 0) continue
+            val wF = total - wB
+            if (wF == 0) break
+            sumB += t.toLong() * hist[t]
+            val mB = sumB.toDouble() / wB
+            val mF = (sumAll - sumB).toDouble() / wF
+            val v = wB.toDouble() * wF * (mB - mF) * (mB - mF)
+            if (v > bestVar) {
+                bestVar = v
+                bestT = t
+            }
+        }
+        val out = IntArray(px.size)
+        val white = -0x1
+        val black = 0xFF000000.toInt()
+        for (i in px.indices) out[i] = if (gray[i] > bestT) white else black
+        return Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888)
     }
 
     /** 数量显示串（保留「万」字，用户要求）：取最长「数字+可选小数点+可选万」组，
