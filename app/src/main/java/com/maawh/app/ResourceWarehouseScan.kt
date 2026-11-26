@@ -326,14 +326,15 @@ class ResourceWarehouseScan(
     }
 
     /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条能解析出数量的行，返回显示串（失败 ""）。
-     *  放大后做 **OTSU 二值化**：数量白字对比度低（贴卡面外缘/浅色网格背景）时纯 rec
-     *  整窗读空（真机 粘合-浆糊/远击核定牌I 的 7 条窗全空实锤；离线 OTSU 两样本救回、
-     *  成功样本零回归且长数字置信度更高）。 */
+     *  放大后做 **反色**：数量字是「白字+黑描边」，深卡面上对比够、但贴卡面外缘/
+     *  浅色网格页时变成白底白字（真机 浆糊/远击I 7 窗全空、金卡 11111/1 连环翻车）。
+     *  反色统一成「黑字+白描边」的稳定形态——离线 6 样本全对且高置信（0.8~1.0），
+     *  全面优于 OTSU 二值化（金卡 3 被 OTSU 背景切白误读、远击I 锐化也救不全）。*/
     private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): Pair<String, Float>? {
         if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return null
         var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
         crop = Bitmap.createScaledBitmap(crop, rw * scale, rh * scale, true)
-        crop = otsuBinarize(crop)
+        crop = invertBitmap(crop)
         val lines = ocr.requestOCR(GachaOcr.encode(crop))
         crop.recycle()
         for (l in lines.sortedByDescending { it.score }) {
@@ -343,58 +344,15 @@ class ResourceWarehouseScan(
         return null
     }
 
-    /** OTSU 自适应阈值二值化：亮（数量白字）→白、其余→黑，把对比度拉满 */
-    private fun otsuBinarize(bmp: Bitmap): Bitmap {
+    /** 反色（RGB 各通道取反，alpha 保留） */
+    private fun invertBitmap(bmp: Bitmap): Bitmap {
         val w = bmp.width
         val h = bmp.height
         val px = IntArray(w * h)
         bmp.getPixels(px, 0, w, 0, 0, w, h)
-        val gray = IntArray(px.size)
-        val hist = IntArray(256)
-        for (i in px.indices) {
-            val p = px[i]
-            val g = (0.299f * (p shr 16 and 0xff) + 0.587f * (p shr 8 and 0xff) + 0.114f * (p and 0xff)).toInt().coerceIn(0, 255)
-            gray[i] = g
-            hist[g]++
-        }
-        val total = px.size
-        var sumAll = 0L
-        for (t in 0..255) sumAll += t.toLong() * hist[t]
-        var sumB = 0L
-        var wB = 0
-        var bestT = 128
-        var bestVar = -1.0
-        for (t in 0..255) {
-            wB += hist[t]
-            if (wB == 0) continue
-            val wF = total - wB
-            if (wF == 0) break
-            sumB += t.toLong() * hist[t]
-            val mB = sumB.toDouble() / wB
-            val mF = (sumAll - sumB).toDouble() / wF
-            val v = wB.toDouble() * wF * (mB - mF) * (mB - mF)
-            if (v > bestVar) {
-                bestVar = v
-                bestT = t
-            }
-        }
-        val out = IntArray(px.size)
-        val white = -0x1
-        val black = 0xFF000000.toInt()
-        var whiteCnt = 0
-        for (i in px.indices) {
-            if (gray[i] > bestT) {
-                out[i] = white
-                whiteCnt++
-            } else {
-                out[i] = black
-            }
-        }
-        // ★ 背景大片亮（数字泡在浅色网格页里）时 OTSU 把背景整片切白、卡面边框线
-        //   被读成垃圾（真机金卡 3→11111 实锤）——白占比过高放弃二值图退回原图读数
-        //   （离线矩阵：金卡 dy106 白占比 0.67 退回原图读出 3；已救回样本白占比 0.23~0.50 不受影响）
-        if (whiteCnt * 100L > px.size * 55L) return bmp
-        return Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888)
+        val aMask = 0xFF000000.toInt()
+        for (i in px.indices) px[i] = (px[i].inv() and 0x00FFFFFF) or aMask
+        return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
     }
 
     /** 数量显示串（保留「万」字，用户要求）：取最长「数字+可选小数点+可选万」组，
