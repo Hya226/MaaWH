@@ -3281,7 +3281,7 @@ class MainActivity : AppCompatActivity() {
         renderWarehouseResults(snap.counts)
     }
 
-    private fun renderWarehouseResults(counts: Map<String, Int>) {
+    private fun renderWarehouseResults(counts: Map<String, String>) {
         val box = binding.llWarehouseResults
         box.removeAllViews()
         binding.tvWhCount.text = "共 ${counts.size} 种物品"
@@ -3306,8 +3306,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** 单个物品卡片：模板缩略图 + 名字 + xN（数量 -1 = OCR 失败显示 ?） */
-    private fun warehouseCell(name: String, qty: Int): View {
+    /** 单个物品卡片：模板缩略图 + 名字 + xN（数量空串 = OCR 失败显示 ?，「万」保留原样） */
+    private fun warehouseCell(name: String, qty: String): View {
         val cell = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
@@ -3338,7 +3338,7 @@ class MainActivity : AppCompatActivity() {
             maxWidth = dp(64)
         })
         cell.addView(TextView(this).apply {
-            text = if (qty >= 0) "x$qty" else "x?"
+            text = if (qty.isNotBlank()) "x$qty" else "x?"
             textSize = 12f
             gravity = Gravity.CENTER
             setTextColor(getColor(R.color.accent))

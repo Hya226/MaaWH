@@ -42,7 +42,7 @@ class ResourceWarehouseScan(
 
     class ScanException(msg: String) : Exception(msg)
 
-    data class Result(val counts: LinkedHashMap<String, Int>, val pages: Int, val elapsedMs: Long)
+    data class Result(val counts: LinkedHashMap<String, String>, val pages: Int, val elapsedMs: Long)
 
     // ---- 网格参数（用户按帧逐格校准：首格 (356,122) 卡面 114×116，列周期 150 行周期 130）----
     private val gridX0 = 356
@@ -76,7 +76,7 @@ class ResourceWarehouseScan(
 
     suspend fun scanSuspend(
         onProgress: (String) -> Unit,
-        onCounts: (Map<String, Int>) -> Unit = {}
+        onCounts: (Map<String, String>) -> Unit = {}
     ): Result = withContext(Dispatchers.IO) {
         val started = System.currentTimeMillis()
         val templates = ensureTemplates(ctx)
@@ -85,7 +85,7 @@ class ResourceWarehouseScan(
         }
         onLog("仓库识别开始（${WarehouseStore.catName(category)}仓库）：模板 ${templates.size} 个", LogLevel.INFO)
 
-        val counts = LinkedHashMap<String, Int>()
+        val counts = LinkedHashMap<String, String>()
         var pages = 0
         var retries = 0
         var prevKeys = emptySet<String>()
@@ -167,7 +167,7 @@ class ResourceWarehouseScan(
         // 结果落盘由调用方（MainActivity → WarehouseStore.save，含上次同步/变化对比）统一负责
         onLog(
             "仓库识别完成（${WarehouseStore.catName(category)}）：共 $pages 页，${counts.size} 种" +
-                "（数量识别成功 ${counts.count { it.value >= 0 }}）" +
+                "（数量识别成功 ${counts.count { it.value.isNotBlank() }}）" +
                 " · 耗时 ${elapsed / 1000}s · 明细见 files/warehouse/${category}_scan.json",
             LogLevel.SUCCESS
         )
@@ -191,10 +191,10 @@ class ResourceWarehouseScan(
     private suspend fun scanPage(
         frame: Bitmap,
         templates: List<Template>,
-        counts: LinkedHashMap<String, Int>,
+        counts: LinkedHashMap<String, String>,
         onProgress: (String) -> Unit,
         verbose: Boolean,
-        onCounts: (Map<String, Int>) -> Unit
+        onCounts: (Map<String, String>) -> Unit
     ): List<CellHit> {
         val hits = ArrayList<CellHit>()
         var newOnes = 0
@@ -249,21 +249,23 @@ class ResourceWarehouseScan(
         return hits
     }
 
-    /** 数量 OCR：卡面右下角数量白字（右对齐卡面右缘、贴底缘，实测 y≈gy+103..118）。
-     *  窗口全用**矮条**（高 28~34）：纯 rec 通道按高 32 等比缩放整块裁片，窗口越高
-     *  数字被压得越小越读不出（62×42 高窗真机实锤失败；56×26 老窗口 6/6 全对；
-     *  qty_fail 诊断图离线 RapidOCR 同窗口全对=问题在高度不在内容）。
-     *  宽度分级：62 → 100（盖「1531.04万」长数字）→ 110 大区兜底。
-     *  数量 ≥1万 游戏显示「X.XX万」——解析按万折算（parseQuantity）。 */
-    private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int, name: String): Int {
+    /** 数量 OCR：卡面右下角数量白字（右对齐卡面右缘、贴底缘，实测数字带 y≈gy+103..118）。
+     *  ★ 锚定难点：命中 y = 卡面顶 + 素材顶部留白 m（手裁素材 m∈0..22px 不等）——数字
+     *  实际位置随 m 漂移，单条矮窗（高 28）会截掉数字上半（真机实锤：420→2、204→4、
+     *  x0、大量 x?）。改用**三条重叠矮条**扫 gy+74..123 全程（高 24×3），任何 m 下
+     *  数字都完整落在某一条；矮条保证纯 rec 缩放后数字足够大。
+     *  宽窗（98）优先防长数字「1531.04万」只读到半截，窄窗（62）兜底背景更干净。
+     *  数量 ≥1万 游戏显示「X.XX万」——**显示串保留万字**（用户要求），见 parseQuantity。 */
+    private suspend fun ocrQuantity(frame: Bitmap, cardX: Int, gy: Int, name: String): String {
         return try {
-            if (cardX < 0 || gy < 0) return -1
-            var v = ocrDigits(frame, cardX + 52, gy + 94, 62, 28, 2)
-            if (v < 0) v = ocrDigits(frame, cardX + 52, gy + 94, 62, 28, 4)
-            if (v < 0) v = ocrDigits(frame, cardX + 14, gy + 94, 100, 28, 2)
-            if (v < 0) v = ocrDigits(frame, cardX + 14, gy + 94, 100, 28, 4)
-            if (v < 0) v = ocrDigits(frame, cardX + 2, gy + 88, 110, 34, 3)
-            if (v < 0) {
+            if (cardX < 0 || gy < 0) return ""
+            var v = ocrDigits(frame, cardX + 16, gy + 87, 98, 24, 2)   // 中条-宽
+            if (v.isBlank()) v = ocrDigits(frame, cardX + 16, gy + 99, 98, 24, 2)  // 下条-宽
+            if (v.isBlank()) v = ocrDigits(frame, cardX + 16, gy + 74, 98, 24, 2)  // 上条-宽
+            if (v.isBlank()) v = ocrDigits(frame, cardX + 52, gy + 87, 62, 24, 2)  // 中条-窄
+            if (v.isBlank()) v = ocrDigits(frame, cardX + 52, gy + 99, 62, 24, 2)  // 下条-窄
+            if (v.isBlank()) v = ocrDigits(frame, cardX + 52, gy + 74, 62, 24, 2)  // 上条-窄
+            if (v.isBlank()) {
                 runCatching {
                     val d = File(ctx.filesDir, "warehouse")
                     d.mkdirs()
@@ -284,43 +286,32 @@ class ResourceWarehouseScan(
             v
         } catch (e: Throwable) {
             onLog("数量 OCR 失败：${e.message}", LogLevel.WRN)
-            -1
+            ""
         }
     }
 
-    /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条能解析出数量的行 */
-    private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): Int {
-        if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return -1
+    /** 裁片放大 scale 倍送 OCR，按置信度降序找第一条能解析出数量的行，返回显示串（失败 ""） */
+    private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): String {
+        if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return ""
         var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
         crop = Bitmap.createScaledBitmap(crop, rw * scale, rh * scale, true)
         val lines = ocr.requestOCR(GachaOcr.encode(crop))
         crop.recycle()
         for (l in lines.sortedByDescending { it.score }) {
-            val v = parseQuantity(l.text)
-            if (v >= 0) return v
+            val s = parseQuantity(l.text)
+            if (s.isNotEmpty()) return s
         }
-        return -1
+        return ""
     }
 
-    /** 「3.99万」→39900、「1531.04万」→15310400。
-     *  游戏数量格式只有两种：纯整数、X.XX万——所以**带小数点即按万折算**
-     *  （万字符被 OCR 丢了也能救回）；含「万」但数字丢点时按位数启发：
-     *  整数部分 3 位（如 399万）当两位小数丢点 ×100，更长 ×1万（误差可忽略）。 */
-    private fun parseQuantity(text: String): Int {
-        val m = Regex("[0-9]+(?:[.．,，][0-9]+)?").findAll(text).maxByOrNull { it.value.length } ?: return -1
-        val raw = m.value
-        val hasWan = text.contains('万') || text.contains('萬')
-        val hasDot = raw.any { it == '.' || it == '．' || it == ',' || it == '，' }
-        return if (hasWan || hasDot) {
-            val f = raw.replace(Regex("[.．,，]"), ".").toFloatOrNull() ?: return -1
-            when {
-                hasDot -> (f * 10000f).toInt()
-                f >= 100f -> (f * 10000f).toInt()
-                else -> (f * 100f).toInt()
-            }
-        } else {
-            raw.toIntOrNull() ?: -1
-        }
+    /** 数量显示串（保留「万」字，用户要求）：取最长「数字+可选小数点+可选万」组，
+     *  规范化全角点/萬。游戏格式只有纯整数与「X.XX万」两种，原样展示（x3.99万）。 */
+    private fun parseQuantity(text: String): String {
+        val m = Regex("[0-9]+(?:[.．,，][0-9]+)?\\s*[万萬]?").findAll(text)
+            .filter { it.value.any { ch -> ch.isDigit() } }
+            .maxByOrNull { it.value.length } ?: return ""
+        return m.value.replace(" ", "")
+            .replace('．', '.').replace('，', '.').replace(',', '.').replace('萬', '万')
     }
 
     // ---------------- 收尾：返回键回主页 ----------------

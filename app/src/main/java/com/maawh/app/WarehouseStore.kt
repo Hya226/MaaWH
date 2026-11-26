@@ -19,7 +19,8 @@ object WarehouseStore {
 
     data class Snapshot(
         val scannedAt: String,
-        val counts: LinkedHashMap<String, Int>,
+        /** 数量显示串（保留「万」，如 "3.99万"）；"" = 数量识别失败（x?）。旧版 Int 值读入自动转串 */
+        val counts: LinkedHashMap<String, String>,
         /** 与上一份的物品差异（种类增减或数量变化），首份为 0 */
         val changedFromPrev: Int
     )
@@ -31,8 +32,10 @@ object WarehouseStore {
         if (!f.isFile) return null
         val o = JSONObject(f.readText())
         val c = o.optJSONObject("counts") ?: return null
-        val m = LinkedHashMap<String, Int>()
-        c.keys().asSequence().sorted().forEach { k -> m[k] = c.optInt(k, -1) }
+        val m = LinkedHashMap<String, String>()
+        c.keys().asSequence().sorted().forEach { k ->
+            m[k] = c.optString(k, "").let { if (it == "-1") "" else it }
+        }
         Snapshot(o.optString("scannedAt"), m, o.optInt("changedFromPrev", 0))
     }.getOrNull()
 
@@ -43,7 +46,7 @@ object WarehouseStore {
     }
 
     /** 保存并当场与上一份对比（差异条数写进 changedFromPrev，供「较上次 N 种有变化」显示） */
-    fun save(ctx: Context, cat: String, counts: Map<String, Int>): Snapshot {
+    fun save(ctx: Context, cat: String, counts: Map<String, String>): Snapshot {
         val prev = load(ctx, cat)
         val changed = if (prev == null) 0 else (prev.counts.keys + counts.keys)
             .count { prev.counts[it] != counts[it] }
@@ -64,7 +67,7 @@ object WarehouseStore {
                 tmp.delete()
             }
         }
-        val m = LinkedHashMap<String, Int>()
+        val m = LinkedHashMap<String, String>()
         counts.entries.sortedBy { it.key }.forEach { (k, v) -> m[k] = v }
         return Snapshot(ts, m, changed)
     }
