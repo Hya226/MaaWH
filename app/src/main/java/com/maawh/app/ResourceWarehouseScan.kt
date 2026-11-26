@@ -42,6 +42,10 @@ class ResourceWarehouseScan(
 
     class ScanException(msg: String) : Exception(msg)
 
+    /** 数量 OCR 预处理通道（双通道级联，见 ocrQuantity） */
+    private val QTY_MODE_OTSU = 0
+    private val QTY_MODE_INVERT = 1
+
     data class Result(val counts: LinkedHashMap<String, String>, val pages: Int, val elapsedMs: Long)
 
     // ---- 网格参数（用户按帧逐格校准：首格 (356,122) 卡面 114×116，列周期 150 行周期 130）----
@@ -261,9 +265,19 @@ class ResourceWarehouseScan(
         return try {
             if (cardX < 0 || gy < 0) return ""
             val votes = ArrayList<Triple<String, String, Float>>()   // (等价类key, 读数串, 置信度)
+            // 阶段1：OTSU 通道（贴卡面外缘/低对比个位数字的救星——浆糊/远击I 实锤）
             for (dy in intArrayOf(76, 82, 88, 94, 100, 106, 112)) {
-                val (qs, qconf) = ocrDigits(frame, cardX + 16, gy + dy, 98, 24, 2) ?: continue
+                val (qs, qconf) = ocrDigits(frame, cardX + 16, gy + dy, 98, 24, 2, QTY_MODE_OTSU) ?: continue
                 votes.add(Triple(voteClass(qs), qs, qconf))
+            }
+            // 阶段2（级联）：OTSU 票少或置信度低（<0.75）才补跑反色通道——白底白字的
+            // 数量字反色成黑字白描边后全场稳定正确（金卡 3/33/3、深背景样本 0.98+ 实锤）；
+            // 多数物品阶段1 高置信直接结束（省一半 rec）
+            if (votes.size < 2 || (votes.maxOfOrNull { it.third } ?: 0f) < 0.75f) {
+                for (dy in intArrayOf(76, 82, 88, 94, 100, 106, 112)) {
+                    val (qs, qconf) = ocrDigits(frame, cardX + 16, gy + dy, 98, 24, 2, QTY_MODE_INVERT) ?: continue
+                    votes.add(Triple(voteClass(qs), qs, qconf))
+                }
             }
             if (votes.isEmpty()) {
                 runCatching {
@@ -330,11 +344,16 @@ class ResourceWarehouseScan(
      *  浅色网格页时变成白底白字（真机 浆糊/远击I 7 窗全空、金卡 11111/1 连环翻车）。
      *  反色统一成「黑字+白描边」的稳定形态——离线 6 样本全对且高置信（0.8~1.0），
      *  全面优于 OTSU 二值化（金卡 3 被 OTSU 背景切白误读、远击I 锐化也救不全）。*/
-    private suspend fun ocrDigits(frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int): Pair<String, Float>? {
+    private suspend fun ocrDigits(
+        frame: Bitmap, rx: Int, ry: Int, rw: Int, rh: Int, scale: Int, mode: Int
+    ): Pair<String, Float>? {
         if (rx + rw > frame.width || ry + rh > frame.height || rx < 0 || ry < 0) return null
         var crop = Bitmap.createBitmap(frame, rx, ry, rw, rh)
         crop = Bitmap.createScaledBitmap(crop, rw * scale, rh * scale, true)
-        crop = invertBitmap(crop)
+        crop = when (mode) {
+            QTY_MODE_INVERT -> invertBitmap(crop)
+            else -> otsuBinarize(crop) ?: return null
+        }
         val lines = ocr.requestOCR(GachaOcr.encode(crop))
         crop.recycle()
         for (l in lines.sortedByDescending { it.score }) {
@@ -344,7 +363,7 @@ class ResourceWarehouseScan(
         return null
     }
 
-    /** 反色（RGB 各通道取反，alpha 保留） */
+    /** 反色（RGB 各通道取反，alpha 保留）：白底白字 → 黑底白字 */
     private fun invertBitmap(bmp: Bitmap): Bitmap {
         val w = bmp.width
         val h = bmp.height
@@ -353,6 +372,62 @@ class ResourceWarehouseScan(
         val aMask = 0xFF000000.toInt()
         for (i in px.indices) px[i] = (px[i].inv() and 0x00FFFFFF) or aMask
         return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
+    }
+
+    /** OTSU 自适应阈值二值化：亮（数量白字）→白、其余→黑。
+     *  ★ 白占比 >55% = 数字泡在大片浅色背景（浅网格页/卡面外缘）——OTSU 把背景整片
+     *  切白吞掉字形（真机金卡 3→11111 实锤），返回 null 让调用方跳过该窗。 */
+    private fun otsuBinarize(bmp: Bitmap): Bitmap? {
+        val w = bmp.width
+        val h = bmp.height
+        val px = IntArray(w * h)
+        bmp.getPixels(px, 0, w, 0, 0, w, h)
+        val gray = IntArray(px.size)
+        val hist = IntArray(256)
+        for (i in px.indices) {
+            val p = px[i]
+            val g = (0.299f * (p shr 16 and 0xff) + 0.587f * (p shr 8 and 0xff) + 0.114f * (p and 0xff)).toInt().coerceIn(0, 255)
+            gray[i] = g
+            hist[g]++
+        }
+        val total = px.size
+        var sumAll = 0L
+        for (t in 0..255) sumAll += t.toLong() * hist[t]
+        var sumB = 0L
+        var wB = 0
+        var bestT = 128
+        var bestVar = -1.0
+        for (t in 0..255) {
+            wB += hist[t]
+            if (wB == 0) continue
+            val wF = total - wB
+            if (wF == 0) break
+            sumB += t.toLong() * hist[t]
+            val mB = sumB.toDouble() / wB
+            val mF = (sumAll - sumB).toDouble() / wF
+            val v = wB.toDouble() * wF * (mB - mF) * (mB - mF)
+            if (v > bestVar) {
+                bestVar = v
+                bestT = t
+            }
+        }
+        val out = IntArray(px.size)
+        val white = -0x1
+        val black = 0xFF000000.toInt()
+        var whiteCnt = 0
+        for (i in px.indices) {
+            if (gray[i] > bestT) {
+                out[i] = white
+                whiteCnt++
+            } else {
+                out[i] = black
+            }
+        }
+        if (whiteCnt * 100L > px.size * 55L) {
+            bmp.recycle()
+            return null
+        }
+        return Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888)
     }
 
     /** 数量显示串（保留「万」字，用户要求）：取最长「数字+可选小数点+可选万」组，
