@@ -68,7 +68,8 @@ class MaterialKeepRunner(
         )
 
         // 体力预算：任务编辑里「刷取体力上限」（空/0 = 不限），逐轮累计达到即停
-        val budget = selection.input("体力上限", "").trim().toLongOrNull() ?: 0L
+        val budget = (selection.input("刷取体力上限", "").ifBlank { selection.input("体力上限", "") })
+            .trim().toLongOrNull() ?: 0L
         var spent = 0L
         var rounds = 0
         var stopReason: String? = null
@@ -158,15 +159,19 @@ class MaterialKeepRunner(
         else -> e.task
     }
 
-    /** 按任务类型构造 pipeline_override（节点名与 interface.json 各 option cases 同源） */
+    /** 按任务类型构造 pipeline_override（节点名与 interface.json 各 option cases 同源）。
+     *  ★ 引擎 repeat 是「额外重复次数」：总刷取次数 = repeat + 1（interface 各次数档
+     *  同构：case「2」→repeat 1……case「10」→repeat 9，最低档就是 2 次）——
+     *  此前直接 repeat=runs 实际多刷一局（用户实测「多算了一次」）。 */
     private fun buildOverride(e: MaterialCatalog.CatalogEntry, runs: Int): String {
         val ov = JSONObject()
+        val repeat = (runs - 1).coerceAtLeast(0)
         when (e.task) {
             "VF_刷活动关" -> {
                 val lv = e.params["关卡名"] ?: "01"
                 ov.put("VF_刷活动关_04", JSONObject().put("expected", lv))
                 ov.put("VF_刷活动关_03_Hit", JSONObject().put("expected", lv))
-                ov.put("VF_刷活动关_07", JSONObject().put("repeat", runs))
+                ov.put("VF_刷活动关_07", JSONObject().put("repeat", repeat))
             }
             "VF_清体力" -> {
                 ov.put("VF_清体力_25_Hit", JSONObject().put("expected", "考核"))
@@ -174,10 +179,10 @@ class MaterialKeepRunner(
                 ov.put("VF_清体力_30_Hit", JSONObject().put("expected", t))
                 ov.put("VF_清体力_32_Hit", JSONObject().put("expected", t))
                 ov.put("VF_清体力_33_Hit", JSONObject().put("expected", e.params["关卡"] ?: "01"))
-                ov.put("VF_清体力_07", JSONObject().put("repeat", runs))
+                ov.put("VF_清体力_07", JSONObject().put("repeat", repeat))
             }
             "VF_实验室" -> {
-                ov.put("VF_实验室_08", JSONObject().put("repeat", runs))
+                ov.put("VF_实验室_08", JSONObject().put("repeat", repeat))
             }
         }
         return ov.toString()

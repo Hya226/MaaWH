@@ -3781,10 +3781,11 @@
       "label": "刷取体力上限",
       "inputs": [
         {
-          "name": "体力上限",
+          "name": "刷取体力上限",
           "default": "",
           "pipeline_type": "string",
-          "description": "本次任务最多消耗的体力，达到即停；留空 = 不限制"
+          "description": "本次任务最多消耗的体力，达到即停；留空 = 不限制",
+          "label": "刷取体力上限"
         }
       ]
     }
